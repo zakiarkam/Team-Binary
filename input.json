@@ -1,12 +1,11 @@
 {
-    "product_name": "EcoSmart Bottle",
+    "product_name": "Shopify",
     "website_url": "https://www.shopify.com",
-    "target_audience": "young professionals",
-    "customer_segment": "eco-conscious buyers",
+    "target_audience": "entrepreneurs and small business owners",
+    "customer_segment": "online retailers and ecommerce startups",
     "preferred_platforms": [
         "instagram",
         "linkedin",
-        "facebook",
         "shorts",
         "email"
     ]

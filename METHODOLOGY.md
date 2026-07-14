@@ -4,7 +4,7 @@ A dataset-guided framework for platform-specific marketing content generation, e
 
 ## 1. Problem statement
 
-Businesses with a product or website struggle to produce platform-appropriate marketing assets across Instagram, LinkedIn, Facebook, Shorts/TikTok, and Email — each demands a distinct caption style, hashtag policy, length, and CTA form. This system asks:
+Businesses with a product or website struggle to produce platform-appropriate marketing assets across Instagram, LinkedIn, Shorts/TikTok, and Email — each demands a distinct caption style, hashtag policy, length, and CTA form. This system asks:
 
 > Can a single AI framework, given only product/website context, automatically infer the campaign strategy, generate platform-tailored assets, predict their likely engagement, and iteratively optimize them?
 
@@ -18,7 +18,7 @@ The user provides only:
   "website_url": "...",
   "target_audience": "...",
   "customer_segment": "...",
-  "preferred_platforms": ["instagram", "linkedin", "facebook", "shorts", "email"]
+  "preferred_platforms": ["instagram", "linkedin", "shorts", "email"]
 }
 ```
 

@@ -43,12 +43,12 @@ def platform_suitability(row) -> float:
         if has_cta: score += 1
         if has_image_prompt: score += 1
         if has_shorts_prompt: score += 1
-    elif platform == "facebook":
-        if word_count <= 80: score += 1
-        if hashtag_count <= 5: score += 1
-        if has_cta: score += 1
-        if has_image_prompt: score += 1
-        if has_shorts_prompt: score += 1
+    # elif platform == "facebook":
+    #     if word_count <= 80: score += 1
+    #     if hashtag_count <= 5: score += 1
+    #     if has_cta: score += 1
+    #     if has_image_prompt: score += 1
+    #     if has_shorts_prompt: score += 1
     elif platform == "email":
         if "subject" in caption.lower() or word_count >= 20: score += 1
         if hashtag_count == 0: score += 1

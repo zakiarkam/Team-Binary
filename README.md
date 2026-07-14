@@ -53,7 +53,7 @@ Edit [`input.json`](input.json):
     "website_url": "https://www.shopify.com",
     "target_audience": "young professionals",
     "customer_segment": "eco-conscious buyers",
-    "preferred_platforms": ["instagram", "linkedin", "facebook", "shorts", "email"]
+    "preferred_platforms": ["instagram", "linkedin", "shorts", "email"]
 }
 ```
 

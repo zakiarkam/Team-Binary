@@ -19,7 +19,7 @@ def _rule(row) -> str:
         return {
             "instagram": "Improve Instagram fit with a shorter caption, 3 to 5 relevant hashtags, one emoji, and a soft CTA.",
             "linkedin": "Improve LinkedIn fit with a professional tone, business value, and formal CTA.",
-            "facebook": "Improve Facebook fit with friendly wording, one clear benefit, and direct CTA.",
+            # "facebook": "Improve Facebook fit with friendly wording, one clear benefit, and direct CTA.",
             "email": "Improve email fit with a subject line, concise body, clear value proposition, and no hashtags.",
             "shorts": "Improve shorts fit with a strong hook, short caption, visual scene idea, and action CTA.",
         }.get(p, "Improve clarity, engagement, and platform alignment while preserving the original product meaning.")
