@@ -457,11 +457,14 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
 
+def run():
     arguments = parse_args()
 
     preprocess(
         use_bart_summary=arguments.summarize,
         limit=arguments.limit,
     )
+
+if __name__ == "__main__":
+    run()

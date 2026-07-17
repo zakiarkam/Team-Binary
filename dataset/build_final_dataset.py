@@ -582,8 +582,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
 
+def run():
     arguments = parse_args()
 
     build(
@@ -604,3 +604,6 @@ if __name__ == "__main__":
             .keep_review_rows
         ),
     )
+
+if __name__ == "__main__":
+    run()

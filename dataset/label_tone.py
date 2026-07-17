@@ -1097,8 +1097,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-if __name__ == "__main__":
-
+def run():
     arguments = parse_args()
 
     label_dataset(
@@ -1108,3 +1107,6 @@ if __name__ == "__main__":
         use_phi3=not arguments.no_phi3,
         phi_threshold=arguments.phi_threshold,
     )
+
+if __name__ == "__main__":
+    run()
