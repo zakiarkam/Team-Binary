@@ -975,6 +975,7 @@ def label_dataset(
             verification_indexes,
             start=1,
         ):
+            print(f"\nPhi-3 tone check {number}/{verification_total}")
 
             dataframe.at[
                 row_index,

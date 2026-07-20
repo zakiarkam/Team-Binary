@@ -729,22 +729,83 @@ def label_dataset(
     limit: int | None = None,
     use_phi3: bool = True,
     phi_threshold: float = 0.72,
+    force: bool = False,
 ) -> pd.DataFrame:
     """
     Create campaign-goal labels and audit columns.
     """
 
     config.init_dirs()
-
+    
     if not input_path.exists():
         raise FileNotFoundError(
             "Preprocessed dataset not found: "
             f"{input_path}"
         )
 
-    dataframe = pd.read_csv(
-        input_path,
-    )
+    checkpoint_path = output_path.with_suffix(".checkpoint.csv")
+
+    if checkpoint_path.exists() and not force:
+
+        print("Loading checkpoint...")
+
+        dataframe = pd.read_csv(checkpoint_path)
+
+        print(f"Loaded {len(dataframe)} rows from checkpoint.")
+
+        resume_from = 0
+
+        if "campaign_goal_phi3" in dataframe.columns:
+
+            # completed = dataframe["campaign_goal_phi3"].fillna("").astype(str) != ""
+
+            # completed_rows = (
+            #     dataframe["campaign_goal_phi3"]
+            #     .fillna("")
+            #     .astype(str)
+            #     .ne("")
+            # )
+
+            completed_rows = (
+                dataframe["campaign_goal_phi3"]
+                .fillna("")
+                .astype(str)
+                .ne("")
+            )
+
+            resume_from = completed_rows.idxmin() if not completed_rows.all() else len(dataframe)
+
+            # verification_indexes = dataframe.index[
+            #     verification_mask &
+            #     dataframe["campaign_goal_phi3"].fillna("").eq("")
+            # ]
+
+            # verification_indexes = [
+            #     idx
+            #     for idx in dataframe.index[verification_mask]
+            #     if dataframe.at[idx, "campaign_goal_phi3"] == ""
+            # ]
+
+        print(f"Resuming Phi-3 from row {resume_from}")
+    
+    elif output_path.exists() and not force:
+        print(
+            "Goal labels already exist."
+        )
+
+        print(
+            "Use --force to rebuild."
+        )
+
+        return pd.read_csv(output_path)
+        
+    else:
+        resume_from = 0
+
+        dataframe = pd.read_csv(input_path)
+
+        if "campaign_goal_phi3" not in dataframe.columns:
+            dataframe["campaign_goal_phi3"] = ""
 
     required_columns = {
         "row_id",
@@ -806,93 +867,152 @@ def label_dataset(
         "campaign_goal_rule_matches",
     ]
 
-    dataframe = pd.concat(
-        [
-            dataframe.reset_index(
-                drop=True,
-            ),
-            rule_results.reset_index(
-                drop=True,
-            ),
-        ],
-        axis=1,
-    )
+    # dataframe = pd.concat(
+    #     [
+    #         dataframe.reset_index(
+    #             drop=True,
+    #         ),
+    #         rule_results.reset_index(
+    #             drop=True,
+    #         ),
+    #     ],
+    #     axis=1,
+    # )
+    dataframe.update(rule_results)
 
     print(
         "Loading BART-MNLI campaign-goal classifier..."
     )
 
-    classifier = load_zero_shot_classifier()
-
-    zero_shot_results = []
-
-    total_rows = len(
-        dataframe,
+    dataframe.to_csv(
+        checkpoint_path,
+        index=False,
     )
 
-    for position, row in dataframe.iterrows():
+    print("Checkpoint saved after rule labeling.")
+    
+    CHECKPOINT_INTERVAL = 20
 
-        goal_context = row[
-            "goal_text"
-        ].strip()
+    if (
+        "campaign_goal_zero_shot" not in dataframe.columns
+        or dataframe["campaign_goal_zero_shot"]
+            .fillna("")
+            .eq("")
+            .any()
+    ):
+        classifier = load_zero_shot_classifier()
 
-        if not goal_context:
+        zero_shot_results = []
 
-            goal_context = (
-                f"{row['instruction']} "
-                f"{row['summary']}"
-            )
-
-        prediction = zero_shot_predict(
-            classifier,
-            goal_context,
+        total_rows = len(
+            dataframe,
         )
 
-        zero_shot_results.append(
-            prediction,
-        )
+        if "campaign_goal_zero_shot" not in dataframe.columns:
+            dataframe["campaign_goal_zero_shot"] = ""
+            dataframe["campaign_goal_zero_shot_confidence"] = 0.0
+            dataframe["campaign_goal_second_choice"] = ""
+            dataframe["campaign_goal_second_choice_confidence"] = 0.0
 
-        completed = position + 1
+        missing = dataframe["campaign_goal_zero_shot"].fillna("").eq("")
 
-        if completed % 100 == 0:
+        if missing.any():
+            start_row = missing.idxmax()
+        else:
+            start_row = len(dataframe)
 
-            print(
-                "BART-MNLI goal labels: "
-                f"{completed}/{total_rows}"
+        for position in range(start_row, len(dataframe)):
+
+            row = dataframe.iloc[position]
+            
+            goal_context = row[
+                "goal_text"
+            ].strip()
+
+            if not goal_context:
+
+                goal_context = (
+                    f"{row['instruction']} "
+                    f"{row['summary']}"
+                )
+
+            prediction = zero_shot_predict(
+                classifier,
+                goal_context,
             )
 
-    zero_shot_dataframe = pd.DataFrame(
-        zero_shot_results,
-        columns=[
-            "campaign_goal_zero_shot",
-            "campaign_goal_zero_shot_confidence",
-            "campaign_goal_second_choice",
-            "campaign_goal_second_choice_confidence",
-        ],
+            zero_shot_results.append(
+                prediction,
+            )
+
+            completed = position + 1
+            
+            if completed % CHECKPOINT_INTERVAL == 0:
+
+                temp_df = pd.DataFrame(
+                    zero_shot_results,
+                    columns=[
+                        "campaign_goal_zero_shot",
+                        "campaign_goal_zero_shot_confidence",
+                        "campaign_goal_second_choice",
+                        "campaign_goal_second_choice_confidence",
+                    ],
+                )
+
+                dataframe.loc[
+                    : completed - 1,
+                    temp_df.columns,
+                ] = temp_df.values
+
+                dataframe.to_csv(
+                    checkpoint_path,
+                    index=False,
+                )
+
+                print(
+                    f"BART checkpoint saved ({completed}/{total_rows})"
+                )
+            if completed % 100 == 0:
+
+                print(
+                    "BART-MNLI goal labels: "
+                    f"{completed}/{total_rows}"
+                )
+        
+        zero_shot_dataframe = pd.DataFrame(
+            zero_shot_results,
+            columns=[
+                "campaign_goal_zero_shot",
+                "campaign_goal_zero_shot_confidence",
+                "campaign_goal_second_choice",
+                "campaign_goal_second_choice_confidence",
+            ],
+        )
+    else:
+        print("Skipping BART. Already completed.")
+    
+    # if "zero_shot_dataframe" in locals():
+    #     dataframe[zero_shot_dataframe.columns] = zero_shot_dataframe
+    if "zero_shot_dataframe" in locals():
+
+        dataframe.loc[
+            start_row:,
+            zero_shot_dataframe.columns,
+        ] = zero_shot_dataframe.values
+
+    dataframe.to_csv(
+        checkpoint_path,
+        index=False,
     )
 
-    dataframe = pd.concat(
-        [
-            dataframe.reset_index(
-                drop=True,
-            ),
-            zero_shot_dataframe.reset_index(
-                drop=True,
-            ),
-        ],
-        axis=1,
-    )
+    if "classifier" in locals():
+        release_model_memory(classifier)
 
-    release_model_memory(
-        classifier,
-    )
-
-    dataframe[
-        "campaign_goal_phi3"
-    ] = ""
+    if "campaign_goal_phi3" not in dataframe.columns:
+        dataframe["campaign_goal_phi3"] = ""
 
     if use_phi3:
-
+        print(dataframe.columns[dataframe.columns.duplicated()])
         disagreement = dataframe[
             "campaign_goal_rule"
         ].ne(
@@ -919,9 +1039,12 @@ def label_dataset(
             | no_rule_prediction
         )
 
-        verification_indexes = dataframe.index[
-            verification_mask
-        ].tolist()
+        verification_indexes = [
+            idx
+            for idx in dataframe.index[verification_mask]
+            if idx >= resume_from
+            and dataframe.at[idx, "campaign_goal_phi3"] == ""
+        ]
 
         print(
             "Rows selected for Phi-3 goal verification: "
@@ -936,7 +1059,7 @@ def label_dataset(
             verification_indexes,
             start=1,
         ):
-
+            print(f"\nPhi-3 goal check {number}/{verification_total}")
             dataframe.at[
                 row_index,
                 "campaign_goal_phi3",
@@ -945,6 +1068,18 @@ def label_dataset(
                     row_index
                 ]
             )
+
+            # Save progress every 20 rows
+            if number % CHECKPOINT_INTERVAL == 0:
+
+                dataframe.to_csv(
+                    checkpoint_path,
+                    index=False,
+                )
+
+                print(
+                    f"Checkpoint saved ({number}/{verification_total})"
+                )
 
             if number % 50 == 0:
 
@@ -965,20 +1100,22 @@ def label_dataset(
 
     output = pd.concat(
         [
-            dataframe.reset_index(
-                drop=True,
-            ),
-            final_decisions.reset_index(
-                drop=True,
-            ),
+            dataframe.reset_index(drop=True),
+            final_decisions.reset_index(drop=True),
         ],
         axis=1,
     )
-
+    
     output.to_csv(
         output_path,
         index=False,
     )
+
+    if checkpoint_path.exists():
+        try:
+            checkpoint_path.unlink()
+        except Exception:
+            pass
 
     print(
         "Campaign-goal labels saved to: "
@@ -1055,6 +1192,12 @@ def parse_args() -> argparse.Namespace:
         default=0.72,
     )
 
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite an existing labeled dataset.",
+    )
+
     return parser.parse_args()
 
 
@@ -1067,6 +1210,7 @@ def run():
         limit=arguments.limit,
         use_phi3=not arguments.no_phi3,
         phi_threshold=arguments.phi_threshold,
+        force=arguments.force,
     )
 
 if __name__ == "__main__":
