@@ -74,7 +74,11 @@ def train():
     )
 
     rf = RandomForestRegressor(n_estimators=200, random_state=42).fit(X_tr, y_tr)
-    xgb = XGBRegressor(n_estimators=300, learning_rate=0.05, max_depth=5, random_state=42).fit(X_tr, y_tr)
+    # n_jobs=1: XGBoost's OpenMP pool clashes with torch's on macOS and can
+    # segfault when this runs after torch has been loaded earlier in the run.
+    xgb = XGBRegressor(
+        n_estimators=300, learning_rate=0.05, max_depth=5, random_state=42, n_jobs=1
+    ).fit(X_tr, y_tr)
 
     def _metrics(y_true, y_pred):
         return (

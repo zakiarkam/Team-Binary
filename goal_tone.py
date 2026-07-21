@@ -257,7 +257,9 @@ def create_xgboost_classifier(
         reg_lambda=1.0,
         eval_metric="mlogloss",
         random_state=RANDOM_STATE,
-        n_jobs=-1,
+        # Single-threaded on purpose: XGBoost's OpenMP thread pool clashes with
+        # torch's on macOS and segfaults when fit runs after torch is loaded.
+        n_jobs=1,
     )
 
     return classifier
@@ -410,36 +412,34 @@ def train() -> dict[str, str]:
         TEXT_COLUMN
     ].tolist()
 
-    print("Loading Sentence-BERT...")
-    import gc
-    import torch
+    skip_xgboost = config.GOAL_TONE_SKIP_XGBOOST
 
-    gc.collect()
+    embeddings = None
 
-    print(torch.__version__)
-    print(torch.__file__)
-    print(torch.backends.mps.is_available())
-    print(torch.get_num_threads())
+    if skip_xgboost:
 
-    print("STEP A")
-    semantic_model = get_semantic_model()
-    print("STEP B")
+        print(
+            "GOAL_TONE_SKIP_XGBOOST is set — training TF-IDF + Logistic "
+            "Regression only, skipping Sentence-BERT + XGBoost."
+        )
 
-    print(
-        "Creating Sentence-BERT embeddings..."
-    )
+    else:
 
-    embeddings = semantic_model.encode(
-        texts,
-        show_progress_bar=True,
-        batch_size=32,
-        normalize_embeddings=True,
-    )
+        print("Loading Sentence-BERT...")
 
-    embeddings = np.asarray(
-        embeddings,
-        dtype=np.float32,
-    )
+        semantic_model = get_semantic_model()
+
+        print("Creating Sentence-BERT embeddings...")
+
+        embeddings = np.asarray(
+            semantic_model.encode(
+                texts,
+                show_progress_bar=True,
+                batch_size=32,
+                normalize_embeddings=True,
+            ),
+            dtype=np.float32,
+        )
 
     metric_results = []
 
@@ -515,6 +515,9 @@ def train() -> dict[str, str]:
         trained_models[
             f"{model_prefix}_tfidf"
         ] = tfidf_model
+
+        if skip_xgboost:
+            continue
 
         # ---------------------------------------------------------
         # Sentence-BERT + XGBoost

@@ -1,9 +1,12 @@
 """Lazy-loaded ML models. Each model loads only when first accessed."""
 
 import warnings
-import torch
 
-import config
+# Import config before torch: config sets the OpenMP/thread environment guards,
+# which must be in place before torch initializes its native runtime.
+import config  # noqa: F401  (imported for its import-time side effects too)
+
+import torch
 
 warnings.filterwarnings("ignore")
 

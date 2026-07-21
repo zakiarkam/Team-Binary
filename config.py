@@ -1,5 +1,34 @@
 """Static configuration: model names, score weights, paths."""
 
+import os
+
+# ---------------------------------------------------------------------------
+# Native threading / OpenMP safety
+# ---------------------------------------------------------------------------
+# This block must run before numpy, torch or xgboost are imported. PyTorch and
+# XGBoost each bundle their own OpenMP runtime (libomp); on macOS, loading both
+# and then fitting XGBoost while torch is active segfaults. Pinning a single
+# OpenMP runtime and one thread avoids the crash. setdefault means a caller can
+# still override, e.g.  OMP_NUM_THREADS=4 python main.py
+for _env_var, _env_default in (
+    ("KMP_DUPLICATE_LIB_OK", "TRUE"),
+    ("OMP_NUM_THREADS", "1"),
+    ("OPENBLAS_NUM_THREADS", "1"),
+    ("MKL_NUM_THREADS", "1"),
+    ("NUMEXPR_NUM_THREADS", "1"),
+):
+    os.environ.setdefault(_env_var, _env_default)
+
+# Hard escape hatch: train only the TF-IDF + Logistic Regression classifier and
+# skip the Sentence-BERT + XGBoost model entirely. For machines where the
+# torch/XGBoost OpenMP clash still crashes despite the settings above (a
+# segfault cannot be caught in Python, so opting out is the only recovery).
+#   GOAL_TONE_SKIP_XGBOOST=1 python main.py
+GOAL_TONE_SKIP_XGBOOST = (
+    os.environ.get("GOAL_TONE_SKIP_XGBOOST", "").strip().lower()
+    in {"1", "true", "yes"}
+)
+
 from pathlib import Path
 
 # Models
