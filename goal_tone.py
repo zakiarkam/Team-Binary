@@ -410,13 +410,20 @@ def train() -> dict[str, str]:
         TEXT_COLUMN
     ].tolist()
 
-    print(
-        "Loading Sentence-BERT..."
-    )
+    print("Loading Sentence-BERT...")
+    import gc
+    import torch
 
-    semantic_model = (
-        get_semantic_model()
-    )
+    gc.collect()
+
+    print(torch.__version__)
+    print(torch.__file__)
+    print(torch.backends.mps.is_available())
+    print(torch.get_num_threads())
+
+    print("STEP A")
+    semantic_model = get_semantic_model()
+    print("STEP B")
 
     print(
         "Creating Sentence-BERT embeddings..."

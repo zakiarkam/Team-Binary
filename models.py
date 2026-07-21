@@ -103,9 +103,33 @@ def generate_with_phi3(
     return _phi_tokenizer.decode(completion, skip_special_tokens=True).strip()
 
 
+# def get_semantic_model():
+#     global _semantic_model
+#     if _semantic_model is None:
+#         from sentence_transformers import SentenceTransformer
+#         _semantic_model = SentenceTransformer(config.SEMANTIC_MODEL_NAME)
+#     return _semantic_model
+
 def get_semantic_model():
     global _semantic_model
+
+    print("A")
+
     if _semantic_model is None:
+
+        print("B")
+
         from sentence_transformers import SentenceTransformer
-        _semantic_model = SentenceTransformer(config.SEMANTIC_MODEL_NAME)
+
+        print("C")
+
+        _semantic_model = SentenceTransformer(
+            config.SEMANTIC_MODEL_NAME,
+            device="cpu"
+        )
+
+        print("D")
+
+    print("E")
+
     return _semantic_model
