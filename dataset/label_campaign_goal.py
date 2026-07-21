@@ -387,11 +387,66 @@ def zero_shot_predict(
     )
 
 
+GOAL_LABEL_SET = set(GOAL_LABELS)
+
+
+def safe_label(
+    value: object,
+    allowed: set[str] = GOAL_LABEL_SET,
+) -> str:
+    """
+    Read a label column defensively.
+
+    A CSV round-trip turns "" into NaN, and str(NaN) is the string "nan", which
+    is truthy. Without this guard a resumed run treats "nan" as a real goal and
+    writes it out as the final label.
+    """
+
+    if value is None:
+        return ""
+
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        pass
+
+    text = str(value).strip().lower()
+
+    if text in allowed:
+        return text
+
+    return ""
+
+
+def safe_float(
+    value: object,
+    default: float = 0.0,
+) -> float:
+    """
+    Read a numeric column defensively.
+    """
+
+    try:
+        if pd.isna(value):
+            return default
+    except (TypeError, ValueError):
+        pass
+
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def parse_phi_label(
     raw_output: str,
 ) -> str:
     """
     Extract one valid label from Phi-3 output.
+
+    Reads the earliest label mentioned in the completion rather than the first
+    label in GOAL_LABELS order, so the result reflects what the model said first.
     """
 
     normalized = normalize_text(
@@ -401,15 +456,32 @@ def parse_phi_label(
         "_",
     )
 
+    if not normalized:
+        return ""
+
+    positions = []
+
     for label in GOAL_LABELS:
 
-        if re.search(
+        match = re.search(
             rf"\b{re.escape(label)}\b",
             normalized,
-        ):
-            return label
+        )
 
-    return ""
+        if match:
+            positions.append(
+                (
+                    match.start(),
+                    label,
+                )
+            )
+
+    if not positions:
+        return ""
+
+    positions.sort()
+
+    return positions[0][1]
 
 
 def phi3_verify(
@@ -467,6 +539,7 @@ Do not provide an explanation.
         output = generate_with_phi3(
             prompt,
             max_new_tokens=12,
+            deterministic=True,
         )
 
         return parse_phi_label(
@@ -490,39 +563,24 @@ def choose_final_label(
     Combine rule, BART-MNLI and Phi-3 predictions.
     """
 
-    rule_label = str(
-        row.get(
-            "campaign_goal_rule",
-            "",
-        )
+    rule_label = safe_label(
+        row.get("campaign_goal_rule"),
     )
 
-    rule_confidence = float(
-        row.get(
-            "campaign_goal_rule_confidence",
-            0.0,
-        )
+    rule_confidence = safe_float(
+        row.get("campaign_goal_rule_confidence"),
     )
 
-    zero_shot_label = str(
-        row.get(
-            "campaign_goal_zero_shot",
-            "",
-        )
+    zero_shot_label = safe_label(
+        row.get("campaign_goal_zero_shot"),
     )
 
-    zero_shot_confidence = float(
-        row.get(
-            "campaign_goal_zero_shot_confidence",
-            0.0,
-        )
+    zero_shot_confidence = safe_float(
+        row.get("campaign_goal_zero_shot_confidence"),
     )
 
-    phi_label = str(
-        row.get(
-            "campaign_goal_phi3",
-            "",
-        )
+    phi_label = safe_label(
+        row.get("campaign_goal_phi3"),
     )
 
     votes = [
@@ -757,15 +815,6 @@ def label_dataset(
 
         if "campaign_goal_phi3" in dataframe.columns:
 
-            # completed = dataframe["campaign_goal_phi3"].fillna("").astype(str) != ""
-
-            # completed_rows = (
-            #     dataframe["campaign_goal_phi3"]
-            #     .fillna("")
-            #     .astype(str)
-            #     .ne("")
-            # )
-
             completed_rows = (
                 dataframe["campaign_goal_phi3"]
                 .fillna("")
@@ -774,17 +823,6 @@ def label_dataset(
             )
 
             resume_from = completed_rows.idxmin() if not completed_rows.all() else len(dataframe)
-
-            # verification_indexes = dataframe.index[
-            #     verification_mask &
-            #     dataframe["campaign_goal_phi3"].fillna("").eq("")
-            # ]
-
-            # verification_indexes = [
-            #     idx
-            #     for idx in dataframe.index[verification_mask]
-            #     if dataframe.at[idx, "campaign_goal_phi3"] == ""
-            # ]
 
         print(f"Resuming Phi-3 from row {resume_from}")
     
@@ -861,24 +899,19 @@ def label_dataset(
         result_type="expand",
     )
 
-    rule_results.columns = [
+    rule_columns = [
         "campaign_goal_rule",
         "campaign_goal_rule_confidence",
         "campaign_goal_rule_matches",
     ]
 
-    # dataframe = pd.concat(
-    #     [
-    #         dataframe.reset_index(
-    #             drop=True,
-    #         ),
-    #         rule_results.reset_index(
-    #             drop=True,
-    #         ),
-    #     ],
-    #     axis=1,
-    # )
-    dataframe.update(rule_results)
+    rule_results.columns = rule_columns
+
+    # Assign each column directly. DataFrame.update() only writes to columns
+    # that already exist, so on a fresh run (where these columns do not exist
+    # yet) it silently does nothing and the rule labels are lost.
+    for column in rule_columns:
+        dataframe[column] = rule_results[column].to_numpy()
 
     print(
         "Loading BART-MNLI campaign-goal classifier..."
@@ -991,8 +1024,6 @@ def label_dataset(
     else:
         print("Skipping BART. Already completed.")
     
-    # if "zero_shot_dataframe" in locals():
-    #     dataframe[zero_shot_dataframe.columns] = zero_shot_dataframe
     if "zero_shot_dataframe" in locals():
 
         dataframe.loc[
@@ -1012,7 +1043,6 @@ def label_dataset(
         dataframe["campaign_goal_phi3"] = ""
 
     if use_phi3:
-        print(dataframe.columns[dataframe.columns.duplicated()])
         disagreement = dataframe[
             "campaign_goal_rule"
         ].ne(
@@ -1148,7 +1178,9 @@ def label_dataset(
     return output
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(
+    argv: list[str] | None = None,
+) -> argparse.Namespace:
     """
     Read terminal arguments.
     """
@@ -1198,11 +1230,11 @@ def parse_args() -> argparse.Namespace:
         help="Overwrite an existing labeled dataset.",
     )
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def run():
-    arguments = parse_args()
+def run(argv: list[str] | None = None):
+    arguments = parse_args(argv)
 
     label_dataset(
         input_path=arguments.input,

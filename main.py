@@ -18,7 +18,6 @@ import config
 STAGES = [
     "crawl",
     "kb",
-    # "label-dataset",
     "preprocess-dataset",
     "label-goal",
     "label-tone",
@@ -78,35 +77,24 @@ def run_pipeline(stages: list[str], force: bool = False):
             print(f"[skip] kb ({config.KB_JSON.name} exists)")
             kb = knowledge_base.load_cached()
 
-    # if "label-dataset" in stages:
-    #     import dataset_builder
-    #     if force or not _exists(config.LABELED_DATASET_CSV):
-    #         dataset_builder.run()
-    #     else:
-    #         print(f"[skip] label-dataset ({config.LABELED_DATASET_CSV.name} exists)")
-
+    # These stages own argparse CLIs of their own. Called with no argument they
+    # would parse main.py's argv and abort on --step/--force, so pass an empty
+    # list and forward only the flags they understand.
     if "preprocess-dataset" in stages:
         from dataset import preprocess_marketing
-        preprocess_marketing.run()
+        preprocess_marketing.run([])
 
     if "label-goal" in stages:
         from dataset import label_campaign_goal
-        label_campaign_goal.run()
+        label_campaign_goal.run(["--force"] if force else [])
 
     if "label-tone" in stages:
         from dataset import label_tone
-        label_tone.run()
+        label_tone.run(["--force"] if force else [])
 
     if "build-dataset" in stages:
         from dataset import build_final_dataset
-        build_final_dataset.run()
-# --------------
-    # if "goal-tone-train" in stages:
-    #     import goal_tone
-    #     if force or not _exists(config.GOAL_TONE_SELECTION_JSON):
-    #         goal_tone.train()
-    #     else:
-    #         print(f"[skip] goal-tone-train ({config.GOAL_TONE_SELECTION_JSON.name} exists)")
+        build_final_dataset.run([])
 
     if "goal-tone-train" in stages:
         import goal_tone
@@ -127,7 +115,6 @@ def run_pipeline(stages: list[str], force: bool = False):
         else:
             print(f"[skip] goal-tone-train ({config.GOAL_TONE_SELECTION_JSON.name} exists)")
 
-# ---------------------------
     if "goal-tone-predict" in stages:
         import knowledge_base, goal_tone
         if kb is None:

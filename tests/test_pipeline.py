@@ -5,6 +5,7 @@ deterministic logic: text cleaning, feature extraction, scoring formula,
 platform suitability rules, and JSON parsing.
 """
 
+import io
 import sys
 from pathlib import Path
 
@@ -18,7 +19,7 @@ import config
 from knowledge_base import _clean_text, _clean_text_list, build as build_kb
 from engagement import extract_features, _count_hashtags, _count_emojis, _has_cta, _has_question
 from evaluation import platform_suitability
-from generator import extract_json_from_text, standardize
+from generator import ASSET_COLUMNS, extract_json_from_text, standardize
 
 
 # --- Text cleaning ----------------------------------------------------------
@@ -68,18 +69,46 @@ def test_extract_features_adds_expected_columns():
 # --- Platform suitability scoring ------------------------------------------
 
 def test_platform_suitability_perfect_instagram():
+    # Instagram is a still-image placement: a correct asset carries an image
+    # prompt and no shorts prompt.
     row = {
         "platform": "instagram",
         "caption": "Stay fresh and hydrated naturally.",
         "hashtags": ["#eco", "#bottle", "#sustain"],
         "cta": "Shop now",
         "image_prompt": "A reusable bottle on a wooden desk with green plants nearby.",
-        "shorts_prompt": "Show a young professional swapping plastic for a reusable bottle daily.",
+        "shorts_prompt": "",
     }
     assert platform_suitability(row) == 1.0
 
 
-def test_platform_suitability_empty_email_zero_or_low():
+def test_platform_suitability_penalises_wrong_creative_for_platform():
+    """An image platform carrying a video prompt is not a well-formed asset."""
+    base = {
+        "platform": "instagram",
+        "caption": "Stay fresh and hydrated naturally.",
+        "hashtags": ["#eco", "#bottle", "#sustain"],
+        "cta": "Shop now",
+        "image_prompt": "A reusable bottle on a wooden desk with green plants nearby.",
+        "shorts_prompt": "",
+    }
+    stray_video = {**base, "shorts_prompt": "Show someone swapping to a reusable bottle."}
+    assert platform_suitability(stray_video) < platform_suitability(base)
+
+
+def test_platform_suitability_perfect_shorts_needs_no_image():
+    row = {
+        "platform": "shorts",
+        "caption": "Swap plastic for good.",
+        "hashtags": ["#eco"],
+        "cta": "Start today",
+        "image_prompt": "",
+        "shorts_prompt": "Show a commuter refilling a bottle, scene ends on the logo.",
+    }
+    assert platform_suitability(row) == 1.0
+
+
+def test_platform_suitability_empty_email_is_low():
     row = {
         "platform": "email",
         "caption": "",
@@ -88,8 +117,22 @@ def test_platform_suitability_empty_email_zero_or_low():
         "image_prompt": "",
         "shorts_prompt": "",
     }
-    # Email path: hashtag_count == 0 awards 1 point out of 5
-    assert platform_suitability(row) == pytest.approx(0.2)
+    # Only "no hashtags" and "no stray video prompt" hold, out of six checks.
+    assert platform_suitability(row) == pytest.approx(2 / 6)
+
+
+def test_platform_suitability_survives_csv_round_trip():
+    """Empty cells come back as NaN, which is truthy — it must not read as content."""
+    row = pd.DataFrame([{
+        "platform": "instagram",
+        "caption": "Stay fresh and hydrated naturally.",
+        "hashtags": ["#eco", "#bottle", "#sustain"],
+        "cta": "Shop now",
+        "image_prompt": "A reusable bottle on a wooden desk with green plants nearby.",
+        "shorts_prompt": "",
+    }])
+    restored = pd.read_csv(io.StringIO(row.to_csv(index=False))).iloc[0]
+    assert platform_suitability(restored) == 1.0
 
 
 # --- Final score formula ---------------------------------------------------
@@ -133,6 +176,36 @@ def test_standardize_fills_missing_fields():
 def test_standardize_coerces_string_hashtags_to_list():
     out = standardize("instagram", '{"caption":"hi","hashtags":"#one"}')
     assert out["hashtags"] == ["#one"]
+
+
+def test_standardize_keeps_only_the_creative_prompt_the_platform_uses():
+    """The model may return both prompts; only the applicable one is kept."""
+    both = (
+        '{"caption":"hi","hashtags":["#a"],"cta":"go",'
+        '"image_prompt":"a bright studio desk","shorts_prompt":"show a refill"}'
+    )
+    video = standardize("shorts", both)
+    assert video["shorts_prompt"] and not video["image_prompt"]
+
+    still = standardize("instagram", both)
+    assert still["image_prompt"] and not still["shorts_prompt"]
+
+
+def test_standardize_drops_hashtags_where_the_platform_has_none():
+    out = standardize("email", '{"caption":"hi","hashtags":["#a","#b"]}')
+    assert out["hashtags"] == []
+
+
+def test_standardize_caps_hashtags_at_the_platform_limit():
+    tags = [f"#t{n}" for n in range(40)]
+    out = standardize("instagram", '{"caption":"hi","hashtags":%s}' % str(tags).replace("'", '"'))
+    assert len(out["hashtags"]) == config.platform_spec("instagram")["hashtag_range"][1]
+
+
+def test_standardize_always_returns_the_full_column_set():
+    """Rows must stay rectangular so downstream stages can read any column."""
+    out = standardize("shorts", "not json at all")
+    assert set(out) == set(ASSET_COLUMNS)
 
 
 # --- Knowledge base build --------------------------------------------------

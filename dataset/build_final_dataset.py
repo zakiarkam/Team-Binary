@@ -517,7 +517,9 @@ def build(
     )
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(
+    argv: list[str] | None = None,
+) -> argparse.Namespace:
     """
     Read terminal arguments.
     """
@@ -579,12 +581,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
     )
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 
-def run():
-    arguments = parse_args()
+def run(argv: list[str] | None = None):
+    arguments = parse_args(argv)
 
     build(
         goal_path=arguments.goal_input,

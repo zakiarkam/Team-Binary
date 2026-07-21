@@ -1,5 +1,7 @@
 """Semantic similarity + platform suitability + final composite score."""
 
+import ast
+
 import pandas as pd
 from sentence_transformers import util
 
@@ -14,61 +16,85 @@ def semantic_score(source_text: str, generated_text: str) -> float:
     return float(util.cos_sim(src, gen).item())
 
 
+MIN_PROMPT_WORDS = 8
+
+
+def as_text(value) -> str:
+    """Read a possibly-missing cell as text.
+
+    A CSV round-trip turns "" into NaN. NaN is truthy, so `value or ""` yields
+    NaN and str() then produces the literal string "nan" — which reads as
+    present content to any emptiness check.
+    """
+    if value is None:
+        return ""
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        pass
+    return str(value)
+
+
+def _as_list(value) -> list:
+    """hashtags survive a CSV round-trip as a string; accept either form."""
+    if isinstance(value, list):
+        return value
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return []
+    text = str(value).strip()
+    if not text or text in {"[]", "nan"}:
+        return []
+    try:
+        parsed = ast.literal_eval(text)
+        if isinstance(parsed, list):
+            return parsed
+    except (ValueError, SyntaxError):
+        pass
+    return [text]
+
+
 def platform_suitability(row) -> float:
+    """Fraction of this platform's applicable criteria that the asset meets.
+
+    Criteria are derived from config.PLATFORM_SPECS, so a platform is only
+    judged on the creative prompt it actually needs. Scoring a platform on a
+    prompt it was never asked to produce would penalise correct output.
+    """
     platform = str(row["platform"]).lower()
-    caption = str(row["caption"])
-    hashtags = row["hashtags"] if isinstance(row["hashtags"], list) else [row["hashtags"]] if row["hashtags"] else []
-    cta = str(row["cta"])
-    image_prompt = str(row["image_prompt"])
-    shorts_prompt = str(row["shorts_prompt"])
+    spec = config.platform_spec(platform)
+
+    caption = as_text(row.get("caption"))
+    cta = as_text(row.get("cta"))
+    image_prompt = as_text(row.get("image_prompt"))
+    shorts_prompt = as_text(row.get("shorts_prompt"))
 
     word_count = len(caption.split())
-    hashtag_count = len(hashtags)
-    has_cta = len(cta.strip()) > 0
-    has_image_prompt = len(image_prompt.split()) >= 8
-    has_shorts_prompt = len(shorts_prompt.split()) >= 8
+    hashtag_count = len(_as_list(row.get("hashtags")))
 
-    score = 0
-    max_score = 5
+    low, high = spec["caption_words"]
+    checks = [low <= word_count <= high]
 
-    if platform == "instagram":
-        if word_count <= 40: score += 1
-        if hashtag_count >= 3: score += 1
-        if has_cta: score += 1
-        if has_image_prompt: score += 1
-        if has_shorts_prompt: score += 1
-    elif platform == "linkedin":
-        if word_count >= 20: score += 1
-        if hashtag_count <= 5: score += 1
-        if has_cta: score += 1
-        if has_image_prompt: score += 1
-        if has_shorts_prompt: score += 1
-    # elif platform == "facebook":
-    #     if word_count <= 80: score += 1
-    #     if hashtag_count <= 5: score += 1
-    #     if has_cta: score += 1
-    #     if has_image_prompt: score += 1
-    #     if has_shorts_prompt: score += 1
-    elif platform == "email":
-        if "subject" in caption.lower() or word_count >= 20: score += 1
-        if hashtag_count == 0: score += 1
-        if has_cta: score += 1
-        if has_image_prompt: score += 1
-        if has_shorts_prompt: score += 1
-    elif platform == "shorts":
-        if word_count <= 30: score += 1
-        if has_cta: score += 1
-        if has_image_prompt: score += 1
-        if has_shorts_prompt: score += 1
-        if "show" in shorts_prompt.lower() or "scene" in shorts_prompt.lower(): score += 1
-    else:
-        if word_count <= 80: score += 1
-        if has_cta: score += 1
-        if has_image_prompt: score += 1
-        if has_shorts_prompt: score += 1
-        if hashtag_count <= 5: score += 1
+    least, most = spec["hashtag_range"]
+    checks.append(least <= hashtag_count <= most)
 
-    return score / max_score
+    checks.append(len(cta.strip()) > 0)
+
+    if spec["visual"] == "image":
+        checks.append(len(image_prompt.split()) >= MIN_PROMPT_WORDS)
+        # A still-image placement must not carry a video prompt.
+        checks.append(not shorts_prompt.strip())
+    elif spec["visual"] == "video":
+        checks.append(len(shorts_prompt.split()) >= MIN_PROMPT_WORDS)
+        checks.append(
+            "show" in shorts_prompt.lower() or "scene" in shorts_prompt.lower()
+        )
+        checks.append(not image_prompt.strip())
+
+    if platform == "email":
+        checks.append("subject" in caption.lower())
+
+    return sum(bool(c) for c in checks) / len(checks)
 
 
 def run(generated_assets_df: pd.DataFrame, marketing_summary: dict) -> pd.DataFrame:

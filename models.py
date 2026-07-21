@@ -7,7 +7,16 @@ import config
 
 warnings.filterwarnings("ignore")
 
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+def _select_device() -> str:
+    """Preferred accelerator. Apple Silicon is the primary dev target here."""
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
+DEVICE = _select_device()
 
 _summarizer = None
 _phi_tokenizer = None
@@ -54,23 +63,44 @@ def get_phi3_generator():
     return _phi_generator
 
 
-def generate_with_phi3(prompt: str, max_new_tokens: int = 450) -> str:
-    """Chat-template generation with Phi-3."""
+def generate_with_phi3(
+    prompt: str,
+    max_new_tokens: int = 450,
+    deterministic: bool = False,
+) -> str:
+    """Chat-template generation with Phi-3.
+
+    Returns only the model's completion. `generate` returns the prompt tokens
+    followed by the completion, so decoding the whole sequence would echo the
+    prompt back to the caller — which silently breaks any parser that scans the
+    output for a keyword the prompt itself contains.
+
+    Set deterministic=True for classification and label-verification calls,
+    where sampling makes the same input produce different labels across runs.
+    """
     _load_phi3()
     messages = [{"role": "user", "content": prompt}]
     input_text = _phi_tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )
     inputs = _phi_tokenizer(input_text, return_tensors="pt").to(_phi_model.device)
+
+    sampling = (
+        {"do_sample": False}
+        if deterministic
+        else {"do_sample": True, "temperature": 0.7, "top_p": 0.9}
+    )
+
     outputs = _phi_model.generate(
         **inputs,
         max_new_tokens=max_new_tokens,
-        do_sample=True,
-        temperature=0.7,
-        top_p=0.9,
         pad_token_id=_phi_tokenizer.eos_token_id,
+        **sampling,
     )
-    return _phi_tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+
+    prompt_length = inputs["input_ids"].shape[-1]
+    completion = outputs[0][prompt_length:]
+    return _phi_tokenizer.decode(completion, skip_special_tokens=True).strip()
 
 
 def get_semantic_model():

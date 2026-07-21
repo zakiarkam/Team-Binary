@@ -1,12 +1,16 @@
 """
 Create research-grade marketing-tone pseudo-labels.
 
-Methods:
+Stages, each of which writes its own checkpoint so an interrupted run resumes
+from the last completed stage instead of re-running the expensive models:
 
-1. Weighted tone keyword and writing-style rules.
-2. BART-MNLI zero-shot classification.
-3. Phi-3 verification for uncertain or disagreeing examples.
-4. Ensemble label selection.
+1. rule   -> weighted tone keyword and writing-style rules
+2. bart   -> BART-MNLI zero-shot classification (+ marginal calibration)
+3. phi3   -> Phi-3 verification for uncertain or disagreeing examples
+4. final  -> ensemble label selection
+
+Checkpoint paths are declared in config as TONE_RULE_CHECKPOINT,
+TONE_BART_CHECKPOINT, TONE_PHI3_CHECKPOINT and TONE_FINAL_CHECKPOINT.
 """
 
 from __future__ import annotations
@@ -41,6 +45,17 @@ TONE_LABELS = [
     "emotional",
     "persuasive",
     "humorous",
+]
+
+
+TONE_LABEL_SET = set(TONE_LABELS)
+
+
+STAGES = [
+    "rule",
+    "bart",
+    "phi3",
+    "final",
 ]
 
 
@@ -169,6 +184,110 @@ TONE_PATTERNS: dict[
 }
 
 
+# Match whole words only. Plain substring matching makes "hey" fire on "they",
+# "sale" on "wholesale" and "care" on "career". Lookarounds rather than \b so
+# that phrases containing apostrophes ("don't miss", "let's") still anchor.
+COMPILED_TONE_PATTERNS: dict[
+    str,
+    list[tuple[re.Pattern[str], str, float]],
+] = {
+    label: [
+        (
+            re.compile(
+                r"(?<!\w)"
+                + re.escape(phrase)
+                + r"(?!\w)"
+            ),
+            phrase,
+            weight,
+        )
+        for phrase, weight in phrases.items()
+    ]
+    for label, phrases in TONE_PATTERNS.items()
+}
+
+
+# Actual emoji blocks. The previous [^\x00-\x7F] test counted every non-ASCII
+# character, so accented letters, curly quotes and em dashes scored as emoji.
+EMOJI_PATTERN = re.compile(
+    "["
+    "\U0001f300-\U0001faff"
+    "\U0001f1e6-\U0001f1ff"
+    "\U00002600-\U000027bf"
+    "\U00002b00-\U00002bff"
+    "]"
+)
+
+
+IMPERATIVE_PATTERN = re.compile(
+    r"\b(?:"
+    r"discover|explore|try|start|join|get|"
+    r"shop|book|order|register|subscribe"
+    r")\b"
+)
+
+
+SMART_CHARACTERS = {
+    "‘": "'",
+    "’": "'",
+    "“": '"',
+    "”": '"',
+    "–": "-",
+    "—": "-",
+    " ": " ",
+}
+
+
+# Column groups written by each stage.
+RULE_COLUMNS = [
+    "tone_rule",
+    "tone_rule_confidence",
+    "tone_rule_matches",
+]
+
+ZERO_SHOT_SCORE_COLUMNS = [
+    f"tone_zs_score_{label}"
+    for label in TONE_LABELS
+]
+
+BART_COLUMNS = (
+    ZERO_SHOT_SCORE_COLUMNS
+    + [
+        "tone_zero_shot_scored",
+        "tone_zero_shot_raw",
+        "tone_zero_shot_raw_confidence",
+        "tone_zero_shot",
+        "tone_zero_shot_confidence",
+        "tone_second_choice",
+        "tone_second_choice_confidence",
+    ]
+)
+
+PHI3_COLUMNS = [
+    "tone_phi3",
+    "tone_phi3_selected",
+    "tone_phi3_done",
+]
+
+FINAL_COLUMNS = [
+    "tone",
+    "tone_confidence",
+    "tone_agreement",
+    "tone_source",
+    "tone_needs_review",
+]
+
+
+# Which stage is responsible for which columns, so restarting a stage can
+# discard exactly the work that stage and its successors produced.
+STAGE_OWNED_COLUMNS = {
+    "rule": RULE_COLUMNS,
+    "bart": BART_COLUMNS,
+    "phi3": PHI3_COLUMNS,
+    "final": FINAL_COLUMNS,
+}
+
+
 def normalize_text(
     value: object,
 ) -> str:
@@ -185,12 +304,15 @@ def normalize_text(
     except (TypeError, ValueError):
         pass
 
-    text = str(value).lower()
+    text = str(value)
 
-    text = text.replace(
-        "\u00a0",
-        " ",
-    )
+    for source, replacement in SMART_CHARACTERS.items():
+        text = text.replace(
+            source,
+            replacement,
+        )
+
+    text = text.lower()
 
     text = re.sub(
         r"\s+",
@@ -199,6 +321,55 @@ def normalize_text(
     )
 
     return text.strip()
+
+
+def safe_label(
+    value: object,
+    allowed: set[str] = TONE_LABEL_SET,
+) -> str:
+    """
+    Read a label column defensively.
+
+    A CSV round-trip turns "" into NaN, and str(NaN) is the string "nan", which
+    is truthy. Without this guard a resumed run will treat "nan" as a real tone
+    and write it out as the final label.
+    """
+
+    if value is None:
+        return ""
+
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        pass
+
+    text = str(value).strip().lower()
+
+    if text in allowed:
+        return text
+
+    return ""
+
+
+def safe_float(
+    value: object,
+    default: float = 0.0,
+) -> float:
+    """
+    Read a numeric column defensively.
+    """
+
+    try:
+        if pd.isna(value):
+            return default
+    except (TypeError, ValueError):
+        pass
+
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def score_rule(
@@ -222,11 +393,11 @@ def score_rule(
         for label in TONE_LABELS
     }
 
-    for label, phrases in TONE_PATTERNS.items():
+    for label, compiled in COMPILED_TONE_PATTERNS.items():
 
-        for phrase, weight in phrases.items():
+        for expression, phrase, weight in compiled:
 
-            if phrase in normalized:
+            if expression.search(normalized):
 
                 scores[label] += weight
 
@@ -243,20 +414,13 @@ def score_rule(
     )
 
     emoji_count = len(
-        re.findall(
-            r"[^\x00-\x7F]",
+        EMOJI_PATTERN.findall(
             str(text),
         )
     )
 
     imperative_count = len(
-        re.findall(
-            (
-                r"\b(?:"
-                r"discover|explore|try|start|join|get|"
-                r"shop|book|order|register|subscribe"
-                r")\b"
-            ),
+        IMPERATIVE_PATTERN.findall(
             normalized,
         )
     )
@@ -317,7 +481,8 @@ def score_rule(
         return "", 0.0, ""
 
     evidence_score = min(
-        best_score / 6.0,
+        best_score
+        / config.TONE_RULE_SATURATION_WEIGHT,
         1.0,
     )
 
@@ -330,8 +495,10 @@ def score_rule(
     )
 
     confidence = (
-        0.55 * evidence_score
-        + 0.45 * margin_score
+        config.TONE_RULE_EVIDENCE_WEIGHT
+        * evidence_score
+        + config.TONE_RULE_MARGIN_WEIGHT
+        * margin_score
     )
 
     matched_phrases = "|".join(
@@ -352,7 +519,17 @@ def load_zero_shot_classifier():
 
     import torch
 
-    if torch.backends.mps.is_available():
+    if torch.cuda.is_available():
+
+        device = torch.device(
+            "cuda",
+        )
+
+        print(
+            "Using CUDA for BART-MNLI."
+        )
+
+    elif torch.backends.mps.is_available():
 
         device = torch.device(
             "mps",
@@ -381,12 +558,15 @@ def load_zero_shot_classifier():
     return classifier
 
 
-def zero_shot_predict(
+def zero_shot_scores(
     classifier,
     text: str,
-) -> tuple[str, float, str, float]:
+) -> dict[str, float]:
     """
-    Run zero-shot marketing-tone classification.
+    Score every tone label for one row.
+
+    The full score vector is kept, not just the winner, so that calibration and
+    any later re-analysis can run from the checkpoint without re-invoking BART.
     """
 
     text = str(
@@ -394,7 +574,10 @@ def zero_shot_predict(
     ).strip()
 
     if not text:
-        return "", 0.0, "", 0.0
+        return {
+            label: 0.0
+            for label in TONE_LABELS
+        }
 
     descriptions = list(
         ZERO_SHOT_CANDIDATES.values()
@@ -407,7 +590,7 @@ def zero_shot_predict(
     }
 
     result = classifier(
-        text[:4000],
+        text[: config.TONE_ZERO_SHOT_MAX_CHARS],
         candidate_labels=descriptions,
         hypothesis_template=(
             "The writing style of this marketing content is {}."
@@ -415,42 +598,158 @@ def zero_shot_predict(
         multi_label=False,
     )
 
-    predicted_labels = [
-        description_to_label[
-            description
-        ]
-        for description
-        in result["labels"]
-    ]
+    return {
+        description_to_label[description]: float(score)
+        for description, score
+        in zip(
+            result["labels"],
+            result["scores"],
+        )
+    }
 
-    predicted_scores = [
-        float(score)
-        for score
-        in result["scores"]
-    ]
 
-    best_label = predicted_labels[0]
+def calibrate_zero_shot_scores(
+    dataframe: pd.DataFrame,
+    strength: float,
+) -> pd.DataFrame:
+    """
+    Divide out each label's corpus-mean score, then renormalize per row.
 
-    best_score = predicted_scores[0]
+    Softmax over six overlapping candidate descriptions collapses onto whichever
+    description best matches the domain as a whole. On marketing copy that is
+    "persuasive, promotional, urgent, benefit-led", which wins almost every row
+    regardless of the individual text. Dividing each label's score by its mean
+    across the corpus removes that shared prior and leaves the per-row signal.
 
-    if len(predicted_labels) > 1:
+    strength=0 returns the raw scores unchanged.
+    """
 
-        second_label = predicted_labels[1]
+    scores = dataframe[
+        ZERO_SHOT_SCORE_COLUMNS
+    ].astype(float)
 
-        second_score = predicted_scores[1]
+    if strength <= 0:
+        return scores
 
-    else:
+    means = scores.mean(axis=0)
 
-        second_label = ""
-
-        second_score = 0.0
-
-    return (
-        best_label,
-        round(best_score, 4),
-        second_label,
-        round(second_score, 4),
+    # A label that never scored anything carries no prior to remove.
+    means = means.where(
+        means > 0,
+        1.0,
     )
+
+    adjusted = scores / (means ** strength)
+
+    totals = adjusted.sum(axis=1)
+
+    totals = totals.where(
+        totals > 0,
+        1.0,
+    )
+
+    return adjusted.div(
+        totals,
+        axis=0,
+    )
+
+
+def derive_zero_shot_columns(
+    dataframe: pd.DataFrame,
+    strength: float,
+) -> pd.DataFrame:
+    """
+    Turn the stored score matrix into the label/confidence columns.
+    """
+
+    raw = dataframe[
+        ZERO_SHOT_SCORE_COLUMNS
+    ].astype(float)
+
+    calibrated = calibrate_zero_shot_scores(
+        dataframe,
+        strength,
+    )
+
+    scored = (
+        dataframe["tone_zero_shot_scored"]
+        .fillna(0)
+        .astype(int)
+        .eq(1)
+    )
+
+    # Column order matches TONE_LABELS, so positional argmax maps back cleanly.
+    def top_two(frame: pd.DataFrame) -> pd.DataFrame:
+        ordered = frame.to_numpy().argsort(axis=1)[:, ::-1]
+        return pd.DataFrame(
+            {
+                "best_index": ordered[:, 0],
+                "second_index": ordered[:, 1],
+            },
+            index=frame.index,
+        )
+
+    raw_top = top_two(raw)
+    calibrated_top = top_two(calibrated)
+
+    labels = pd.Series(TONE_LABELS)
+
+    dataframe["tone_zero_shot_raw"] = (
+        labels
+        .reindex(raw_top["best_index"])
+        .to_numpy()
+    )
+
+    dataframe["tone_zero_shot_raw_confidence"] = [
+        round(raw.iat[position, index], 4)
+        for position, index
+        in enumerate(raw_top["best_index"])
+    ]
+
+    dataframe["tone_zero_shot"] = (
+        labels
+        .reindex(calibrated_top["best_index"])
+        .to_numpy()
+    )
+
+    dataframe["tone_zero_shot_confidence"] = [
+        round(calibrated.iat[position, index], 4)
+        for position, index
+        in enumerate(calibrated_top["best_index"])
+    ]
+
+    dataframe["tone_second_choice"] = (
+        labels
+        .reindex(calibrated_top["second_index"])
+        .to_numpy()
+    )
+
+    dataframe["tone_second_choice_confidence"] = [
+        round(calibrated.iat[position, index], 4)
+        for position, index
+        in enumerate(calibrated_top["second_index"])
+    ]
+
+    # Rows with no usable text carry no prediction at all.
+    blank_columns = [
+        "tone_zero_shot_raw",
+        "tone_zero_shot",
+        "tone_second_choice",
+    ]
+
+    for column in blank_columns:
+        dataframe.loc[~scored, column] = ""
+
+    zero_columns = [
+        "tone_zero_shot_raw_confidence",
+        "tone_zero_shot_confidence",
+        "tone_second_choice_confidence",
+    ]
+
+    for column in zero_columns:
+        dataframe.loc[~scored, column] = 0.0
+
+    return dataframe
 
 
 def parse_phi_label(
@@ -458,21 +757,42 @@ def parse_phi_label(
 ) -> str:
     """
     Extract one tone label from Phi-3 output.
+
+    Reads the earliest label mentioned in the completion rather than the first
+    label in TONE_LABELS order, so the result reflects what the model actually
+    said first.
     """
 
     normalized = normalize_text(
         raw_output,
     )
 
+    if not normalized:
+        return ""
+
+    positions = []
+
     for label in TONE_LABELS:
 
-        if re.search(
-            rf"\b{re.escape(label)}\b",
+        match = re.search(
+            rf"(?<!\w){re.escape(label)}(?!\w)",
             normalized,
-        ):
-            return label
+        )
 
-    return ""
+        if match:
+            positions.append(
+                (
+                    match.start(),
+                    label,
+                )
+            )
+
+    if not positions:
+        return ""
+
+    positions.sort()
+
+    return positions[0][1]
 
 
 def phi3_verify(
@@ -531,6 +851,7 @@ Do not provide an explanation.
         output = generate_with_phi3(
             prompt,
             max_new_tokens=12,
+            deterministic=True,
         )
 
         return parse_phi_label(
@@ -554,39 +875,24 @@ def choose_final_label(
     Combine tone predictions.
     """
 
-    rule_label = str(
-        row.get(
-            "tone_rule",
-            "",
-        )
+    rule_label = safe_label(
+        row.get("tone_rule"),
     )
 
-    rule_confidence = float(
-        row.get(
-            "tone_rule_confidence",
-            0.0,
-        )
+    rule_confidence = safe_float(
+        row.get("tone_rule_confidence"),
     )
 
-    zero_shot_label = str(
-        row.get(
-            "tone_zero_shot",
-            "",
-        )
+    zero_shot_label = safe_label(
+        row.get("tone_zero_shot"),
     )
 
-    zero_shot_confidence = float(
-        row.get(
-            "tone_zero_shot_confidence",
-            0.0,
-        )
+    zero_shot_confidence = safe_float(
+        row.get("tone_zero_shot_confidence"),
     )
 
-    phi_label = str(
-        row.get(
-            "tone_phi3",
-            "",
-        )
+    phi_label = safe_label(
+        row.get("tone_phi3"),
     )
 
     votes = [
@@ -678,7 +984,8 @@ def choose_final_label(
 
     elif (
         zero_shot_label
-        and zero_shot_confidence >= 0.72
+        and zero_shot_confidence
+        >= config.TONE_ZERO_SHOT_ACCEPT_CONFIDENCE
     ):
 
         final_label = zero_shot_label
@@ -693,7 +1000,8 @@ def choose_final_label(
 
     elif (
         rule_label
-        and rule_confidence >= 0.82
+        and rule_confidence
+        >= config.TONE_RULE_ACCEPT_CONFIDENCE
     ):
 
         final_label = rule_label
@@ -746,8 +1054,8 @@ def choose_final_label(
 
     needs_review = bool(
         not final_label
-        or final_confidence < 0.62
-        or agreement < 0.5
+        or final_confidence < config.TONE_MIN_CONFIDENCE
+        or agreement < config.TONE_MIN_AGREEMENT
     )
 
     return {
@@ -780,6 +1088,9 @@ def release_model_memory(
 
         import torch
 
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         if torch.backends.mps.is_available():
             torch.mps.empty_cache()
 
@@ -787,18 +1098,169 @@ def release_model_memory(
         pass
 
 
-def label_dataset(
-    input_path: Path,
-    output_path: Path,
-    limit: int | None = None,
-    use_phi3: bool = True,
-    phi_threshold: float = 0.67,
-) -> pd.DataFrame:
+def save_checkpoint(
+    dataframe: pd.DataFrame,
+    path: Path,
+    message: str = "",
+) -> None:
     """
-    Create tone labels and audit columns.
+    Write a checkpoint atomically.
+
+    A crash partway through a write would otherwise leave a truncated CSV that
+    the next run happily resumes from.
     """
 
-    config.init_dirs()
+    path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    temporary_path = path.with_suffix(
+        path.suffix + ".tmp",
+    )
+
+    dataframe.to_csv(
+        temporary_path,
+        index=False,
+    )
+
+    temporary_path.replace(
+        path,
+    )
+
+    if message:
+        print(message)
+
+
+def read_checkpoint(
+    path: Path,
+) -> pd.DataFrame:
+    """
+    Load a checkpoint and restore the empty-string columns pandas turned to NaN.
+    """
+
+    dataframe = pd.read_csv(
+        path,
+    )
+
+    text_columns = [
+        "text",
+        "tone_rule",
+        "tone_rule_matches",
+        "tone_zero_shot",
+        "tone_zero_shot_raw",
+        "tone_second_choice",
+        "tone_phi3",
+        "tone",
+        "tone_source",
+    ]
+
+    for column in text_columns:
+
+        if column in dataframe.columns:
+
+            dataframe[column] = (
+                dataframe[column]
+                .fillna("")
+                .astype(str)
+            )
+
+    return dataframe
+
+
+def resolve_resume_point(
+    from_stage: str | None,
+) -> tuple[int, pd.DataFrame | None]:
+    """
+    Decide which stage to start at and which checkpoint to start from.
+
+    Returns the index of the stage to enter, plus the dataframe to start from
+    (None means start from the preprocessed input).
+
+    Auto-resume re-enters the stage that owns the newest checkpoint rather than
+    skipping past it. A checkpoint is written *during* a stage as well as at the
+    end of one, so its existence only proves the stage started. Each stage
+    detects its own outstanding rows and costs nothing when already complete.
+
+    An explicit --from-stage instead discards that stage's work and every later
+    stage's work, so the stage genuinely re-runs.
+    """
+
+    if from_stage:
+
+        stage_index = STAGES.index(
+            from_stage,
+        )
+
+        if stage_index == 0:
+            return 0, None
+
+        previous_name, previous_path = (
+            config.TONE_STAGE_CHECKPOINTS[stage_index - 1]
+        )
+
+        if not previous_path.exists():
+            raise FileNotFoundError(
+                f"--from-stage {from_stage} needs the '{previous_name}' "
+                f"checkpoint ({previous_path}), which does not exist. "
+                "Run the earlier stages first, or use --force."
+            )
+
+        print(
+            f"Restarting at '{from_stage}' from {previous_path.name}"
+        )
+
+        dataframe = read_checkpoint(
+            previous_path,
+        )
+
+        # Discard anything the restarted stage or a later stage produced.
+        stale_columns = [
+            column
+            for stage_name in STAGES[stage_index:]
+            for column in STAGE_OWNED_COLUMNS[stage_name]
+            if column in dataframe.columns
+        ]
+
+        return (
+            stage_index,
+            dataframe.drop(
+                columns=stale_columns,
+            ),
+        )
+
+    for stage_index in range(
+        len(config.TONE_STAGE_CHECKPOINTS) - 1,
+        -1,
+        -1,
+    ):
+
+        stage_name, checkpoint_path = (
+            config.TONE_STAGE_CHECKPOINTS[stage_index]
+        )
+
+        if checkpoint_path.exists():
+
+            print(
+                f"Resuming inside '{stage_name}' stage "
+                f"from {checkpoint_path.name}"
+            )
+
+            return (
+                stage_index,
+                read_checkpoint(checkpoint_path),
+            )
+
+    return 0, None
+
+
+def load_input_dataframe(
+    input_path: Path,
+    limit: int | None,
+) -> pd.DataFrame:
+    """
+    Load and validate the preprocessed dataset.
+    """
 
     if not input_path.exists():
         raise FileNotFoundError(
@@ -837,8 +1299,20 @@ def label_dataset(
             limit,
         ).copy()
 
+    return dataframe.reset_index(
+        drop=True,
+    )
+
+
+def stage_rule(
+    dataframe: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Stage 1: weighted keyword and writing-style rules.
+    """
+
     print(
-        "Running tone rule classifier..."
+        "\n[stage 1/4] Running tone rule classifier..."
     )
 
     rule_results = dataframe[
@@ -849,198 +1323,360 @@ def label_dataset(
         pd.Series,
     )
 
-    rule_results.columns = [
-        "tone_rule",
-        "tone_rule_confidence",
-        "tone_rule_matches",
-    ]
+    rule_results.columns = RULE_COLUMNS
 
-    dataframe = pd.concat(
-        [
-            dataframe.reset_index(
-                drop=True,
-            ),
-            rule_results.reset_index(
-                drop=True,
-            ),
-        ],
-        axis=1,
+    for column in RULE_COLUMNS:
+        dataframe[column] = rule_results[column].to_numpy()
+
+    save_checkpoint(
+        dataframe,
+        config.TONE_RULE_CHECKPOINT,
+        "Rule checkpoint saved: "
+        f"{config.TONE_RULE_CHECKPOINT}",
     )
+
+    return dataframe
+
+
+def stage_bart(
+    dataframe: pd.DataFrame,
+    calibration_strength: float,
+) -> pd.DataFrame:
+    """
+    Stage 2: BART-MNLI zero-shot scoring, resumable row by row.
+    """
 
     print(
-        "Loading BART-MNLI tone classifier..."
+        "\n[stage 2/4] Running BART-MNLI tone classifier..."
     )
 
-    classifier = load_zero_shot_classifier()
+    for column in ZERO_SHOT_SCORE_COLUMNS:
+        if column not in dataframe.columns:
+            dataframe[column] = pd.NA
 
-    zero_shot_results = []
+    if "tone_zero_shot_scored" not in dataframe.columns:
+        dataframe["tone_zero_shot_scored"] = 0
 
-    total_rows = len(
-        dataframe,
+    dataframe["tone_zero_shot_scored"] = (
+        dataframe["tone_zero_shot_scored"]
+        .fillna(0)
+        .astype(int)
     )
 
-    for position, text in enumerate(
-        dataframe["text"],
-        start=1,
-    ):
+    pending = dataframe.index[
+        dataframe["tone_zero_shot_scored"].ne(1)
+    ].tolist()
 
-        prediction = zero_shot_predict(
-            classifier,
-            text,
-        )
+    total_rows = len(dataframe)
 
-        zero_shot_results.append(
-            prediction,
-        )
-
-        if position % 100 == 0:
-
-            print(
-                "BART-MNLI tone labels: "
-                f"{position}/{total_rows}"
-            )
-
-    zero_shot_dataframe = pd.DataFrame(
-        zero_shot_results,
-        columns=[
-            "tone_zero_shot",
-            "tone_zero_shot_confidence",
-            "tone_second_choice",
-            "tone_second_choice_confidence",
-        ],
-    )
-
-    dataframe = pd.concat(
-        [
-            dataframe.reset_index(
-                drop=True,
-            ),
-            zero_shot_dataframe.reset_index(
-                drop=True,
-            ),
-        ],
-        axis=1,
-    )
-
-    release_model_memory(
-        classifier,
-    )
-
-    dataframe[
-        "tone_phi3"
-    ] = ""
-
-    if use_phi3:
-
-        disagreement = dataframe[
-            "tone_rule"
-        ].ne(
-            dataframe[
-                "tone_zero_shot"
-            ]
-        )
-
-        low_zero_shot_confidence = dataframe[
-            "tone_zero_shot_confidence"
-        ].lt(
-            phi_threshold,
-        )
-
-        no_rule_prediction = dataframe[
-            "tone_rule"
-        ].eq(
-            "",
-        )
-
-        verification_mask = (
-            disagreement
-            | low_zero_shot_confidence
-            | no_rule_prediction
-        )
-
-        verification_indexes = dataframe.index[
-            verification_mask
-        ].tolist()
+    if not pending:
 
         print(
-            "Rows selected for Phi-3 tone verification: "
-            f"{len(verification_indexes)}"
+            f"BART already complete for all {total_rows} rows."
         )
 
-        verification_total = len(
-            verification_indexes,
+    else:
+
+        print(
+            f"Rows still needing BART: {len(pending)}/{total_rows}"
         )
+
+        classifier = load_zero_shot_classifier()
 
         for number, row_index in enumerate(
-            verification_indexes,
+            pending,
             start=1,
         ):
-            print(f"\nPhi-3 tone check {number}/{verification_total}")
+
+            scores = zero_shot_scores(
+                classifier,
+                dataframe.at[row_index, "text"],
+            )
+
+            for label, score in scores.items():
+                dataframe.at[
+                    row_index,
+                    f"tone_zs_score_{label}",
+                ] = score
 
             dataframe.at[
                 row_index,
-                "tone_phi3",
-            ] = phi3_verify(
-                dataframe.loc[
-                    row_index
-                ]
+                "tone_zero_shot_scored",
+            ] = 1
+
+            if number % config.LABEL_CHECKPOINT_INTERVAL == 0:
+
+                save_checkpoint(
+                    dataframe,
+                    config.TONE_BART_CHECKPOINT,
+                    "BART checkpoint saved "
+                    f"({number}/{len(pending)})",
+                )
+
+        release_model_memory(
+            classifier,
+        )
+
+    for column in ZERO_SHOT_SCORE_COLUMNS:
+        dataframe[column] = (
+            dataframe[column]
+            .astype(float)
+            .fillna(0.0)
+        )
+
+    dataframe = derive_zero_shot_columns(
+        dataframe,
+        calibration_strength,
+    )
+
+    save_checkpoint(
+        dataframe,
+        config.TONE_BART_CHECKPOINT,
+        "BART checkpoint saved: "
+        f"{config.TONE_BART_CHECKPOINT}",
+    )
+
+    return dataframe
+
+
+def stage_phi3(
+    dataframe: pd.DataFrame,
+    use_phi3: bool,
+    phi_threshold: float,
+) -> pd.DataFrame:
+    """
+    Stage 3: Phi-3 arbitration for uncertain or disagreeing rows, resumable.
+    """
+
+    print(
+        "\n[stage 3/4] Running Phi-3 tone verification..."
+    )
+
+    for column in PHI3_COLUMNS:
+        if column not in dataframe.columns:
+            dataframe[column] = (
+                "" if column == "tone_phi3" else 0
             )
 
-            if number % 50 == 0:
+    dataframe["tone_phi3"] = (
+        dataframe["tone_phi3"]
+        .fillna("")
+        .astype(str)
+    )
 
-                print(
-                    "Phi-3 tone checks: "
-                    f"{number}/{verification_total}"
-                )
+    if not use_phi3:
+
+        print(
+            "Phi-3 disabled (--no-phi3). "
+            "Skipping arbitration."
+        )
+
+        dataframe["tone_phi3_selected"] = 0
+        dataframe["tone_phi3_done"] = 0
+
+        save_checkpoint(
+            dataframe,
+            config.TONE_PHI3_CHECKPOINT,
+            "Phi-3 checkpoint saved: "
+            f"{config.TONE_PHI3_CHECKPOINT}",
+        )
+
+        return dataframe
+
+    rule_labels = dataframe["tone_rule"].map(safe_label)
+
+    zero_shot_labels = dataframe["tone_zero_shot"].map(safe_label)
+
+    zero_shot_confidences = dataframe[
+        "tone_zero_shot_confidence"
+    ].map(safe_float)
+
+    disagreement = rule_labels.ne(
+        zero_shot_labels,
+    )
+
+    low_zero_shot_confidence = zero_shot_confidences.lt(
+        phi_threshold,
+    )
+
+    no_rule_prediction = rule_labels.eq(
+        "",
+    )
+
+    verification_mask = (
+        disagreement
+        | low_zero_shot_confidence
+        | no_rule_prediction
+    )
+
+    dataframe["tone_phi3_selected"] = (
+        verification_mask
+        .astype(int)
+    )
+
+    dataframe["tone_phi3_done"] = (
+        dataframe["tone_phi3_done"]
+        .fillna(0)
+        .astype(int)
+    )
+
+    pending = dataframe.index[
+        verification_mask
+        & dataframe["tone_phi3_done"].ne(1)
+    ].tolist()
+
+    print(
+        "Rows selected for Phi-3 tone verification: "
+        f"{int(verification_mask.sum())}"
+    )
+
+    print(
+        f"Rows still needing Phi-3: {len(pending)}"
+    )
+
+    for number, row_index in enumerate(
+        pending,
+        start=1,
+    ):
+
+        dataframe.at[
+            row_index,
+            "tone_phi3",
+        ] = phi3_verify(
+            dataframe.loc[row_index]
+        )
+
+        dataframe.at[
+            row_index,
+            "tone_phi3_done",
+        ] = 1
+
+        if number % config.LABEL_CHECKPOINT_INTERVAL == 0:
+
+            save_checkpoint(
+                dataframe,
+                config.TONE_PHI3_CHECKPOINT,
+                "Phi-3 checkpoint saved "
+                f"({number}/{len(pending)})",
+            )
+
+    save_checkpoint(
+        dataframe,
+        config.TONE_PHI3_CHECKPOINT,
+        "Phi-3 checkpoint saved: "
+        f"{config.TONE_PHI3_CHECKPOINT}",
+    )
+
+    return dataframe
+
+
+def stage_final(
+    dataframe: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Stage 4: ensemble decision.
+    """
+
+    print(
+        "\n[stage 4/4] Selecting final tone labels..."
+    )
 
     final_decisions = pd.DataFrame(
         [
-            choose_final_label(
-                row,
-            )
+            choose_final_label(row)
             for _, row
             in dataframe.iterrows()
-        ]
-    )
-
-    output = pd.concat(
-        [
-            dataframe.reset_index(
-                drop=True,
-            ),
-            final_decisions.reset_index(
-                drop=True,
-            ),
         ],
-        axis=1,
+        index=dataframe.index,
     )
 
-    output.to_csv(
-        output_path,
-        index=False,
+    for column in FINAL_COLUMNS:
+        dataframe[column] = final_decisions[column]
+
+    save_checkpoint(
+        dataframe,
+        config.TONE_FINAL_CHECKPOINT,
+        "Final checkpoint saved: "
+        f"{config.TONE_FINAL_CHECKPOINT}",
+    )
+
+    return dataframe
+
+
+def clear_checkpoints() -> None:
+    """
+    Remove every tone checkpoint.
+    """
+
+    for _, checkpoint_path in config.TONE_STAGE_CHECKPOINTS:
+
+        if checkpoint_path.exists():
+
+            try:
+                checkpoint_path.unlink()
+                print(
+                    f"Removed checkpoint: {checkpoint_path.name}"
+                )
+            except OSError as exc:
+                print(
+                    f"Could not remove {checkpoint_path.name}: {exc}"
+                )
+
+
+def report(
+    output: pd.DataFrame,
+) -> None:
+    """
+    Print the distributions a reviewer needs to judge the labeling run.
+    """
+
+    print(
+        "\nTone distribution (final):"
     )
 
     print(
-        "Tone labels saved to: "
-        f"{output_path}"
+        output["tone"]
+        .replace("", "(none)")
+        .value_counts(dropna=False)
+        .to_string()
+    )
+
+    if "tone_zero_shot_raw" in output.columns:
+
+        print(
+            "\nBART distribution before calibration:"
+        )
+
+        print(
+            output["tone_zero_shot_raw"]
+            .replace("", "(none)")
+            .value_counts(dropna=False)
+            .to_string()
+        )
+
+        print(
+            "\nBART distribution after calibration:"
+        )
+
+        print(
+            output["tone_zero_shot"]
+            .replace("", "(none)")
+            .value_counts(dropna=False)
+            .to_string()
+        )
+
+    print(
+        "\nDecision source:"
     )
 
     print(
-        "\nTone distribution:"
-    )
-
-    print(
-        output[
-            "tone"
-        ].value_counts(
-            dropna=False,
-        ).to_string()
+        output["tone_source"]
+        .value_counts(dropna=False)
+        .to_string()
     )
 
     review_count = int(
-        output[
-            "tone_needs_review"
-        ].sum()
+        output["tone_needs_review"].sum()
     )
 
     print(
@@ -1048,10 +1684,119 @@ def label_dataset(
         f"{review_count}/{len(output)}"
     )
 
-    return output
+    print(
+        "Mean tone confidence: "
+        f"{output['tone_confidence'].mean():.4f}"
+    )
 
 
-def parse_args() -> argparse.Namespace:
+def label_dataset(
+    input_path: Path,
+    output_path: Path,
+    limit: int | None = None,
+    use_phi3: bool = True,
+    phi_threshold: float | None = None,
+    calibration_strength: float | None = None,
+    force: bool = False,
+    from_stage: str | None = None,
+    keep_checkpoints: bool = False,
+) -> pd.DataFrame:
+    """
+    Create tone labels and audit columns, resuming from the last checkpoint.
+    """
+
+    config.init_dirs()
+
+    if phi_threshold is None:
+        phi_threshold = config.TONE_PHI3_TRIGGER_CONFIDENCE
+
+    if calibration_strength is None:
+        calibration_strength = config.TONE_PRIOR_CALIBRATION_STRENGTH
+
+    if force:
+        clear_checkpoints()
+
+    elif (
+        output_path.exists()
+        and not from_stage
+        and not any(
+            path.exists()
+            for _, path in config.TONE_STAGE_CHECKPOINTS
+        )
+    ):
+
+        print(
+            "Tone labels already exist. Use --force to rebuild."
+        )
+
+        return pd.read_csv(output_path)
+
+    start_index, dataframe = resolve_resume_point(
+        from_stage,
+    )
+
+    if dataframe is None:
+        dataframe = load_input_dataframe(
+            input_path,
+            limit,
+        )
+
+    elif limit is not None:
+        dataframe = dataframe.head(
+            limit,
+        ).copy()
+
+    if start_index <= 0:
+        dataframe = stage_rule(dataframe)
+    else:
+        print("\n[stage 1/4] rule — loaded from checkpoint.")
+
+    if start_index <= 1:
+        dataframe = stage_bart(
+            dataframe,
+            calibration_strength,
+        )
+    else:
+        print("[stage 2/4] bart — loaded from checkpoint.")
+
+    if start_index <= 2:
+        dataframe = stage_phi3(
+            dataframe,
+            use_phi3,
+            phi_threshold,
+        )
+    else:
+        print("[stage 3/4] phi3 — loaded from checkpoint.")
+
+    if start_index <= 3:
+        dataframe = stage_final(dataframe)
+
+    output_path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    dataframe.to_csv(
+        output_path,
+        index=False,
+    )
+
+    print(
+        "\nTone labels saved to: "
+        f"{output_path}"
+    )
+
+    report(dataframe)
+
+    if not keep_checkpoints:
+        clear_checkpoints()
+
+    return dataframe
+
+
+def parse_args(
+    argv: list[str] | None = None,
+) -> argparse.Namespace:
     """
     Read terminal arguments.
     """
@@ -1092,14 +1837,43 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--phi-threshold",
         type=float,
-        default=0.67,
+        default=config.TONE_PHI3_TRIGGER_CONFIDENCE,
     )
 
-    return parser.parse_args()
+    parser.add_argument(
+        "--calibration-strength",
+        type=float,
+        default=config.TONE_PRIOR_CALIBRATION_STRENGTH,
+        help=(
+            "Marginal calibration applied to BART scores. "
+            "0 disables it and restores raw zero-shot output."
+        ),
+    )
+
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Discard checkpoints and relabel from scratch.",
+    )
+
+    parser.add_argument(
+        "--from-stage",
+        choices=STAGES,
+        default=None,
+        help="Re-run starting at this stage, reusing earlier checkpoints.",
+    )
+
+    parser.add_argument(
+        "--keep-checkpoints",
+        action="store_true",
+        help="Keep stage checkpoints after a successful run.",
+    )
+
+    return parser.parse_args(argv)
 
 
-def run():
-    arguments = parse_args()
+def run(argv: list[str] | None = None):
+    arguments = parse_args(argv)
 
     label_dataset(
         input_path=arguments.input,
@@ -1107,7 +1881,12 @@ def run():
         limit=arguments.limit,
         use_phi3=not arguments.no_phi3,
         phi_threshold=arguments.phi_threshold,
+        calibration_strength=arguments.calibration_strength,
+        force=arguments.force,
+        from_stage=arguments.from_stage,
+        keep_checkpoints=arguments.keep_checkpoints,
     )
+
 
 if __name__ == "__main__":
     run()

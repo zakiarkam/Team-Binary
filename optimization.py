@@ -6,7 +6,7 @@ import pandas as pd
 import config
 import engagement
 import evaluation
-from generator import standardize
+from generator import _rules_block, _schema_block, required_fields, standardize
 from models import generate_with_phi3
 
 
@@ -28,63 +28,66 @@ def _rule(row) -> str:
     return "Improve clarity, engagement, and platform alignment while preserving the original product meaning."
 
 
+def _original_creative(row, spec: dict) -> str:
+    """Show back only the creative prompt this platform uses."""
+    if spec["visual"] == "image":
+        return f"Original Image Prompt:\n{evaluation.as_text(row.get('image_prompt'))}"
+    if spec["visual"] == "video":
+        return f"Original Shorts Prompt:\n{evaluation.as_text(row.get('shorts_prompt'))}"
+    return ""
+
+
 def _build_prompt(row, marketing_summary: dict, rule: str) -> str:
+    platform = row["platform"]
+    spec = config.platform_spec(platform)
+    fields = required_fields(spec)
+
     return f"""
 You are an expert digital marketing content optimizer.
 
 Improve this generated marketing asset.
 
 Product Name:
-{marketing_summary["product_name"]}
+{marketing_summary.get("product_name", "")}
 
 Business Summary:
-{marketing_summary["summary"]}
+{marketing_summary.get("summary", "")}
 
 Target Audience:
-{marketing_summary["target_audience"]}
+{marketing_summary.get("target_audience", "")}
 
 Customer Segment:
-{marketing_summary["customer_segment"]}
+{marketing_summary.get("customer_segment", "")}
 
 Inferred Campaign Goal:
-{marketing_summary["campaign_goal"]}
+{marketing_summary.get("campaign_goal", "")}
 
 Inferred Tone:
-{marketing_summary["tone"]}
+{marketing_summary.get("tone", "")}
 
 Platform:
-{row["platform"]}
+{platform}
 
 Original Caption:
-{row["caption"]}
+{row.get("caption", "")}
 
 Original Hashtags:
-{row["hashtags"]}
+{row.get("hashtags", "")}
 
 Original CTA:
-{row["cta"]}
+{row.get("cta", "")}
 
-Original Image Prompt:
-{row["image_prompt"]}
-
-Original Shorts Prompt:
-{row["shorts_prompt"]}
+{_original_creative(row, spec)}
 
 Optimization Rule:
 {rule}
 
 Return only valid JSON in this exact format:
 
-{{
-  "platform": "{row["platform"]}",
-  "caption": "...",
-  "hashtags": ["...", "...", "..."],
-  "cta": "...",
-  "image_prompt": "...",
-  "shorts_prompt": "..."
-}}
+{_schema_block(platform, fields)}
 
-Do not add explanation outside JSON.
+Rules:
+{_rules_block(spec)}
 """
 
 
