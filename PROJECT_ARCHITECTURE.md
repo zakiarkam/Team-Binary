@@ -13,8 +13,15 @@ Team-Binary/
 ├── models.py
 ├── crawler.py
 ├── knowledge_base.py
-├── auto_label_marketing_dataset.py
-├── dataset_builder.py
+├── dataset/
+│   ├── preprocess_marketing.py
+│   ├── label_campaign_goal.py
+│   ├── label_tone.py
+│   └── build_final_dataset.py
+├── dashboard/
+│   ├── app.py
+│   ├── artifacts.py
+│   └── theme.py
 ├── goal_tone.py
 ├── summary.py
 ├── generator.py
@@ -31,7 +38,6 @@ Team-Binary/
 │   │       ├── Social Media Engagement Dataset.csv
 │   │       ├── your_engagement_dataset.csv
 │   │       ├── your_labeled_marketing_dataset.csv
-│   │       ├── your_labeled_marketing_dataset.csv.before_auto_label
 │   │       ├── socialmedia.csv
 │   │       ├── Instagram-datasets.csv
 │   │       ├── Facebook-datasets.csv
@@ -87,7 +93,10 @@ The execution order is controlled by `main.py`:
 ```text
 crawl
 kb
-label-dataset
+preprocess-dataset
+label-goal
+label-tone
+build-dataset
 goal-tone-train
 goal-tone-predict
 summary
@@ -174,8 +183,11 @@ human_vs_ai_comparison.csv
 | `config.py` | Paths, constants, model names, weights | None | Creates folders |
 | `crawler.py` | Crawls product website | `input.json` | `marketing_knowledge_base` input for later stages |
 | `knowledge_base.py` | Cleans and structures website/product context | Crawl output + `input.json` | `data/processed/marketing_knowledge_base.json` |
-| `auto_label_marketing_dataset.py` | Pseudo-labels goal/tone | `your_labeled_marketing_dataset.csv` or base marketing rows | Updated labeled CSV + backup |
-| `dataset_builder.py` | Builds labeled dataset from Hugging Face source | `RafaM97/marketing_social_media` | `data/raw/datasets/your_labeled_marketing_dataset.csv` |
+| `dataset/preprocess_marketing.py` | Cleans the RafaM97 corpus into pipeline rows | `RafaM97_marketing_social_media_raw.csv` | `data/intermediate/marketing_preprocessed.csv` |
+| `dataset/label_campaign_goal.py` | Weak-labels `campaign_goal` (rule + zero-shot + Phi-3) | preprocessed corpus | `data/intermediate/campaign_goal_labeled.csv` |
+| `dataset/label_tone.py` | Weak-labels `tone` (rule + BART-MNLI + Phi-3, checkpointed) | goal-labeled corpus | `data/intermediate/tone_labeled.csv` |
+| `dataset/build_final_dataset.py` | Applies the confidence gate and writes the splits | tone-labeled corpus | `goal_tone_dataset_training.csv`, `goal_tone_dataset_research.csv` |
+| `dashboard/app.py` | Streamlit research dashboard over the written artifacts | all artifacts | nothing (read-only view) |
 | `goal_tone.py` | Trains and predicts campaign goal/tone | Labeled dataset + KB | Saved classifiers + updated KB input |
 | `summary.py` | Creates concise summary of KB | `marketing_knowledge_base.json` | `marketing_summary.json` |
 | `generator.py` | Generates platform-specific marketing assets | `marketing_summary.json` | `generated_platform_assets.csv` |
@@ -215,7 +227,7 @@ into a structured marketing knowledge base.
 
 ### Stage 4: Goal/Tone Dataset Preparation
 
-`auto_label_marketing_dataset.py` and `dataset_builder.py` create training labels for:
+The four `dataset/` modules create training labels for:
 
 ```text
 campaign_goal

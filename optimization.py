@@ -7,7 +7,7 @@ import config
 import engagement
 import evaluation
 from generator import _rules_block, _schema_block, required_fields, standardize
-from models import generate_with_phi3
+from models import generate_batch_with_phi3
 
 
 def _rule(row) -> str:
@@ -92,10 +92,19 @@ Rules:
 
 
 def run(ranked_df: pd.DataFrame, marketing_summary: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
+    rows = [row for _, row in ranked_df.iterrows()]
+    rules = [_rule(row) for row in rows]
+
+    # Batched for the same reason as generation: each row's re-prompt depends
+    # only on that row's own scores, never on another row's optimized output.
+    raws = generate_batch_with_phi3(
+        [_build_prompt(row, marketing_summary, rule)
+         for row, rule in zip(rows, rules)],
+        max_new_tokens=500,
+    )
+
     optimized = []
-    for _, row in ranked_df.iterrows():
-        rule = _rule(row)
-        raw = generate_with_phi3(_build_prompt(row, marketing_summary, rule), max_new_tokens=500)
+    for row, rule, raw in zip(rows, rules, raws):
         item = standardize(row["platform"], raw)
         item["optimization_rule"] = rule
         optimized.append(item)

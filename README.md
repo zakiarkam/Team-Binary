@@ -9,7 +9,7 @@ Same algorithm as the original Colab notebook, restructured as a local CLI with 
 ## 1. Setup
 
 ```bash
-cd /Users/arkamzakir/Documents/Aadhil
+cd /Users/arkamzakir/Documents/Research/Research
 
 # Create + activate a virtual env
 python3 -m venv .venv
@@ -39,7 +39,7 @@ Drop these CSVs into `data/raw/datasets/` before running the pipeline:
 | `your_engagement_dataset.csv` | `engagement-train` | `text`, `platform`, `likes`, `comments`, `shares`, `impressions` |
 | `human_content_dataset.csv` | `human-baseline` | `platform`, `caption` |
 
-If you don't have `your_labeled_marketing_dataset.csv`, the `label-dataset` stage will build one from the `RafaM97/marketing_social_media` Hugging Face dataset (slow — runs Phi-3 over every row).
+If you don't have a labeled goal/tone dataset, the `preprocess-dataset` → `label-goal` → `label-tone` → `build-dataset` stages build one from the `RafaM97/marketing_social_media` Hugging Face dataset. This is the slowest part of the project: it runs BART-MNLI over every row and Phi-3 over the low-confidence ones. Each stage checkpoints, so an interrupted run resumes rather than restarting.
 
 ---
 
@@ -83,7 +83,10 @@ python main.py --list
 |---|---|---|
 | `crawl` | `input.json` | `data/raw/websites/crawled_website_data.json` |
 | `kb` | crawl output | `data/processed/marketing_knowledge_base.json` |
-| `label-dataset` | (HF dataset) | `data/raw/datasets/your_labeled_marketing_dataset.csv` |
+| `preprocess-dataset` | RafaM97 raw CSV | `data/intermediate/marketing_preprocessed.csv` |
+| `label-goal` | preprocessed corpus | `data/intermediate/campaign_goal_labeled.csv` |
+| `label-tone` | goal-labeled corpus | `data/intermediate/tone_labeled.csv` |
+| `build-dataset` | tone-labeled corpus | `data/processed/goal_tone_dataset_training.csv` (+ research CSV) |
 | `goal-tone-train` | labeled dataset | `models/best_goal_model.pkl`, `models/best_tone_model.pkl`, selection JSON |
 | `goal-tone-predict` | KB | updates KB with predicted goal + tone |
 | `summary` | KB | `data/processed/marketing_summary.json` |
@@ -100,14 +103,22 @@ python main.py --list
 ## 5. Project layout
 
 ```
-Aadhil/
+Research/
 ├── input.json                     # product/website input (edit this)
 ├── main.py                        # CLI orchestrator
-├── config.py                      # paths, model names, score weights
-├── models.py                      # lazy-loaded BART/Phi-3/MiniLM
+├── config.py                      # paths, model names, score weights, thresholds
+├── models.py                      # lazy-loaded BART/Phi-3/MiniLM (device + dtype policy)
 ├── crawler.py                     # STEP 6
 ├── knowledge_base.py              # STEP 7
-├── dataset_builder.py             # builds labeled dataset from RafaM97
+├── dataset/                       # corpus preprocessing + weak labeling
+│   ├── preprocess_marketing.py    #   RafaM97 → cleaned rows
+│   ├── label_campaign_goal.py     #   rule + zero-shot + Phi-3 → campaign_goal
+│   ├── label_tone.py              #   rule + BART-MNLI + Phi-3 → tone
+│   └── build_final_dataset.py     #   confidence gate → training/research splits
+├── dashboard/                     # Streamlit research dashboard
+│   ├── app.py
+│   ├── artifacts.py
+│   └── theme.py
 ├── goal_tone.py                   # STEP 8: TF-IDF + SentenceBERT-XGB classifiers
 ├── summary.py                     # STEP 9
 ├── generator.py                   # STEP 10: Phi-3 platform assets

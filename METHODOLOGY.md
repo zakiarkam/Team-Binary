@@ -74,7 +74,16 @@ input.json
 [knowledge_base]          →  cleaned, deduped, concatenated marketing context
     │
     ▼
-[label-dataset]           →  RafaM97 → text/goal/tone/summary
+[preprocess-dataset]      →  RafaM97 raw → cleaned rows
+    │
+    ▼
+[label-goal]              →  rule + zero-shot + Phi-3 → campaign_goal
+    │
+    ▼
+[label-tone]              →  rule + BART-MNLI + Phi-3 → tone
+    │
+    ▼
+[build-dataset]           →  confidence gate → training + research splits
     │
     ▼
 [goal-tone-train]         →  TF-IDF+LR vs SentenceBERT+XGB ; best by weighted F1

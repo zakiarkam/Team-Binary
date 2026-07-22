@@ -7,17 +7,30 @@ import os
 # ---------------------------------------------------------------------------
 # This block must run before numpy, torch or xgboost are imported. PyTorch and
 # XGBoost each bundle their own OpenMP runtime (libomp); on macOS, loading both
-# and then fitting XGBoost while torch is active segfaults. Pinning a single
-# OpenMP runtime and one thread avoids the crash. setdefault means a caller can
-# still override, e.g.  OMP_NUM_THREADS=4 python main.py
-for _env_var, _env_default in (
-    ("KMP_DUPLICATE_LIB_OK", "TRUE"),
-    ("OMP_NUM_THREADS", "1"),
-    ("OPENBLAS_NUM_THREADS", "1"),
-    ("MKL_NUM_THREADS", "1"),
-    ("NUMEXPR_NUM_THREADS", "1"),
+# and then fitting XGBoost while torch is active segfaults.
+#
+# The actual crash guard is two-part and neither part needs a single thread:
+#   1. KMP_DUPLICATE_LIB_OK lets the duplicate runtimes coexist.
+#   2. Every XGBoost estimator in this project is constructed with n_jobs=1,
+#      so XGBoost never spawns the pool that clashes with torch's.
+#
+# Pinning OMP_NUM_THREADS=1 globally was the previous blunt fix. It also capped
+# every torch CPU matmul and every BLAS call to a single core, which made CPU
+# inference roughly as many times slower as the machine has cores. The default
+# below leaves one core for the OS and uses the rest.
+#
+# Override per run, e.g.  PIPELINE_NUM_THREADS=1 python main.py
+_DEFAULT_THREADS = str(max(1, (os.cpu_count() or 2) - 1))
+_THREADS = os.environ.get("PIPELINE_NUM_THREADS", _DEFAULT_THREADS)
+
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+for _env_var in (
+    "OMP_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
 ):
-    os.environ.setdefault(_env_var, _env_default)
+    os.environ.setdefault(_env_var, _THREADS)
 
 # Hard escape hatch: train only the TF-IDF + Logistic Regression classifier and
 # skip the Sentence-BERT + XGBoost model entirely. For machines where the
