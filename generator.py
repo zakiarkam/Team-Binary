@@ -10,7 +10,7 @@ import json
 import pandas as pd
 
 import config
-from models import generate_batch_with_phi3
+from models import generate_with_phi3
 
 
 # Every row carries the full column set so the CSV stays rectangular and
@@ -176,24 +176,18 @@ def standardize(platform: str, raw_output: str) -> dict:
 def run(marketing_summary: dict) -> pd.DataFrame:
     platforms = list(marketing_summary.get("preferred_platforms", config.PLATFORMS))
 
-    # One batch instead of one call per platform. The platforms are independent,
-    # so generating them together amortises the per-step cost of the model across
-    # all of them rather than paying it once each.
-    for platform in platforms:
+    cleaned = []
+    for index, platform in enumerate(platforms, start=1):
         spec = config.platform_spec(platform)
         asset = {"image": "image prompt", "video": "shorts prompt"}.get(
             spec["visual"], "no creative prompt"
         )
-        print(f"--- {str(platform).upper()} (asking for {asset}) ---")
-
-    raws = generate_batch_with_phi3(
-        [build_prompt(marketing_summary, p) for p in platforms],
-        max_new_tokens=500,
-    )
-
-    cleaned = []
-    for platform, raw in zip(platforms, raws):
-        print(f"\n--- {str(platform).upper()} ---\n{raw}")
+        print(f"\n--- [{index}/{len(platforms)}] {str(platform).upper()} "
+              f"(asking for {asset}) ---")
+        raw = generate_with_phi3(
+            build_prompt(marketing_summary, platform), max_new_tokens=500
+        )
+        print(raw)
         cleaned.append(standardize(platform, raw))
 
     df = pd.DataFrame(cleaned, columns=ASSET_COLUMNS)

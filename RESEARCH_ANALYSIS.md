@@ -517,6 +517,28 @@ M2, 8 cores, 16 GB unified memory.
 | 3 | `config.py` pinned `OMP_NUM_THREADS=1` globally to dodge a macOS OpenMP segfault. | Every torch and BLAS op on **1 of 8 cores** |
 | 4 | 8 sequential 500-token generations (4 generate + 4 optimize), each running the full token budget past the JSON it was asked for. | Wasted tokens ×8 |
 
+### ⚠ Do not batch the platform prompts
+
+An earlier version of this fix batched the four platform prompts into one
+`generate` call, on the reasoning that they are independent and batching
+amortises the fixed per-step cost. **This is wrong on memory-constrained
+hardware and it is wrong badly.** Measured on a 16 GB M2, fp16 on MPS,
+~390-token prompts:
+
+| Configuration | Throughput |
+|---|---|
+| batch = 1 | **5.5 tok/s** |
+| batch = 4 | did not finish 40 tokens in 9 minutes, **16.3 GB of swap in use** |
+
+Phi-3-mini in fp16 is ~7.6 GB of weights. Four concurrent sequences add four KV
+caches and four sets of activations on top, which pushes a 16 GB unified-memory
+machine into swap; once it swaps, every decode step pays disk latency and the
+per-step saving is worth nothing. The failure mode is a **~50× slowdown, not an
+OOM error**, so it does not announce itself.
+
+Generation is therefore deliberately sequential. The reasoning is recorded in
+the `generate_batch_with_phi3` docstring so it is not "optimized" back later.
+
 ### What changed
 
 - **`models.py`** — Phi-3, BART and MiniLM now load on the selected accelerator
@@ -529,16 +551,32 @@ M2, 8 cores, 16 GB unified memory.
   `n_jobs=1` that every XGBoost estimator already carried. Those are the actual
   crash guards; pinning one thread was collateral damage. Threads now default to
   `cpu_count() - 1`, overridable via `PIPELINE_NUM_THREADS`.
-- **`generate_batch_with_phi3`** — the four platform prompts are independent, so
-  they run as one batch (left-padded, as decoder-only batching requires) with a
-  sequential fallback on OOM. `generator.py` and `optimization.py` both use it.
 - **JSON stop criterion** — generation halts as soon as the first top-level
   `{...}` closes, incrementally decoding only new tokens so the check stays
   linear. Every caller wants one JSON object and discards the rest.
+- **`human_baseline.py`** now raises a typed `MissingHumanDataset` with
+  instructions when `human_content_dataset.csv` is absent, and `main.py` reports
+  and skips rather than aborting. Previously a missing optional file threw an
+  unhandled `FileNotFoundError` at the *last* stage, discarding a run that had
+  just spent an hour in generation.
 - Removed dead code (`_phi_generator`) and leftover `print("A"/"B"/…)` debug
   statements in `get_semantic_model`.
 
-Verified: `device=mps dtype=float16 threads=7`, 45/45 tests pass.
+**Measured end-to-end on a 16 GB M2** (`device=mps dtype=float16 threads=7`),
+full `generate` stage, four platforms:
+
+```
+[models] 214 new tokens in 79.1s (2.7 tok/s)   ← first call, includes MPS warmup
+[models] 301 new tokens in 41.6s (7.2 tok/s)
+[models] 249 new tokens in 37.0s (6.7 tok/s)
+[models] 164 new tokens in 24.7s (6.6 tok/s)
+GENERATE_STAGE_TOTAL = 182.7s
+```
+
+**~3 minutes for the generate stage**, and `optimize` does the same work again,
+so the Phi-3 portion of a per-product run is roughly **6 minutes** — against
+52 minutes for the batched `optimize` stage alone before this fix. 45/45 tests
+pass.
 
 ### What is still slow, and is not a bug
 

@@ -194,9 +194,7 @@ def generate_with_phi3(
     Set deterministic=True for classification and label-verification calls,
     where sampling makes the same input produce different labels across runs.
     """
-    return generate_batch_with_phi3(
-        [prompt], max_new_tokens=max_new_tokens, deterministic=deterministic
-    )[0]
+    return _generate_one(prompt, max_new_tokens, deterministic)
 
 
 def generate_batch_with_phi3(
@@ -204,66 +202,67 @@ def generate_batch_with_phi3(
     max_new_tokens: int = 450,
     deterministic: bool = False,
 ) -> list[str]:
-    """Generate for several prompts in one forward pass.
+    """Generate for several prompts, one at a time.
 
-    The per-platform asset calls are independent, so running them as a batch
-    amortises the model's fixed per-step cost across all of them instead of
-    paying it once per platform. Falls back to sequential generation if the
-    batch does not fit in memory.
+    Deliberately sequential. Batching these prompts looks attractive — they are
+    independent, so in principle one batched forward pass amortises the model's
+    fixed per-step cost across all of them. Measured on a 16 GB M2 (fp16 on MPS,
+    ~390-token prompts) it is catastrophically worse:
+
+        batch=1   5.5 tok/s
+        batch=4   did not finish 40 tokens in 9 minutes, with 16.3 GB of swap in use
+
+    Phi-3-mini in fp16 is ~7.6 GB of weights. Four concurrent sequences add
+    four KV caches and four sets of activations on top of that, which pushes a
+    16 GB unified-memory machine into swap, and once it swaps every step pays
+    disk latency. The per-step saving batching buys is worth nothing against
+    that. Generating sequentially keeps peak memory at one sequence.
+
+    Revisit only on a machine with memory to spare — and measure before
+    trusting it, because the failure mode is a 50x slowdown, not an OOM error.
     """
-    if not prompts:
-        return []
+    return [
+        generate_with_phi3(prompt, max_new_tokens, deterministic)
+        for prompt in prompts
+    ]
 
+
+def _generate_one(
+    prompt: str,
+    max_new_tokens: int,
+    deterministic: bool,
+) -> str:
     _load_phi3()
 
     from transformers import StoppingCriteriaList
 
-    texts = [
-        _phi_tokenizer.apply_chat_template(
-            [{"role": "user", "content": p}],
-            tokenize=False,
-            add_generation_prompt=True,
-        )
-        for p in prompts
-    ]
-
-    inputs = _phi_tokenizer(
-        texts, return_tensors="pt", padding=True
-    ).to(_phi_model.device)
+    text = _phi_tokenizer.apply_chat_template(
+        [{"role": "user", "content": prompt}],
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+    inputs = _phi_tokenizer(text, return_tensors="pt").to(_phi_model.device)
     prompt_length = inputs["input_ids"].shape[-1]
 
-    generate_kwargs = {
-        **inputs,
-        "max_new_tokens": max_new_tokens,
-        "pad_token_id": _phi_tokenizer.pad_token_id,
-        "use_cache": True,
-        **_sampling_kwargs(deterministic),
-    }
-    if len(prompts) == 1:
-        # The stop criterion inspects row 0 only, so it is correct for a single
-        # sequence but would cut a batch short at its fastest member.
-        generate_kwargs["stopping_criteria"] = StoppingCriteriaList(
-            [_StopOnCompleteJson(_phi_tokenizer, prompt_length)]
-        )
-
     started = time.perf_counter()
-    try:
-        with torch.inference_mode():
-            outputs = _phi_model.generate(**generate_kwargs)
-    except RuntimeError:  # OOM and MPS allocation failures both land here
-        if len(prompts) == 1:
-            raise
-        print(f"[models] batch of {len(prompts)} failed, retrying sequentially")
-        return [
-            generate_with_phi3(p, max_new_tokens, deterministic) for p in prompts
-        ]
+    with torch.inference_mode():
+        outputs = _phi_model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            pad_token_id=_phi_tokenizer.pad_token_id,
+            use_cache=True,
+            stopping_criteria=StoppingCriteriaList(
+                [_StopOnCompleteJson(_phi_tokenizer, prompt_length)]
+            ),
+            **_sampling_kwargs(deterministic),
+        )
 
     generated = int(outputs.shape[-1] - prompt_length)
     elapsed = time.perf_counter() - started
-    print(f"[models] {len(prompts)} completion(s), {generated} new tokens "
-          f"in {elapsed:.1f}s ({generated / max(elapsed, 1e-6):.1f} tok/s)")
+    print(f"[models] {generated} new tokens in {elapsed:.1f}s "
+          f"({generated / max(elapsed, 1e-6):.1f} tok/s)")
 
-    return _decode_completions(outputs, prompt_length)
+    return _decode_completions(outputs, prompt_length)[0]
 
 
 def get_semantic_model():

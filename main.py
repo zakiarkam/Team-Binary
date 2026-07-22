@@ -197,7 +197,13 @@ def run_pipeline(stages: list[str], force: bool = False):
             ranked_df = evaluation.load_cached()
         if optimized_ranked is None:
             optimized_ranked, _ = optimization.load_cached()
-        human_baseline.run(marketing_summary, ranked_df, optimized_ranked)
+        try:
+            human_baseline.run(marketing_summary, ranked_df, optimized_ranked)
+        except human_baseline.MissingHumanDataset as exc:
+            # This is the last stage and an optional benchmark. Aborting the run
+            # here would discard everything the expensive generation stages just
+            # produced, so report it and exit cleanly instead.
+            print(f"\n[skip] human-baseline — {exc}")
 
 
 def main():

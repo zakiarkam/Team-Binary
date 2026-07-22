@@ -7,8 +7,28 @@ import engagement
 import evaluation
 
 
+class MissingHumanDataset(FileNotFoundError):
+    """The optional human baseline CSV is absent."""
+
+
 def _score_human(marketing_summary: dict) -> pd.DataFrame:
+    if not config.HUMAN_DATASET_CSV.exists():
+        raise MissingHumanDataset(
+            f"Human baseline dataset not found: {config.HUMAN_DATASET_CSV}\n"
+            "This stage compares human-written captions against the generated "
+            "ones. Create the CSV with two columns — 'platform' and 'caption' — "
+            "one row per human-written asset, then rerun:\n"
+            "  python main.py --step human-baseline"
+        )
+
     raw = pd.read_csv(config.HUMAN_DATASET_CSV)
+
+    missing_columns = {"platform", "caption"} - set(raw.columns)
+    if missing_columns:
+        raise ValueError(
+            f"{config.HUMAN_DATASET_CSV} is missing required column(s): "
+            f"{', '.join(sorted(missing_columns))}. Expected 'platform' and 'caption'."
+        )
 
     df = pd.DataFrame()
     df["platform"] = raw["platform"].fillna("unknown").astype(str).str.lower()
