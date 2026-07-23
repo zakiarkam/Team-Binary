@@ -1,12 +1,12 @@
 {
-    "product_name": "Shopify",
-    "website_url": "https://www.shopify.com",
-    "target_audience": "entrepreneurs and small business owners",
-    "customer_segment": "online retailers and ecommerce startups",
+    "product_name": "Canva",
+    "website_url": "https://www.canva.com",
+    "target_audience": "students, marketers, educators, and small businesses",
+    "customer_segment": "graphic design beginners and content creators",
     "preferred_platforms": [
         "instagram",
         "linkedin",
-        "shorts",
+        "tiktok",
         "email"
     ]
 }

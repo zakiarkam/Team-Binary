@@ -1,7 +1,7 @@
 """Static configuration: model names, score weights, paths."""
 
 import os
-
+import hashlib
 # ---------------------------------------------------------------------------
 # Native threading / OpenMP safety
 # ---------------------------------------------------------------------------
@@ -100,7 +100,11 @@ DEFAULT_PLATFORM_SPEC = {
 
 PLATFORM_SPECS = {
     "instagram": {
-        "visual": "image",
+        "visual_options": [
+            "image",
+            "video",
+        ],
+        "default_visual": "image",
         "hashtags": True,
         "caption_words": (0, 40),
         "hashtag_range": (3, 30),  # 30 = Instagram's per-post hashtag cap
@@ -110,13 +114,33 @@ PLATFORM_SPECS = {
         ),
     },
     "linkedin": {
-        "visual": "image",
+        "visual_options": [
+            "image",
+            "video",
+        ],
+        "default_visual": "image",
         "hashtags": True,
         "caption_words": (20, 180),
         "hashtag_range": (0, 5),
         "guidance": (
             "Professional post. Open with a business insight, support it "
             "with concrete value for the reader, close with a formal CTA."
+        ),
+    },
+    "tiktok": {
+
+        "visual_options": [
+            "image",
+            "video",
+        ],
+        "default_visual": "video",
+        "hashtags": True,
+        "caption_words": (0,30),
+        "hashtag_range": (3,5),
+        "guidance": (
+            "Create short-form vertical video content. "
+            "The first seconds must capture attention. "
+            "Use simple CTA."
         ),
     },
     "shorts": {
@@ -142,11 +166,76 @@ PLATFORM_SPECS = {
 }
 
 
+# def platform_spec(platform: str) -> dict:
+#     """Return the capability spec for a platform, falling back to the default."""
+#     return PLATFORM_SPECS.get(
+#         str(platform).strip().lower(),
+#         DEFAULT_PLATFORM_SPEC,
+#     )
+
 def platform_spec(platform: str) -> dict:
-    """Return the capability spec for a platform, falling back to the default."""
-    return PLATFORM_SPECS.get(
-        str(platform).strip().lower(),
+
+    platform = str(platform).strip().lower()
+
+    spec = PLATFORM_SPECS.get(
+        platform,
         DEFAULT_PLATFORM_SPEC,
+    )
+
+    spec = spec.copy()
+
+    if "visual" not in spec:
+
+        spec["visual"] = spec.get(
+            "default_visual",
+            "image"
+        )
+
+    return spec
+
+def select_visual(platform, marketing_summary):
+
+    spec = platform_spec(platform)
+
+    options = spec.get(
+        "visual_options",
+        ["image"]
+    )
+
+    text = (
+        marketing_summary.get("summary","")
+        +
+        marketing_summary.get("campaign_goal","")
+    ).lower()
+
+
+    video_keywords = [
+        "launch",
+        "demo",
+        "tutorial",
+        "automation",
+        "ai",
+        "app",
+        "productivity",
+        "show",
+    ]
+
+
+    if "video" in options:
+
+        score = sum(
+            1
+            for word in video_keywords
+            if word in text
+        )
+
+        if score >= 2:
+            return "video"
+
+
+    return spec.get(
+        "default_visual",
+        "image"
     )
 
 # Paths
@@ -160,12 +249,13 @@ OUTPUTS = DATA / "outputs"
 MODELS = ROOT / "models"
 
 FEEDBACK = DATA / "feedback"
+CACHE = DATA / "cache"
 
 def init_dirs() -> None:
     """Create all pipeline directories. Idempotent. Called explicitly from main.py
     so importing config has no filesystem side effect (better for tests)."""
     for d in (RAW_WEBSITES, RAW_DATASETS, INTERMEDIATE, PROCESSED, OUTPUTS,
-              MODELS, FEEDBACK):
+              MODELS, FEEDBACK, CACHE,):
         d.mkdir(parents=True, exist_ok=True)
 
 
@@ -179,6 +269,8 @@ PREPROCESSED_MARKETING_DATASET = (
     INTERMEDIATE
     / "marketing_preprocessed.csv"
 )
+
+PREPROCESSED_DATASET_CSV = PREPROCESSED_MARKETING_DATASET
 
 GOAL_LABELED_DATASET = (
     INTERMEDIATE
@@ -339,6 +431,7 @@ PERSONALIZED_ENGAGEMENT_METRICS_JSON = MODELS / "personalized_engagement_metrics
 # Best-of-N candidate generation output.
 CANDIDATES_CSV = OUTPUTS / "candidate_platform_assets.csv"
 BEST_CANDIDATES_CSV = OUTPUTS / "best_candidate_platform_assets.csv"
+PIPELINE_METADATA_JSON = CACHE / "pipeline_metadata.json"
 
 # How many caption candidates to generate per platform before ranking.
 CANDIDATES_PER_PLATFORM = 5
@@ -346,3 +439,31 @@ CANDIDATES_PER_PLATFORM = 5
 # Minimum posts an account needs before its own history is trusted enough to
 # normalize against (below this the base/raw rate is used instead).
 RELATIVE_TARGET_MIN_ACCOUNT_POSTS = 5
+
+PIPELINE_STAGE_OUTPUTS = {
+    "crawl": CRAWL_JSON,
+    "kb": KB_JSON,
+    "goal-tone-predict": KB_JSON,
+    "summary": SUMMARY_JSON,
+    "generate": GENERATED_CSV,
+    "evaluate": RANKED_CSV,
+    "optimize": OPTIMIZED_RANKED_CSV,
+}
+
+PIPELINE_HASH_FIELDS = [
+    "product_name",
+    "website_url",
+    "target_audience",
+    "customer_segment",
+    "preferred_platforms",
+    "campaign_goal",
+    "tone",
+]
+
+USER_INPUT_HASH_FIELDS = [
+    "product_name",
+    "website_url",
+    "target_audience",
+    "customer_segment",
+    "preferred_platforms",
+]

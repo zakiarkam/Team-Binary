@@ -24,6 +24,11 @@ from generator import ASSET_COLUMNS, extract_json_from_text, standardize
 
 # --- Text cleaning ----------------------------------------------------------
 
+dummy_summary = {
+    "summary": "",
+    "campaign_goal": "",
+}
+
 def test_clean_text_strips_urls_and_whitespace():
     assert _clean_text("  visit  https://example.com  now  ") == "visit  now"
 
@@ -167,14 +172,14 @@ def test_extract_json_from_text_returns_none_on_garbage():
 
 
 def test_standardize_fills_missing_fields():
-    out = standardize("linkedin", '{"caption": "hi"}')
+    out = standardize("linkedin", '{"caption": "hi"}', dummy_summary)
     assert out["platform"] == "linkedin"
     assert out["hashtags"] == []
     assert out["cta"] == ""
 
 
 def test_standardize_coerces_string_hashtags_to_list():
-    out = standardize("instagram", '{"caption":"hi","hashtags":"#one"}')
+    out = standardize("instagram", '{"caption":"hi","hashtags":"#one"}', dummy_summary)
     assert out["hashtags"] == ["#one"]
 
 
@@ -184,27 +189,27 @@ def test_standardize_keeps_only_the_creative_prompt_the_platform_uses():
         '{"caption":"hi","hashtags":["#a"],"cta":"go",'
         '"image_prompt":"a bright studio desk","shorts_prompt":"show a refill"}'
     )
-    video = standardize("shorts", both)
+    video = standardize("shorts", both, dummy_summary)
     assert video["shorts_prompt"] and not video["image_prompt"]
 
-    still = standardize("instagram", both)
+    still = standardize("instagram", both, dummy_summary)
     assert still["image_prompt"] and not still["shorts_prompt"]
 
 
 def test_standardize_drops_hashtags_where_the_platform_has_none():
-    out = standardize("email", '{"caption":"hi","hashtags":["#a","#b"]}')
+    out = standardize("email", '{"caption":"hi","hashtags":["#a","#b"]}', dummy_summary)
     assert out["hashtags"] == []
 
 
 def test_standardize_caps_hashtags_at_the_platform_limit():
     tags = [f"#t{n}" for n in range(40)]
-    out = standardize("instagram", '{"caption":"hi","hashtags":%s}' % str(tags).replace("'", '"'))
+    out = standardize("instagram", '{"caption":"hi","hashtags":%s}' % str(tags).replace("'", '"'), dummy_summary)
     assert len(out["hashtags"]) == config.platform_spec("instagram")["hashtag_range"][1]
 
 
 def test_standardize_always_returns_the_full_column_set():
     """Rows must stay rectangular so downstream stages can read any column."""
-    out = standardize("shorts", "not json at all")
+    out = standardize("shorts", "not json at all", dummy_summary)
     assert set(out) == set(ASSET_COLUMNS)
 
 

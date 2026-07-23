@@ -50,7 +50,7 @@ def generate_candidates(
     for i in range(n):
         # Sampling (deterministic=False) is what makes the candidates differ.
         raw = generate_with_phi3(prompt, max_new_tokens=500, deterministic=False)
-        item = standardize(platform, raw)
+        item = standardize(platform, raw, marketing_summary)
         item["candidate_index"] = i
         rows.append(item)
     return pd.DataFrame(rows, columns=[*ASSET_COLUMNS, "candidate_index"])

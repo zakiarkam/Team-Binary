@@ -14,6 +14,8 @@ import json
 import sys
 
 import config
+import pipeline_cache
+from datetime import datetime
 
 STAGES = [
     "crawl",
@@ -59,10 +61,58 @@ config.init_dirs()
 def _exists(path) -> bool:
     return path.exists()
 
+def _calculate_pipeline_hash(module_input: dict) -> str:
+    """
+    Create SHA256 hash from important business inputs.
+    """
+
+    return pipeline_cache.calculate_hash(
+        module_input,
+        config.PIPELINE_HASH_FIELDS
+    )
+
 
 def run_pipeline(stages: list[str], force: bool = False):
     module_input = _load_input()
 
+    current_hash = _calculate_pipeline_hash(
+        module_input
+    )
+
+    previous_hash = pipeline_cache.load_hash(
+        config.PIPELINE_METADATA_JSON
+    )
+    
+    cache_changed = (
+        previous_hash is None
+        or previous_hash != current_hash
+    )
+    
+    if cache_changed:
+
+        print("[cache] input changed")
+
+        # delete downstream cache files
+        pipeline_cache.invalidate("crawl")
+
+        # remove metadata
+        pipeline_cache.clear_metadata(
+            config.PIPELINE_METADATA_JSON
+        )
+
+        pipeline_cache.save_hash(
+            config.PIPELINE_METADATA_JSON,
+            current_hash
+        )
+
+    else:
+        print(
+            "[cache] input unchanged - "
+            "using stage cache"
+        )
+
+    upstream_changed = cache_changed
+    
     # Stage outputs we may reuse
     website_data = None
     kb = None
@@ -74,28 +124,42 @@ def run_pipeline(stages: list[str], force: bool = False):
 
     if "crawl" in stages:
         import crawler
-        if force or not _exists(config.CRAWL_JSON):
+        if force  or cache_changed or not _exists(config.CRAWL_JSON):
             website_data = crawler.run(module_input)
         else:
-            print(f"[skip] crawl ({config.CRAWL_JSON.name} exists)")
+            # print(f"[skip] crawl ({config.CRAWL_JSON.name} exists)")
+            print(
+                f"[cache-hit] crawl "
+                f"({config.CRAWL_JSON.name})"
+            )
             website_data = crawler.load_cached()
 
     if "kb" in stages:
         import crawler, knowledge_base
+        kb_reran = False
         if website_data is None:
             website_data = crawler.load_cached()
-        if force or not _exists(config.KB_JSON):
-            kb = knowledge_base.run(website_data, module_input)
+        if force or upstream_changed or not _exists(config.KB_JSON):
+            kb = knowledge_base.run(
+                website_data,
+                module_input
+            )
+            kb_reran = True
         else:
-            print(f"[skip] kb ({config.KB_JSON.name} exists)")
+            print("[cache-hit] kb")
             kb = knowledge_base.load_cached()
+
+        upstream_changed = upstream_changed or kb_reran
 
     # These stages own argparse CLIs of their own. Called with no argument they
     # would parse main.py's argv and abort on --step/--force, so pass an empty
     # list and forward only the flags they understand.
     if "preprocess-dataset" in stages:
         from dataset import preprocess_marketing
-        preprocess_marketing.run([])
+        if force or not config.PREPROCESSED_DATASET_CSV.exists():
+            preprocess_marketing.run([])
+        else:
+            print("[cache-hit] preprocess-dataset")
 
     if "label-goal" in stages:
         from dataset import label_campaign_goal
@@ -107,7 +171,10 @@ def run_pipeline(stages: list[str], force: bool = False):
 
     if "build-dataset" in stages:
         from dataset import build_final_dataset
-        build_final_dataset.run([])
+        if force or not config.LABELED_DATASET_CSV.exists():
+            build_final_dataset.run([])
+        else:
+            print("[cache-hit] build-dataset")
 
     if "goal-tone-train" in stages:
         import goal_tone
@@ -130,32 +197,80 @@ def run_pipeline(stages: list[str], force: bool = False):
 
     if "goal-tone-predict" in stages:
         import knowledge_base, goal_tone
+
         if kb is None:
             kb = knowledge_base.load_cached()
-        module_input, kb = goal_tone.predict(kb, module_input)
-        # Persist updated KB
-        with open(config.KB_JSON, "w", encoding="utf-8") as f:
-            json.dump(kb, f, indent=4, ensure_ascii=False)
+
+        goal_predict_reran = False
+
+        if force or upstream_changed:
+
+            module_input, kb = goal_tone.predict(
+                kb,
+                module_input,
+            )
+
+            goal_predict_reran = True
+
+            # Save updated KB
+            with open(config.KB_JSON, "w", encoding="utf-8") as f:
+                json.dump(
+                    kb,
+                    f,
+                    indent=4,
+                    ensure_ascii=False,
+                )
+
+            # Recalculate pipeline hash because prediction may update
+            # campaign_goal and tone.
+            new_hash = _calculate_pipeline_hash(module_input)
+
+            if new_hash != current_hash:
+
+                print("[cache] campaign goal or tone changed")
+
+                pipeline_cache.invalidate("goal-tone-predict")
+
+                current_hash = new_hash
+
+                pipeline_cache.save_hash(
+                    config.PIPELINE_METADATA_JSON,
+                    current_hash,
+                )
+
+        else:
+            print("[cache-hit] goal-tone-predict")
+
+        upstream_changed = upstream_changed or goal_predict_reran
 
     if "summary" in stages:
         import knowledge_base, summary
         if kb is None:
             kb = knowledge_base.load_cached()
-        if force or not _exists(config.SUMMARY_JSON):
+        summary_reran = False
+        if force or upstream_changed or not _exists(config.SUMMARY_JSON):
             marketing_summary = summary.run(kb)
+            summary_reran = True
         else:
-            print(f"[skip] summary ({config.SUMMARY_JSON.name} exists)")
+            print("[cache-hit] summary")
             marketing_summary = summary.load_cached()
+
+        upstream_changed = upstream_changed or summary_reran
 
     if "generate" in stages:
         import summary, generator
         if marketing_summary is None:
             marketing_summary = summary.load_cached()
-        if force or not _exists(config.GENERATED_CSV):
+        generate_reran = False
+
+        if force or upstream_changed or not _exists(config.GENERATED_CSV):
             generated_df = generator.run(marketing_summary)
+            generate_reran = True
         else:
-            print(f"[skip] generate ({config.GENERATED_CSV.name} exists)")
+            print("[cache-hit] generate")
             generated_df = generator.load_cached()
+
+        upstream_changed = upstream_changed or generate_reran
 
     if "engagement-train" in stages:
         import engagement
@@ -178,11 +293,19 @@ def run_pipeline(stages: list[str], force: bool = False):
             generated_df = generator.load_cached()
         if "engagement_score" not in generated_df.columns:
             generated_df = engagement.score(generated_df)
-        if force or not _exists(config.RANKED_CSV):
-            ranked_df = evaluation.run(generated_df, marketing_summary)
+        evaluation_reran = False
+
+        if force or upstream_changed or not _exists(config.RANKED_CSV):
+            ranked_df = evaluation.run(
+                generated_df,
+                marketing_summary
+            )
+            evaluation_reran = True
         else:
-            print(f"[skip] evaluate ({config.RANKED_CSV.name} exists)")
+            print("[cache-hit] evaluate")
             ranked_df = evaluation.load_cached()
+
+        upstream_changed = upstream_changed or evaluation_reran
 
     if "optimize" in stages:
         import evaluation, summary, optimization
@@ -190,11 +313,19 @@ def run_pipeline(stages: list[str], force: bool = False):
             marketing_summary = summary.load_cached()
         if ranked_df is None:
             ranked_df = evaluation.load_cached()
-        if force or not _exists(config.OPTIMIZED_RANKED_CSV):
-            optimized_ranked, comparison = optimization.run(ranked_df, marketing_summary)
+        optimization_reran = False
+
+        if force or upstream_changed or not _exists(config.OPTIMIZED_RANKED_CSV):
+            optimized_ranked, comparison = optimization.run(
+                ranked_df,
+                marketing_summary
+            )
+            optimization_reran = True
         else:
-            print(f"[skip] optimize ({config.OPTIMIZED_RANKED_CSV.name} exists)")
+            print("[cache-hit] optimize")
             optimized_ranked, comparison = optimization.load_cached()
+
+        upstream_changed = upstream_changed or optimization_reran
 
     if "significance" in stages:
         import optimization, significance
@@ -273,6 +404,15 @@ def run_pipeline(stages: list[str], force: bool = False):
         else:
             print(f"[skip] generate-candidates "
                   f"({config.BEST_CANDIDATES_CSV.name} exists)")
+    
+    pipeline_cache.save_stage_metadata(
+        config.PIPELINE_METADATA_JSON,
+        {
+            "hash": current_hash,
+            "completed_stages": stages,
+            "last_run": str(datetime.now())
+        }
+    )
 
 
 def main():
