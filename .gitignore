@@ -18,6 +18,9 @@ data/processed/*.json
 data/outputs/*.csv
 data/raw/websites/*.json
 
+# Engagement-learning feedback store + analytics imports (per-deployment data)
+data/feedback/
+
 # OS / editor
 .DS_Store
 .vscode/

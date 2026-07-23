@@ -34,6 +34,19 @@ STAGES = [
     "human-baseline",
 ]
 
+# Opt-in stages for the adaptive engagement-learning subsystem (learning/).
+# Deliberately NOT part of the default STAGES sequence: a plain `python main.py`
+# never runs them, so the existing pipeline is unaffected. They are selectable
+# only via `--step`.
+LEARNING_STAGES = [
+    "feedback-log",       # record generated/ranked assets + predictions into the store
+    "feedback-import",    # ingest analytics CSV exports → observed engagement
+    "engagement-retrain", # retrain the personalized predictor on base + feedback
+    "generate-candidates",# best-of-N generation ranked by the personalized model
+]
+
+ALL_STAGES = STAGES + LEARNING_STAGES
+
 
 def _load_input() -> dict:
     with open(config.ROOT / "input.json", encoding="utf-8") as f:
@@ -205,19 +218,81 @@ def run_pipeline(stages: list[str], force: bool = False):
             # produced, so report it and exit cleanly instead.
             print(f"\n[skip] human-baseline — {exc}")
 
+    # -----------------------------------------------------------------------
+    # Opt-in engagement-learning stages (learning/). Never in the default run.
+    # -----------------------------------------------------------------------
+    if "feedback-log" in stages:
+        import pandas as pd
+        from learning import feedback_store
+        import evaluation, optimization
+        account_id = module_input.get("account_id")
+        logged = 0
+        # Log whichever scored asset sets exist, tagging each with its source.
+        for csv_path, source, loader in (
+            (config.RANKED_CSV, "generated", evaluation.load_cached),
+            (config.OPTIMIZED_RANKED_CSV, "optimized",
+             lambda: optimization.load_cached()[0]),
+            (config.BEST_CANDIDATES_CSV, "candidate",
+             lambda: pd.read_csv(config.BEST_CANDIDATES_CSV)),
+        ):
+            if _exists(csv_path):
+                logged += feedback_store.log_assets(
+                    loader(), account_id=account_id, source=source
+                )
+        print(f"[feedback-log] recorded {logged} asset(s) → {config.FEEDBACK_DB.name}")
+        print(f"[feedback-log] store summary: {feedback_store.summary()}")
+
+    if "feedback-import" in stages:
+        from learning import importer, feedback_store
+        account_id = module_input.get("account_id")
+        reports = importer.import_dir(account_id=account_id)
+        if not reports:
+            print(f"[feedback-import] no CSVs found in "
+                  f"{config.ANALYTICS_IMPORT_DIR}. Drop platform Insights "
+                  f"exports there and rerun.")
+        for report in reports:
+            print(f"[feedback-import] {report}")
+        print(f"[feedback-import] store summary: {feedback_store.summary()}")
+
+    if "engagement-retrain" in stages:
+        from learning import personalize
+        if force or not _exists(config.PERSONALIZED_ENGAGEMENT_MODEL_PKL):
+            personalize.retrain()
+        else:
+            print(f"[skip] engagement-retrain "
+                  f"({config.PERSONALIZED_ENGAGEMENT_MODEL_PKL.name} exists)")
+
+    if "generate-candidates" in stages:
+        import summary
+        from learning import candidates
+        if marketing_summary is None:
+            marketing_summary = summary.load_cached()
+        account_id = module_input.get("account_id")
+        if force or not _exists(config.BEST_CANDIDATES_CSV):
+            candidates.run(marketing_summary, account_id=account_id)
+        else:
+            print(f"[skip] generate-candidates "
+                  f"({config.BEST_CANDIDATES_CSV.name} exists)")
+
 
 def main():
     p = argparse.ArgumentParser(description="Marketing content pipeline.")
-    p.add_argument("--step", nargs="+", choices=STAGES, help="Run only these stages.")
+    p.add_argument("--step", nargs="+", choices=ALL_STAGES, metavar="STAGE",
+                   help="Run only these stages (see --list for names).")
     p.add_argument("--force", action="store_true", help="Rerun stages even if outputs exist.")
     p.add_argument("--list", action="store_true", help="List stages and exit.")
     args = p.parse_args()
 
     if args.list:
+        print("# core pipeline (default run)")
         for s in STAGES:
+            print(s)
+        print("\n# opt-in engagement-learning stages (run only via --step)")
+        for s in LEARNING_STAGES:
             print(s)
         sys.exit(0)
 
+    # No --step → the default sequence only. Learning stages must be requested.
     run_pipeline(args.step or STAGES, force=args.force)
 
 

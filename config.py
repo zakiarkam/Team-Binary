@@ -42,6 +42,15 @@ GOAL_TONE_SKIP_XGBOOST = (
     in {"1", "true", "yes"}
 )
 
+# Same escape hatch for the personalized engagement regressor in learning/.
+# The stage runs standalone (no torch in-process) so the clash does not arise in
+# normal use; this exists for the test suite, where sibling modules import
+# transformers first, and for any environment where the clash persists.
+LEARNING_SKIP_XGBOOST = (
+    os.environ.get("LEARNING_SKIP_XGBOOST", "").strip().lower()
+    in {"1", "true", "yes"}
+)
+
 from pathlib import Path
 
 # Models
@@ -150,10 +159,13 @@ PROCESSED = DATA / "processed"
 OUTPUTS = DATA / "outputs"
 MODELS = ROOT / "models"
 
+FEEDBACK = DATA / "feedback"
+
 def init_dirs() -> None:
     """Create all pipeline directories. Idempotent. Called explicitly from main.py
     so importing config has no filesystem side effect (better for tests)."""
-    for d in (RAW_WEBSITES, RAW_DATASETS, INTERMEDIATE, PROCESSED, OUTPUTS, MODELS):
+    for d in (RAW_WEBSITES, RAW_DATASETS, INTERMEDIATE, PROCESSED, OUTPUTS,
+              MODELS, FEEDBACK):
         d.mkdir(parents=True, exist_ok=True)
 
 
@@ -297,3 +309,40 @@ GOAL_TONE_METRICS_JSON = (
     MODELS
     / "goal_tone_training_metrics.json"
 )
+
+# ---------------------------------------------------------------------------
+# Engagement learning loop (opt-in — nothing here runs on a default `main.py`)
+# ---------------------------------------------------------------------------
+# These artifacts belong to the adaptive learning subsystem in learning/. The
+# personalized model is written to its OWN file and never overwrites
+# ENGAGEMENT_MODEL_PKL, so the default generate→evaluate→optimize path keeps
+# using exactly the model it used before.
+
+# A richer public corpus than ENGAGEMENT_DATASET_CSV: it carries a per-account
+# id (user_id) and a timestamp, which is what makes within-account relative
+# targets and personalization possible. Used as the base corpus when present.
+RICH_ENGAGEMENT_DATASET_CSV = RAW_DATASETS / "Social Media Engagement Dataset.csv"
+
+# SQLite store of generated assets + their predictions, with (nullable) actual
+# analytics filled in later from an Insights CSV import.
+FEEDBACK_DB = FEEDBACK / "feedback.db"
+
+# Drop platform Insights CSV exports here for `feedback-import` to ingest.
+ANALYTICS_IMPORT_DIR = FEEDBACK / "analytics_import"
+
+# Personalized engagement predictor + its feature columns (separate from the
+# base model on purpose).
+PERSONALIZED_ENGAGEMENT_MODEL_PKL = MODELS / "personalized_engagement_model.pkl"
+PERSONALIZED_ENGAGEMENT_FEATURES_PKL = MODELS / "personalized_engagement_features.pkl"
+PERSONALIZED_ENGAGEMENT_METRICS_JSON = MODELS / "personalized_engagement_metrics.json"
+
+# Best-of-N candidate generation output.
+CANDIDATES_CSV = OUTPUTS / "candidate_platform_assets.csv"
+BEST_CANDIDATES_CSV = OUTPUTS / "best_candidate_platform_assets.csv"
+
+# How many caption candidates to generate per platform before ranking.
+CANDIDATES_PER_PLATFORM = 5
+
+# Minimum posts an account needs before its own history is trusted enough to
+# normalize against (below this the base/raw rate is used instead).
+RELATIVE_TARGET_MIN_ACCOUNT_POSTS = 5
