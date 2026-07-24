@@ -1,0 +1,102 @@
+{
+  "dataset_path": "/Users/arkamzakir/Documents/Research/Research/data/processed/goal_tone_dataset_training.csv",
+  "dataset_rows": 121,
+  "selection": {
+    "best_goal_model_type": "tfidf_logistic",
+    "best_tone_model_type": "tfidf_logistic"
+  },
+  "results": [
+    {
+      "target": "campaign_goal",
+      "model": "tfidf_logistic",
+      "accuracy": 0.75,
+      "weighted_f1": 0.740995,
+      "macro_f1": 0.554029,
+      "classification_report": {
+        "awareness": {
+          "precision": 0.9166666666666666,
+          "recall": 0.9166666666666666,
+          "f1-score": 0.9166666666666666,
+          "support": 12.0
+        },
+        "conversion": {
+          "precision": 0.6666666666666666,
+          "recall": 0.5714285714285714,
+          "f1-score": 0.6153846153846154,
+          "support": 7.0
+        },
+        "engagement": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1.0
+        },
+        "lead_generation": {
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1-score": 0.6666666666666666,
+          "support": 2.0
+        },
+        "retention": {
+          "precision": 0.4,
+          "recall": 1.0,
+          "f1-score": 0.5714285714285714,
+          "support": 2.0
+        },
+        "accuracy": 0.75,
+        "macro avg": {
+          "precision": 0.5966666666666666,
+          "recall": 0.5976190476190476,
+          "f1-score": 0.5540293040293041,
+          "support": 24.0
+        },
+        "weighted avg": {
+          "precision": 0.7694444444444444,
+          "recall": 0.75,
+          "f1-score": 0.740995115995116,
+          "support": 24.0
+        }
+      }
+    },
+    {
+      "target": "tone",
+      "model": "tfidf_logistic",
+      "accuracy": 1.0,
+      "weighted_f1": 1.0,
+      "macro_f1": 1.0,
+      "classification_report": {
+        "luxury": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 1.0
+        },
+        "persuasive": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 18.0
+        },
+        "professional": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 5.0
+        },
+        "accuracy": 1.0,
+        "macro avg": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 24.0
+        },
+        "weighted avg": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 24.0
+        }
+      }
+    }
+  ]
+}

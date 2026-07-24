@@ -1,184 +1,114 @@
-# Marketing Content Pipeline
+# 🧭 AI-Powered Digital Marketing Orchestration
 
-Generate, score, optimize, and benchmark platform-specific marketing assets from a product website using BART (summarization), Phi-3 (generation), Sentence-BERT (semantics), and TF-IDF/XGBoost/RandomForest (classification + engagement regression).
+**Team Binary · University of Moratuwa · Level 4 FYP · 2026**
 
-Same algorithm as the original Colab notebook, restructured as a local CLI with lazy model loading, stage-level caching, and a single configuration entry point.
+An integrated, **closed-loop** marketing system for launch-stage products with
+limited data. Four research modules run as one pipeline behind one app:
 
----
-
-## 1. Setup
-
-```bash
-cd /Users/arkamzakir/Documents/Research/Research
-
-# Create + activate a virtual env
-python3 -m venv .venv
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Required model + system dependency
-python -m spacy download en_core_web_sm
-brew install ffmpeg          # macOS; Linux: apt-get install ffmpeg
+```
+  ①  Audience Segmentation      →  ②  Campaign Automation
+  (hybrid rule + ML, 8k users)      (fixed / trigger / hybrid strategies)
+              ▲                                    │
+              │                              event logs
+        content priorities                        ▼
+              │                     ③  Analytics & Decision Support
+  ④  AI Content Refinery   ◀────────  (funnel · attribution · prediction ·
+     (goal/tone → posts →              recommendations)
+      scored & ranked)      ◀──── analytics feedback closes the loop
 ```
 
-> **Note on GPU**: BART and Phi-3 (~8 GB) load fastest on a CUDA GPU. On CPU/Mac everything still runs but Phi-3 generation will be slow (a minute+ per asset).
->
-> `bitsandbytes` was dropped from `requirements.txt` because it's Linux/CUDA-only and the code does not use it.
+---
+
+## Quick start
+
+```bash
+# 1. activate the environment
+source venv/bin/activate            # Python 3.11
+
+# 2a. run the whole closed loop from the command line (~10s)
+python orchestrator.py --full --engine fast
+
+# 2b. or launch the app and drive it from the browser
+streamlit run app_unified/Home.py
+```
+
+Open **🚀 Run Campaign**, enter a product (name, website, audience, platforms),
+and the system segments the audience, picks the best automation strategy,
+analyses the funnel, and generates **platform-native, scored posts** you can
+preview, export, and schedule.
+
+> This is a research prototype: it runs on public / simulated data and
+> **previews** content — it never auto-posts to live platforms.
 
 ---
 
-## 2. Provide the input datasets
+## What each module does
 
-Drop these CSVs into `data/raw/datasets/` before running the pipeline:
+| # | Module | Lives in | Produces |
+|---|--------|----------|----------|
+| ① | **Segmentation** | `modules/m1_segmentation/` | `user_segments.csv` — 8,000 users in 5 segments (hybrid rule + RandomForest) |
+| ② | **Automation** | `modules/m2_automation/` | strategy comparison + campaign event logs (fixed / trigger / hybrid) |
+| ③ | **Analytics** | `modules/m3_analytics/` | funnel, 4 attribution models, conversion / drop-off predictions, recommendations |
+| ④ | **Content** | repo root (`content_service.py`, `generator.py`, `engagement.py`, …) | goal/tone-aware, platform-native posts scored `0.30·semantic + 0.25·platform-fit + 0.45·engagement` |
 
-| File | Required by stage | Required columns |
+The **`unified` git branch** merges all four. See **[INTEGRATION_PLAN.md](INTEGRATION_PLAN.md)**
+for the exact data contracts between modules and the design decisions.
+
+---
+
+## The integration layer (what was built to unify them)
+
+```
+orchestrator.py        # runs M1 → M2 → M3 → (feedback) → M4, writes data/integrated/run_bundle.json
+content_service.py     # M4 content: fast (template) + phi3 engines, both model-scored
+model_health.py        # honest cross-validated metrics for every model
+adapters/
+  segment_labels.py    # Title-Case (M1/M2) ↔ snake_case (M3) segment names
+  m2_to_m3.py          # M2 wide event logs → M3 long event logs + funnel
+  m3_to_m4.py          # M3 analytics → M4 content platform priorities
+app_unified/           # the Streamlit app (Home + Run Campaign + Research dashboards)
+```
+
+---
+
+## Honest model health
+
+A research project reports its weaknesses. Run `python model_health.py`; the
+findings also appear on the app's **Research → Model health** tab.
+
+| Model | Headline | Honest number |
 |---|---|---|
-| `your_labeled_marketing_dataset.csv` | `goal-tone-train` | `text`, `campaign_goal`, `tone` |
-| `your_engagement_dataset.csv` | `engagement-train` | `text`, `platform`, `likes`, `comments`, `shares`, `impressions` |
-| `human_content_dataset.csv` | `human-baseline` | `platform`, `caption` |
-
-If you don't have a labeled goal/tone dataset, the `preprocess-dataset` → `label-goal` → `label-tone` → `build-dataset` stages build one from the `RafaM97/marketing_social_media` Hugging Face dataset. This is the slowest part of the project: it runs BART-MNLI over every row and Phi-3 over the low-confidence ones. Each stage checkpoints, so an interrupted run resumes rather than restarting.
-
----
-
-## 3. Configure the product / website
-
-Edit [`input.json`](input.json):
-
-```json
-{
-    "product_name": "EcoSmart Bottle",
-    "website_url": "https://www.shopify.com",
-    "target_audience": "young professionals",
-    "customer_segment": "eco-conscious buyers",
-    "preferred_platforms": ["instagram", "linkedin", "shorts", "email"]
-}
-```
-
-`campaign_goal` and `tone` are **inferred** by the pipeline, not provided.
+| M4 tone classifier | 1.0 accuracy (24-row test) | **CV weighted-F1 0.90 ± 0.07** — low-data, not perfect |
+| M4 goal classifier | 0.75 single-split | **CV weighted-F1 0.76 ± 0.09** |
+| M4 engagement regressor | R² 0.99 | optimistic on synthetic data — use as a **ranker** |
+| M3 conversion / drop-off | AUC ≈ 1.0 (simulated) | **real-data AUC 0.95** (leakage in sim) |
+| M2 conversion | ~base-rate accuracy | honest; read via ROC/PR-AUC |
 
 ---
 
-## 4. Run
+## Documentation
 
-```bash
-# Run the full pipeline; stages whose outputs already exist are skipped.
-python main.py
-
-# Rerun everything from scratch
-python main.py --force
-
-# Run only specific stages
-python main.py --step crawl kb summary
-
-# List all stage names
-python main.py --list
-```
-
-### Stages (in execution order)
-
-| Stage | Reads | Writes |
-|---|---|---|
-| `crawl` | `input.json` | `data/raw/websites/crawled_website_data.json` |
-| `kb` | crawl output | `data/processed/marketing_knowledge_base.json` |
-| `preprocess-dataset` | RafaM97 raw CSV | `data/intermediate/marketing_preprocessed.csv` |
-| `label-goal` | preprocessed corpus | `data/intermediate/campaign_goal_labeled.csv` |
-| `label-tone` | goal-labeled corpus | `data/intermediate/tone_labeled.csv` |
-| `build-dataset` | tone-labeled corpus | `data/processed/goal_tone_dataset_training.csv` (+ research CSV) |
-| `goal-tone-train` | labeled dataset | `models/best_goal_model.pkl`, `models/best_tone_model.pkl`, selection JSON |
-| `goal-tone-predict` | KB | updates KB with predicted goal + tone |
-| `summary` | KB | `data/processed/marketing_summary.json` |
-| `generate` | summary | `data/outputs/generated_platform_assets.csv` |
-| `engagement-train` | engagement dataset | `models/best_engagement_model.pkl`, feature columns |
-| `engagement-score` | generated assets | adds `predicted_engagement` + `engagement_score` columns |
-| `evaluate` | generated + summary | `data/outputs/ranked_platform_assets.csv` |
-| `optimize` | ranked + summary | `data/outputs/optimized_ranked_platform_assets.csv`, `before_after_optimization_comparison.csv` |
-| `significance` | comparison | `data/outputs/optimization_significance_test.csv` |
-| `human-baseline` | human CSV + summary + rankings | `data/outputs/human_vs_ai_comparison.csv` |
+- **[INTEGRATION_PLAN.md](INTEGRATION_PLAN.md)** — architecture, data contracts, phases, model-health plan
+- **[docs/](docs/)** — per-module deep dives: methodology, content-engine reasoning, engagement-learning loop, research analysis
+- Module notes: `modules/m2_automation/MODULE2_README.md`, `modules/m3_analytics/README.md`
 
 ---
 
-## 5. Project layout
+## Repo layout
 
 ```
-Research/
-├── input.json                     # product/website input (edit this)
-├── main.py                        # CLI orchestrator
-├── config.py                      # paths, model names, score weights, thresholds
-├── models.py                      # lazy-loaded BART/Phi-3/MiniLM (device + dtype policy)
-├── crawler.py                     # STEP 6
-├── knowledge_base.py              # STEP 7
-├── dataset/                       # corpus preprocessing + weak labeling
-│   ├── preprocess_marketing.py    #   RafaM97 → cleaned rows
-│   ├── label_campaign_goal.py     #   rule + zero-shot + Phi-3 → campaign_goal
-│   ├── label_tone.py              #   rule + BART-MNLI + Phi-3 → tone
-│   └── build_final_dataset.py     #   confidence gate → training/research splits
-├── dashboard/                     # Streamlit research dashboard
-│   ├── app.py
-│   ├── artifacts.py
-│   └── theme.py
-├── goal_tone.py                   # STEP 8: TF-IDF + SentenceBERT-XGB classifiers
-├── summary.py                     # STEP 9
-├── generator.py                   # STEP 10: Phi-3 platform assets
-├── engagement.py                  # STEP 11/12: train + score
-├── evaluation.py                  # STEP 13-15: semantic + platform + final score
-├── optimization.py                # STEP 16-17: re-prompt + re-evaluate
-├── significance.py                # STEP 18: paired t-test
-├── human_baseline.py              # STEP 19: human vs AI
-├── data/
-│   ├── raw/
-│   │   ├── datasets/              # ← drop your input CSVs here
-│   │   └── websites/
-│   ├── processed/
-│   └── outputs/                   # all CSV results
-└── models/                        # trained classifiers + engagement regressor
+Research/                        (branch: unified)
+├── orchestrator.py              # closed-loop runner
+├── content_service.py           # M4 content service (app-facing)
+├── model_health.py              # honest metrics report
+├── adapters/                    # cross-module schema bridges
+├── app_unified/                 # Streamlit app  (Home.py + pages/)
+├── modules/
+│   ├── m1_segmentation/         # Module 1
+│   ├── m2_automation/           # Module 2
+│   └── m3_analytics/            # Module 3
+├── config.py, generator.py, engagement.py, evaluation.py, goal_tone.py, …  # Module 4
+├── models/  outputs/  data/     # trained models, artifacts, datasets
+├── docs/                        # deep-dive documentation
+└── INTEGRATION_PLAN.md, README.md
 ```
-
----
-
-## 6. Common workflows
-
-**First-time run (with all datasets in place):**
-```bash
-python main.py
-```
-
-**Already trained, want to test a new product:**
-```bash
-# Edit input.json, then:
-python main.py --step crawl kb goal-tone-predict summary generate engagement-score evaluate optimize significance
-```
-
-**Retrain only the engagement model:**
-```bash
-python main.py --step engagement-train --force
-```
-
-**Generate fresh assets for a product without retraining anything:**
-```bash
-python main.py --step generate engagement-score evaluate optimize --force
-```
-
----
-
-## 7. Score formula
-
-Final score per asset:
-
-```
-final_score = 0.30 * semantic_score
-            + 0.25 * platform_suitability_score
-            + 0.45 * engagement_score
-```
-
-Weights live in [`config.py`](config.py): `SEMANTIC_WEIGHT`, `PLATFORM_WEIGHT`, `ENGAGEMENT_WEIGHT`.
-
----
-
-## 8. Notes
-
-- Models are lazy-loaded — importing a module that uses Phi-3 won't actually download Phi-3 until `generate_with_phi3()` is called.
-- Stages are independent and use disk artifacts for handoff. If a stage's output exists, it is reused unless `--force` is given.
-- The original Colab `extract_json_from_text` was undefined — it is implemented in [`generator.py`](generator.py).

@@ -25,3 +25,9 @@ data/feedback/
 .DS_Store
 .vscode/
 .idea/
+
+# Module 3 trained models (regenerable via its pipeline)
+outputs/models/*.pkl
+
+# Integrated run artifacts (regenerable)
+data/integrated/run_bundle.json
