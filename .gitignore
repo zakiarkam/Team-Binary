@@ -31,3 +31,6 @@ outputs/models/*.pkl
 
 # Integrated run artifacts (regenerable)
 data/integrated/run_bundle.json
+
+
+config.py
