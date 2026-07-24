@@ -1,0 +1,22 @@
+{
+    "hash": "98306f697a7314880dec3efa41786ea26675269c1b02d897c429b9ee31bd99be",
+    "completed_stages": [
+        "crawl",
+        "kb",
+        "preprocess-dataset",
+        "label-goal",
+        "label-tone",
+        "build-dataset",
+        "goal-tone-train",
+        "goal-tone-predict",
+        "summary",
+        "generate",
+        "engagement-train",
+        "engagement-score",
+        "evaluate",
+        "optimize",
+        "significance",
+        "human-baseline"
+    ],
+    "last_run": "2026-07-24 00:11:50.039549"
+}

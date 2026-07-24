@@ -1,154 +1,488 @@
-"""Adaptive optimization: re-prompt Phi-3 with platform-specific improvement rules
-and re-evaluate against the same scoring pipeline."""
+"""
+Adaptive optimization stage.
+
+Flow:
+
+ranked_platform_assets.csv
+        |
+        | input hash check
+        v
+Optimize with Phi-3
+        |
+        v
+Re-score engagement
+        |
+        v
+Evaluate semantic/platform score
+        |
+        v
+Save optimized artifacts
+"""
+
+from __future__ import annotations
 
 import pandas as pd
 
 import config
 import engagement
 import evaluation
-from generator import _rules_block, _schema_block, required_fields, standardize
+
+from generator import (
+    _rules_block,
+    _schema_block,
+    required_fields,
+    standardize,
+)
+
 from models import generate_with_phi3
 
 
+# ---------------------------------------------------------
+# Optimization rules
+# ---------------------------------------------------------
+
 def _rule(row) -> str:
-    p = str(row["platform"]).lower()
-    s, ps, e = row["semantic_score"], row["platform_suitability_score"], row["engagement_score"]
-    if s < 0.65:
-        return "Keep the content closer to the original product meaning and avoid changing the business message."
-    if ps < 0.75:
+
+    semantic = float(row["semantic_score"])
+    platform_score = float(row["platform_suitability_score"])
+    engagement_score = float(row["engagement_score"])
+
+    platform = str(row["platform"]).lower()
+
+
+    if semantic < 0.65:
+        return (
+            "Keep the content closer to the original product meaning "
+            "and avoid changing the business message."
+        )
+
+
+    if platform_score < 0.75:
+
         return {
-            "instagram": "Improve Instagram fit with a shorter caption, 3 to 5 relevant hashtags, one emoji, and a soft CTA.",
-            "linkedin": "Improve LinkedIn fit with a professional tone, business value, and formal CTA.",
-            # "facebook": "Improve Facebook fit with friendly wording, one clear benefit, and direct CTA.",
-            "email": "Improve email fit with a subject line, concise body, clear value proposition, and no hashtags.",
-            "shorts": "Improve shorts fit with a strong hook, short caption, visual scene idea, and action CTA.",
-        }.get(p, "Improve clarity, engagement, and platform alignment while preserving the original product meaning.")
-    if e < 0.50:
-        return "Improve engagement by using clearer benefits, stronger emotional wording, and a more action-oriented CTA."
-    return "Improve clarity, engagement, and platform alignment while preserving the original product meaning."
+            "instagram":
+                (
+                    "Improve Instagram fit with a stronger hook, "
+                    "shorter caption, relevant hashtags and soft CTA."
+                ),
+
+            "linkedin":
+                (
+                    "Improve LinkedIn fit with professional wording, "
+                    "business insight and formal CTA."
+                ),
+
+            "email":
+                (
+                    "Improve email fit with strong subject line, "
+                    "clear value proposition and no hashtags."
+                ),
+
+            "shorts":
+                (
+                    "Improve short video fit with a strong first-second "
+                    "hook and clear visual storytelling."
+                ),
+
+        }.get(
+            platform,
+            "Improve clarity, engagement and platform alignment."
+        )
 
 
-def _original_creative(row, spec: dict) -> str:
-    """Show back only the creative prompt this platform uses."""
+    if engagement_score < 0.50:
+
+        return (
+            "Improve engagement using stronger emotional wording, "
+            "clear benefits and action-oriented CTA."
+        )
+
+
+    return (
+        "Improve clarity, engagement and platform alignment "
+        "while preserving the original meaning."
+    )
+
+
+
+# ---------------------------------------------------------
+# Creative prompt recovery
+# ---------------------------------------------------------
+
+def _original_creative(row, spec):
+
     if spec["visual"] == "image":
-        return f"Original Image Prompt:\n{evaluation.as_text(row.get('image_prompt'))}"
+
+        return (
+            "Original Image Prompt:\n"
+            f"{evaluation.as_text(row.get('image_prompt'))}"
+        )
+
+
     if spec["visual"] == "video":
-        return f"Original Shorts Prompt:\n{evaluation.as_text(row.get('shorts_prompt'))}"
+
+        return (
+            "Original Shorts Prompt:\n"
+            f"{evaluation.as_text(row.get('shorts_prompt'))}"
+        )
+
+
     return ""
 
 
-def _build_prompt(row, marketing_summary: dict, rule: str) -> str:
+
+# ---------------------------------------------------------
+# Phi-3 optimization prompt
+# ---------------------------------------------------------
+
+def _build_prompt(row, marketing_summary, rule):
+
     platform = row["platform"]
+
     spec = config.platform_spec(platform)
+
     fields = required_fields(spec)
 
+
     return f"""
-You are an expert digital marketing content optimizer.
 
-Improve this generated marketing asset.
+You are an expert marketing content optimizer.
 
-Product Name:
-{marketing_summary.get("product_name", "")}
+Improve the following generated marketing asset.
+
+Product:
+{marketing_summary.get("product_name","")}
+
 
 Business Summary:
-{marketing_summary.get("summary", "")}
+{marketing_summary.get("summary","")}
 
-Target Audience:
-{marketing_summary.get("target_audience", "")}
+
+Audience:
+{marketing_summary.get("target_audience","")}
+
 
 Customer Segment:
-{marketing_summary.get("customer_segment", "")}
+{marketing_summary.get("customer_segment","")}
 
-Inferred Campaign Goal:
-{marketing_summary.get("campaign_goal", "")}
 
-Inferred Tone:
-{marketing_summary.get("tone", "")}
+Campaign Goal:
+{marketing_summary.get("campaign_goal","")}
+
+
+Tone:
+{marketing_summary.get("tone","")}
+
 
 Platform:
 {platform}
 
-Original Caption:
-{row.get("caption", "")}
 
-Original Hashtags:
-{row.get("hashtags", "")}
+Current Caption:
 
-Original CTA:
-{row.get("cta", "")}
+{row.get("caption","")}
 
-{_original_creative(row, spec)}
 
-Optimization Rule:
+Current Hashtags:
+
+{row.get("hashtags","")}
+
+
+Current CTA:
+
+{row.get("cta","")}
+
+
+{_original_creative(row,spec)}
+
+
+Optimization Instruction:
+
 {rule}
 
-Return only valid JSON in this exact format:
 
-{_schema_block(platform, fields)}
+Return only JSON:
+
+{_schema_block(platform,fields)}
+
 
 Rules:
+
 {_rules_block(spec)}
+
 """
 
 
-def run(ranked_df: pd.DataFrame, marketing_summary: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
-    rows = [row for _, row in ranked_df.iterrows()]
 
-    optimized = []
-    for index, row in enumerate(rows, start=1):
+# ---------------------------------------------------------
+# Main optimization stage
+# ---------------------------------------------------------
+
+def run(
+    ranked_df: pd.DataFrame,
+    marketing_summary: dict
+) -> tuple[pd.DataFrame,pd.DataFrame]:
+
+    optimized_rows = []
+
+
+    rows = list(
+        ranked_df.iterrows()
+    )
+
+
+    for index, (_, row) in enumerate(
+        rows,
+        start=1
+    ):
+
+
         rule = _rule(row)
-        print(f"\n--- [{index}/{len(rows)}] optimizing "
-              f"{str(row['platform']).upper()} ---")
-        raw = generate_with_phi3(
-            _build_prompt(row, marketing_summary, rule), max_new_tokens=500
+
+
+        print(
+            f"\n--- [{index}/{len(rows)}] "
+            f"Optimizing {row['platform'].upper()} ---"
         )
-        item = standardize(row["platform"], raw)
+
+
+        raw = generate_with_phi3(
+            _build_prompt(
+                row,
+                marketing_summary,
+                rule,
+            ),
+            max_new_tokens=500,
+        )
+
+
+        item = standardize(
+            row["platform"],
+            raw,
+            marketing_summary,
+        )
+
+
         item["optimization_rule"] = rule
-        optimized.append(item)
 
-    opt_df = pd.DataFrame(optimized)
-    opt_df.to_csv(config.OPTIMIZED_CSV, index=False)
-    print(f"Optimized assets saved → {config.OPTIMIZED_CSV}")
 
-    opt_df = engagement.score(opt_df)
-    opt_df["semantic_score"] = opt_df["caption"].apply(
-        lambda c: evaluation.semantic_score(marketing_summary["summary"], c)
+        optimized_rows.append(item)
+
+
+
+    optimized_df = pd.DataFrame(
+        optimized_rows
     )
-    opt_df["platform_suitability_score"] = opt_df.apply(evaluation.platform_suitability, axis=1)
-    opt_df["final_score"] = (
-        config.SEMANTIC_WEIGHT * opt_df["semantic_score"]
-        + config.PLATFORM_WEIGHT * opt_df["platform_suitability_score"]
-        + config.ENGAGEMENT_WEIGHT * opt_df["engagement_score"]
+
+
+
+    optimized_df.to_csv(
+        config.OPTIMIZED_CSV,
+        index=False,
     )
-    opt_ranked = opt_df.sort_values("final_score", ascending=False).reset_index(drop=True)
-    opt_ranked.to_csv(config.OPTIMIZED_RANKED_CSV, index=False)
-
-    comparison = _build_comparison(ranked_df, opt_ranked)
-    comparison.to_csv(config.COMPARISON_CSV, index=False)
-    print(f"Before/after comparison saved → {config.COMPARISON_CSV}")
-    print(comparison.to_string())
-    return opt_ranked, comparison
 
 
-def _build_comparison(before: pd.DataFrame, after: pd.DataFrame) -> pd.DataFrame:
-    cols = ["platform", "semantic_score", "platform_suitability_score", "engagement_score", "final_score"]
-    b = before[cols].rename(
-        columns={c: f"before_{c.replace('_score', '')}_score" if c != "platform" else c for c in cols}
+    print(
+        f"Optimized assets saved → "
+        f"{config.OPTIMIZED_CSV}"
     )
-    a = after[cols].rename(
-        columns={c: f"after_{c.replace('_score', '')}_score" if c != "platform" else c for c in cols}
-    )
-    # The original naming used "platform_score" not "platform_suitability_score"; preserve original artifact format
-    b = b.rename(columns={"before_platform_suitability_score": "before_platform_score"})
-    a = a.rename(columns={"after_platform_suitability_score": "after_platform_score"})
 
-    merged = b.merge(a, on="platform", how="inner")
-    merged["semantic_change"] = merged["after_semantic_score"] - merged["before_semantic_score"]
-    merged["platform_change"] = merged["after_platform_score"] - merged["before_platform_score"]
-    merged["engagement_change"] = merged["after_engagement_score"] - merged["before_engagement_score"]
-    merged["final_score_change"] = merged["after_final_score"] - merged["before_final_score"]
+
+
+    # -----------------------------
+    # Re-score optimized content
+    # -----------------------------
+
+
+    optimized_df = engagement.score(
+        optimized_df
+    )
+
+
+    optimized_df["semantic_score"] = (
+        optimized_df["caption"]
+        .apply(
+            lambda x:
+            evaluation.semantic_score(
+                marketing_summary["summary"],
+                x,
+            )
+        )
+    )
+
+
+    optimized_df[
+        "platform_suitability_score"
+    ] = optimized_df.apply(
+        evaluation.platform_suitability,
+        axis=1,
+    )
+
+
+    optimized_df["final_score"] = (
+
+        config.SEMANTIC_WEIGHT
+        *
+        optimized_df["semantic_score"]
+
+        +
+
+        config.PLATFORM_WEIGHT
+        *
+        optimized_df[
+            "platform_suitability_score"
+        ]
+
+        +
+
+        config.ENGAGEMENT_WEIGHT
+        *
+        optimized_df["engagement_score"]
+
+    )
+
+
+
+    optimized_ranked = (
+        optimized_df
+        .sort_values(
+            "final_score",
+            ascending=False,
+        )
+        .reset_index(drop=True)
+    )
+
+
+
+    optimized_ranked.to_csv(
+        config.OPTIMIZED_RANKED_CSV,
+        index=False,
+    )
+
+
+
+    comparison = _build_comparison(
+        ranked_df,
+        optimized_ranked,
+    )
+
+
+    comparison.to_csv(
+        config.COMPARISON_CSV,
+        index=False,
+    )
+
+    print(
+        f"Comparison saved → {config.COMPARISON_CSV}"
+    )
+
+
+    return (
+        optimized_ranked,
+        comparison,
+    )
+
+
+
+# ---------------------------------------------------------
+# Comparison report
+# ---------------------------------------------------------
+
+def _build_comparison(
+    before,
+    after
+):
+
+    cols = [
+        "platform",
+        "semantic_score",
+        "platform_suitability_score",
+        "engagement_score",
+        "final_score",
+    ]
+
+
+    before_df = (
+        before[cols]
+        .rename(
+            columns={
+                c:
+                f"before_{c}"
+                for c in cols
+                if c != "platform"
+            }
+        )
+    )
+
+
+    after_df = (
+        after[cols]
+        .rename(
+            columns={
+                c:
+                f"after_{c}"
+                for c in cols
+                if c != "platform"
+            }
+        )
+    )
+
+
+
+    merged = before_df.merge(
+        after_df,
+        on="platform",
+        how="inner",
+    )
+
+
+
+    merged["semantic_change"] = (
+        merged["after_semantic_score"]
+        -
+        merged["before_semantic_score"]
+    )
+
+
+    merged["platform_change"] = (
+        merged["after_platform_suitability_score"]
+        -
+        merged["before_platform_suitability_score"]
+    )
+
+
+    merged["engagement_change"] = (
+        merged["after_engagement_score"]
+        -
+        merged["before_engagement_score"]
+    )
+
+
+    merged["final_score_change"] = (
+        merged["after_final_score"]
+        -
+        merged["before_final_score"]
+    )
+
+
     return merged
 
 
-def load_cached() -> tuple[pd.DataFrame, pd.DataFrame]:
-    return pd.read_csv(config.OPTIMIZED_RANKED_CSV), pd.read_csv(config.COMPARISON_CSV)
+
+# ---------------------------------------------------------
+# Cache loader
+# ---------------------------------------------------------
+
+def load_cached():
+
+    return (
+
+        pd.read_csv(
+            config.OPTIMIZED_RANKED_CSV
+        ),
+
+        pd.read_csv(
+            config.COMPARISON_CSV
+        ),
+
+    )

@@ -1,123 +1,375 @@
-"""Semantic similarity + platform suitability + final composite score."""
+"""
+Evaluation and ranking stage.
+
+Responsibilities:
+- Calculate semantic similarity.
+- Measure platform suitability.
+- Combine scores.
+- Rank generated marketing assets.
+
+Cache handling is managed by:
+    main.py
+    pipeline_cache.py
+"""
 
 import ast
 
 import pandas as pd
+
 from sentence_transformers import util
 
 import config
+
 from models import get_semantic_model
-
-
-def semantic_score(source_text: str, generated_text: str) -> float:
-    sm = get_semantic_model()
-    src = sm.encode(str(source_text), convert_to_tensor=True)
-    gen = sm.encode(str(generated_text), convert_to_tensor=True)
-    return float(util.cos_sim(src, gen).item())
 
 
 MIN_PROMPT_WORDS = 8
 
 
-def as_text(value) -> str:
-    """Read a possibly-missing cell as text.
-
-    A CSV round-trip turns "" into NaN. NaN is truthy, so `value or ""` yields
-    NaN and str() then produces the literal string "nan" — which reads as
-    present content to any emptiness check.
+def semantic_score(
+    source_text: str,
+    generated_text: str,
+) -> float:
     """
+    Calculate semantic similarity between
+    business summary and generated caption.
+    """
+
+    model = get_semantic_model()
+
+    source_embedding = model.encode(
+        str(source_text),
+        convert_to_tensor=True,
+    )
+
+    generated_embedding = model.encode(
+        str(generated_text),
+        convert_to_tensor=True,
+    )
+
+    return float(
+        util.cos_sim(
+            source_embedding,
+            generated_embedding,
+        ).item()
+    )
+
+
+def as_text(value) -> str:
+    """
+    Safely convert dataframe values into text.
+    """
+
     if value is None:
         return ""
+
     try:
+
         if pd.isna(value):
             return ""
-    except (TypeError, ValueError):
+
+    except (
+        TypeError,
+        ValueError,
+    ):
         pass
+
     return str(value)
 
 
 def _as_list(value) -> list:
-    """hashtags survive a CSV round-trip as a string; accept either form."""
-    if isinstance(value, list):
+    """
+    Convert hashtag strings back into lists.
+    """
+
+    if isinstance(
+        value,
+        list,
+    ):
         return value
-    if value is None or (isinstance(value, float) and pd.isna(value)):
+
+
+    if value is None:
         return []
-    text = str(value).strip()
-    if not text or text in {"[]", "nan"}:
-        return []
+
+
     try:
-        parsed = ast.literal_eval(text)
-        if isinstance(parsed, list):
-            return parsed
-    except (ValueError, SyntaxError):
+
+        if pd.isna(value):
+            return []
+
+    except (
+        TypeError,
+        ValueError,
+    ):
         pass
+
+
+    text = str(value).strip()
+
+
+    if not text or text == "[]":
+        return []
+
+
+    try:
+
+        parsed = ast.literal_eval(text)
+
+        if isinstance(
+            parsed,
+            list,
+        ):
+            return parsed
+
+    except (
+        ValueError,
+        SyntaxError,
+    ):
+        pass
+
+
     return [text]
 
 
-def platform_suitability(row) -> float:
-    """Fraction of this platform's applicable criteria that the asset meets.
-
-    Criteria are derived from config.PLATFORM_SPECS, so a platform is only
-    judged on the creative prompt it actually needs. Scoring a platform on a
-    prompt it was never asked to produce would penalise correct output.
+def platform_suitability(
+    row,
+) -> float:
     """
-    platform = str(row["platform"]).lower()
-    spec = config.platform_spec(platform)
+    Evaluate whether generated content follows
+    platform requirements.
+    """
 
-    caption = as_text(row.get("caption"))
-    cta = as_text(row.get("cta"))
-    image_prompt = as_text(row.get("image_prompt"))
-    shorts_prompt = as_text(row.get("shorts_prompt"))
+    platform = str(
+        row["platform"]
+    ).lower()
 
-    word_count = len(caption.split())
-    hashtag_count = len(_as_list(row.get("hashtags")))
+
+    spec = config.platform_spec(
+        platform
+    )
+
+
+    caption = as_text(
+        row.get("caption")
+    )
+
+    cta = as_text(
+        row.get("cta")
+    )
+
+    image_prompt = as_text(
+        row.get("image_prompt")
+    )
+
+    shorts_prompt = as_text(
+        row.get("shorts_prompt")
+    )
+
+
+    caption_words = len(
+        caption.split()
+    )
+
+
+    hashtags = len(
+        _as_list(
+            row.get("hashtags")
+        )
+    )
+
+
+    checks = []
+
 
     low, high = spec["caption_words"]
-    checks = [low <= word_count <= high]
 
-    least, most = spec["hashtag_range"]
-    checks.append(least <= hashtag_count <= most)
+    checks.append(
+        low <= caption_words <= high
+    )
 
-    checks.append(len(cta.strip()) > 0)
+
+    least, maximum = spec["hashtag_range"]
+
+    checks.append(
+        least <= hashtags <= maximum
+    )
+
+
+    checks.append(
+        len(cta.strip()) > 0
+    )
+
 
     if spec["visual"] == "image":
-        checks.append(len(image_prompt.split()) >= MIN_PROMPT_WORDS)
-        # A still-image placement must not carry a video prompt.
-        checks.append(not shorts_prompt.strip())
-    elif spec["visual"] == "video":
-        checks.append(len(shorts_prompt.split()) >= MIN_PROMPT_WORDS)
+
         checks.append(
-            "show" in shorts_prompt.lower() or "scene" in shorts_prompt.lower()
+            len(
+                image_prompt.split()
+            )
+            >= MIN_PROMPT_WORDS
         )
-        checks.append(not image_prompt.strip())
+
+        checks.append(
+            not shorts_prompt.strip()
+        )
+
+
+    elif spec["visual"] == "video":
+
+        checks.append(
+            len(
+                shorts_prompt.split()
+            )
+            >= MIN_PROMPT_WORDS
+        )
+
+        checks.append(
+            (
+                "scene"
+                in shorts_prompt.lower()
+            )
+            or
+            (
+                "show"
+                in shorts_prompt.lower()
+            )
+        )
+
+        checks.append(
+            not image_prompt.strip()
+        )
+
 
     if platform == "email":
-        checks.append("subject" in caption.lower())
 
-    return sum(bool(c) for c in checks) / len(checks)
+        checks.append(
+            "subject"
+            in caption.lower()
+        )
 
 
-def run(generated_assets_df: pd.DataFrame, marketing_summary: dict) -> pd.DataFrame:
-    """Adds semantic_score, platform_suitability_score, final_score and ranks."""
-    src = marketing_summary["summary"]
-    generated_assets_df["semantic_score"] = generated_assets_df["caption"].apply(
-        lambda c: semantic_score(src, c)
+    return sum(
+        bool(check)
+        for check in checks
+    ) / len(checks)
+
+
+
+def run(
+    generated_assets_df: pd.DataFrame,
+    marketing_summary: dict,
+) -> pd.DataFrame:
+    """
+    Evaluate and rank generated assets.
+    """
+
+
+    source_summary = marketing_summary.get(
+        "summary",
+        "",
     )
-    generated_assets_df["platform_suitability_score"] = generated_assets_df.apply(
-        platform_suitability, axis=1
+
+
+    dataframe = generated_assets_df.copy()
+
+
+    dataframe["semantic_score"] = (
+        dataframe["caption"]
+        .apply(
+            lambda text:
+            semantic_score(
+                source_summary,
+                text,
+            )
+        )
     )
-    generated_assets_df["final_score"] = (
-        config.SEMANTIC_WEIGHT * generated_assets_df["semantic_score"]
-        + config.PLATFORM_WEIGHT * generated_assets_df["platform_suitability_score"]
-        + config.ENGAGEMENT_WEIGHT * generated_assets_df["engagement_score"]
+
+
+    dataframe[
+        "platform_suitability_score"
+    ] = dataframe.apply(
+        platform_suitability,
+        axis=1,
     )
-    ranked = generated_assets_df.sort_values("final_score", ascending=False).reset_index(drop=True)
-    ranked.to_csv(config.RANKED_CSV, index=False)
-    print(f"Ranked assets saved → {config.RANKED_CSV}")
-    print(ranked[["platform", "semantic_score", "platform_suitability_score",
-                  "engagement_score", "final_score"]].to_string())
+
+
+    dataframe[
+        "final_score"
+    ] = (
+
+        config.SEMANTIC_WEIGHT
+        *
+        dataframe["semantic_score"]
+
+        +
+
+        config.PLATFORM_WEIGHT
+        *
+        dataframe[
+            "platform_suitability_score"
+        ]
+
+        +
+
+        config.ENGAGEMENT_WEIGHT
+        *
+        dataframe[
+            "engagement_score"
+        ]
+
+    )
+
+
+    ranked = (
+        dataframe
+        .sort_values(
+            "final_score",
+            ascending=False,
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+
+    ranked.to_csv(
+        config.RANKED_CSV,
+        index=False,
+    )
+
+
+    print(
+        f"Ranked assets saved → "
+        f"{config.RANKED_CSV}"
+    )
+
+
+    print(
+        ranked[
+            [
+                "platform",
+                "semantic_score",
+                "platform_suitability_score",
+                "engagement_score",
+                "final_score",
+            ]
+        ]
+        .to_string(
+            index=False
+        )
+    )
+
+
     return ranked
 
 
+
 def load_cached() -> pd.DataFrame:
-    return pd.read_csv(config.RANKED_CSV)
+    """
+    Load cached ranking output.
+    """
+
+    return pd.read_csv(
+        config.RANKED_CSV
+    )
