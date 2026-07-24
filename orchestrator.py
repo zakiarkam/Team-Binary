@@ -123,6 +123,60 @@ def _read_csv_records(path: Path) -> list[dict]:
     return pd.read_csv(path).to_dict(orient="records") if path.exists() else []
 
 
+def _recommendation_summary(records: list[dict], source: str) -> dict[str, Any]:
+    """Aggregate per-user recommendations + a diverse sample for display."""
+    from collections import Counter
+    n = len(records) or 1
+    mix = dict(Counter(r["recommendation"] for r in records))
+    top = sorted(records, key=lambda r: r["predicted_conversion"], reverse=True)[:20]
+    risk = sorted(records, key=lambda r: r["drop_off_risk"], reverse=True)[:12]
+    seen, sample = set(), []
+    for r in top + risk:
+        if r["user_id"] in seen:
+            continue
+        seen.add(r["user_id"])
+        sample.append({k: r[k] for k in ("user_id", "predicted_conversion",
+                       "drop_off_risk", "recommendation", "recommended_platform", "confidence")})
+    return {
+        "source": source,
+        "n_users": len(records),
+        "mix": mix,
+        "avg_predicted_conversion": round(sum(r["predicted_conversion"] for r in records) / n, 4),
+        "avg_drop_off_risk": round(sum(r["drop_off_risk"] for r in records) / n, 4),
+        "high_intent_users": sum(1 for r in records if r["predicted_conversion"] >= 0.5),
+        "at_risk_users": sum(1 for r in records if r["drop_off_risk"] >= 0.6),
+        "sample": sample,
+    }
+
+
+def _per_user_recommendations(m2_events: pd.DataFrame,
+                              log: Callable[[str], None] | None = None) -> dict[str, Any]:
+    """Run Module 3's recommender (trained XGBoost models) on the REAL campaign users.
+
+    Falls back to Module 3's committed validated cohort if the live run fails.
+    """
+    import sys as _sys
+    records, source = None, ""
+    try:
+        _sys.path.insert(0, str(M3_DIR))
+        from src.recommender import build_recommendations, validate_output  # type: ignore
+        long = m2_to_m3.wide_to_long(m2_events)
+        long["timestamp"] = pd.to_datetime(long["timestamp"])
+        segments = m2_to_m3.segments_to_m3(pd.read_csv(M1_SEGMENTS))
+        records = build_recommendations(long, segments, ROOT / "outputs" / "models")
+        validate_output(records)
+        source = "real campaign users (trained XGBoost models)"
+        _log(log, f"[M3] per-user recommendations for {len(records):,} real users.")
+    except Exception as exc:
+        _log(log, f"[M3] live per-user run unavailable ({str(exc)[:80]}); using validated cohort.")
+        records = json.loads((M3_REPORTS / "analytics_output.json").read_text())
+        source = "validated analytics cohort (simulated)"
+    finally:
+        if str(M3_DIR) in _sys.path:
+            _sys.path.remove(str(M3_DIR))
+    return _recommendation_summary(records, source)
+
+
 def run_analytics(m2_events: pd.DataFrame,
                   log: Callable[[str], None] | None = None) -> dict[str, Any]:
     """Real-data funnel on the M2 campaign + M3's validated multi-platform study."""
@@ -131,11 +185,15 @@ def run_analytics(m2_events: pd.DataFrame,
     real_drop = m2_to_m3.dropoffs(real_funnel)
     by_strategy = m2_to_m3.funnel_by_strategy(m2_events).reset_index().to_dict(orient="records")
 
+    _log(log, "[M3] generating per-user recommendations…")
+    recommendations = _per_user_recommendations(m2_events, log)
+
     _log(log, "[M3] loading validated attribution / prediction study…")
     analytics = {
         "real_funnel": real_funnel,
         "real_dropoffs": real_drop,
         "real_funnel_by_strategy": by_strategy,
+        "recommendations": recommendations,
         # M3's validated multi-platform research artifacts (committed):
         "attribution_mae": _read_csv_records(M3_REPORTS / "attribution_mae.csv"),
         "model_metrics": _read_csv_records(M3_REPORTS / "model_metrics.csv"),

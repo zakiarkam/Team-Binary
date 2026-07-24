@@ -174,6 +174,51 @@ with tabs[2]:
         for col, (label, rate) in zip(dc, drop.items()):
             col.metric(f"Drop-off · {label}", f"{rate:.1%}")
 
+    # ---- Per-user recommendations (Module 3 decision support) ----
+    rec = bundle["analytics"].get("recommendations", {})
+    if rec:
+        with st.container(border=True):
+            lib.section("Per-user recommendations",
+                        f"Predicted conversion, drop-off risk & next-best action · {rec.get('source','—')}")
+            m = st.columns(4)
+            m[0].metric("Avg conversion likelihood", f"{rec.get('avg_predicted_conversion',0):.1%}")
+            m[1].metric("Avg drop-off risk", f"{rec.get('avg_drop_off_risk',0):.1%}")
+            m[2].metric("High-intent users", f"{rec.get('high_intent_users',0):,}")
+            m[3].metric("At-risk users", f"{rec.get('at_risk_users',0):,}")
+
+            mix = rec.get("mix", {})
+            if mix:
+                mixdf = (pd.DataFrame({"action": list(mix), "users": list(mix.values())})
+                         .sort_values("users", ascending=False))
+                st.altair_chart(alt.Chart(mixdf).mark_bar(cornerRadiusEnd=5, height=24).encode(
+                    x=alt.X("users:Q", title="Users"),
+                    y=alt.Y("action:N", sort="-x", title=None),
+                    color=alt.Color("action:N", legend=None,
+                                    scale=alt.Scale(range=[lib.GREEN, lib.BLUE, lib.AMBER, lib.PURPLE])),
+                    tooltip=["action", "users"]).properties(height=170),
+                    use_container_width=True)
+
+            sample = rec.get("sample", [])
+            if sample:
+                df = pd.DataFrame(sample)
+                df["conversion"] = df["predicted_conversion"] * 100
+                df["dropoff"] = df["drop_off_risk"] * 100
+                st.markdown("**Sample users — top prospects & at-risk**")
+                st.dataframe(
+                    df[["user_id", "conversion", "dropoff", "recommendation",
+                        "recommended_platform", "confidence"]],
+                    use_container_width=True, hide_index=True,
+                    column_config={
+                        "user_id": "User",
+                        "conversion": st.column_config.ProgressColumn(
+                            "Conversion likelihood", format="%.0f%%", min_value=0, max_value=100),
+                        "dropoff": st.column_config.ProgressColumn(
+                            "Drop-off risk", format="%.0f%%", min_value=0, max_value=100),
+                        "recommendation": "Next-best action",
+                        "recommended_platform": "Platform",
+                        "confidence": st.column_config.NumberColumn("Confidence", format="%.2f"),
+                    })
+
     with st.container(border=True):
         lib.section("System insights", "Analytics → decision support")
         for ins in bundle["analytics"].get("insights", []):
