@@ -483,3 +483,8 @@ STAGE_HASHES = {
     "summary": DATA / "summary.hash",
     "generate": DATA / "generate.hash",
 }
+
+DATASET_HASH_FIELDS = [
+    "dataset_path",
+    "label_threshold",
+]

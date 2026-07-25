@@ -125,6 +125,13 @@ def run_pipeline(stages: list[str], force: bool = False):
         "generation_hash"
     )
 
+    previous_dataset_hash = previous_metadata.get(
+        "dataset_hash"
+    )
+
+    dataset_changed = (
+        previous_dataset_hash != dataset_hash
+    )
 
     content_changed = (
         previous_content_hash != content_hash
@@ -140,21 +147,28 @@ def run_pipeline(stages: list[str], force: bool = False):
         module_input,
         config.USER_INPUT_HASH_FIELDS
     )
-    
+
+    dataset_hash = pipeline_cache.calculate_hash(
+        module_input,
+        config.DATASET_HASH_FIELDS
+    )
+     
     if content_changed:
 
         print("[cache] website input changed")
 
         pipeline_cache.invalidate("crawl")
 
-        # remove metadata
-        pipeline_cache.clear_metadata(
-            config.PIPELINE_METADATA_JSON
-        )
-
-        pipeline_cache.save_hash(
+        pipeline_cache.save_stage_metadata(
             config.PIPELINE_METADATA_JSON,
-            current_hash
+            {
+                "content_hash": content_hash,
+                "generation_hash": generation_hash,
+                "hash": current_hash,
+                "dataset_hash": dataset_hash,
+                "completed_stages": stages,
+                "last_run": str(datetime.now())
+            }
         )
     elif generation_changed:
 
@@ -229,7 +243,12 @@ def run_pipeline(stages: list[str], force: bool = False):
 
     if "label-goal" in stages:
         from dataset import label_campaign_goal
-        label_campaign_goal.run(["--force"] if force else [])
+        if force or dataset_changed or not config.GOAL_LABELED_DATASET.exists():
+            label_campaign_goal.run(
+                ["--force"] if force else []
+            )
+        else:
+            print("[cache-hit] label-goal")
 
     if "label-tone" in stages:
         from dataset import label_tone
