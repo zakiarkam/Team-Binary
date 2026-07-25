@@ -1,29 +1,29 @@
 {
-  "dataset_path": "/Users/arkamzakir/Documents/Research/Research/data/processed/goal_tone_dataset_training.csv",
-  "dataset_rows": 121,
+  "dataset_path": "/Users/aadhil/Documents/Sem/research/Marketing/ai_marketing_research/Team-Binary/data/processed/goal_tone_dataset_training.csv",
+  "dataset_rows": 113,
   "selection": {
-    "best_goal_model_type": "tfidf_logistic",
+    "best_goal_model_type": "sentencebert_xgboost",
     "best_tone_model_type": "tfidf_logistic"
   },
   "results": [
     {
       "target": "campaign_goal",
       "model": "tfidf_logistic",
-      "accuracy": 0.75,
-      "weighted_f1": 0.740995,
-      "macro_f1": 0.554029,
+      "accuracy": 0.695652,
+      "weighted_f1": 0.638127,
+      "macro_f1": 0.387692,
       "classification_report": {
         "awareness": {
-          "precision": 0.9166666666666666,
-          "recall": 0.9166666666666666,
-          "f1-score": 0.9166666666666666,
-          "support": 12.0
+          "precision": 0.6666666666666666,
+          "recall": 0.9090909090909091,
+          "f1-score": 0.7692307692307693,
+          "support": 11.0
         },
         "conversion": {
-          "precision": 0.6666666666666666,
-          "recall": 0.5714285714285714,
-          "f1-score": 0.6153846153846154,
-          "support": 7.0
+          "precision": 0.7142857142857143,
+          "recall": 0.8333333333333334,
+          "f1-score": 0.7692307692307693,
+          "support": 6.0
         },
         "engagement": {
           "precision": 0.0,
@@ -33,68 +33,172 @@
         },
         "lead_generation": {
           "precision": 1.0,
-          "recall": 0.5,
-          "f1-score": 0.6666666666666666,
-          "support": 2.0
+          "recall": 0.25,
+          "f1-score": 0.4,
+          "support": 4.0
         },
         "retention": {
-          "precision": 0.4,
-          "recall": 1.0,
-          "f1-score": 0.5714285714285714,
-          "support": 2.0
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1.0
         },
-        "accuracy": 0.75,
+        "accuracy": 0.6956521739130435,
         "macro avg": {
-          "precision": 0.5966666666666666,
-          "recall": 0.5976190476190476,
-          "f1-score": 0.5540293040293041,
-          "support": 24.0
+          "precision": 0.47619047619047616,
+          "recall": 0.3984848484848485,
+          "f1-score": 0.3876923076923077,
+          "support": 23.0
         },
         "weighted avg": {
-          "precision": 0.7694444444444444,
-          "recall": 0.75,
-          "f1-score": 0.740995115995116,
-          "support": 24.0
+          "precision": 0.6790890269151139,
+          "recall": 0.6956521739130435,
+          "f1-score": 0.6381270903010033,
+          "support": 23.0
+        }
+      }
+    },
+    {
+      "target": "campaign_goal",
+      "model": "sentencebert_xgboost",
+      "accuracy": 0.782609,
+      "weighted_f1": 0.71505,
+      "macro_f1": 0.433846,
+      "classification_report": {
+        "awareness": {
+          "precision": 0.7333333333333333,
+          "recall": 1.0,
+          "f1-score": 0.8461538461538461,
+          "support": 11.0
+        },
+        "conversion": {
+          "precision": 0.8571428571428571,
+          "recall": 1.0,
+          "f1-score": 0.9230769230769231,
+          "support": 6.0
+        },
+        "engagement": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1.0
+        },
+        "lead_generation": {
+          "precision": 1.0,
+          "recall": 0.25,
+          "f1-score": 0.4,
+          "support": 4.0
+        },
+        "retention": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 1.0
+        },
+        "accuracy": 0.782608695652174,
+        "macro avg": {
+          "precision": 0.518095238095238,
+          "recall": 0.45,
+          "f1-score": 0.4338461538461538,
+          "support": 23.0
+        },
+        "weighted avg": {
+          "precision": 0.74824016563147,
+          "recall": 0.782608695652174,
+          "f1-score": 0.7150501672240803,
+          "support": 23.0
         }
       }
     },
     {
       "target": "tone",
       "model": "tfidf_logistic",
-      "accuracy": 1.0,
-      "weighted_f1": 1.0,
-      "macro_f1": 1.0,
+      "accuracy": 0.869565,
+      "weighted_f1": 0.875454,
+      "macro_f1": 0.880224,
       "classification_report": {
-        "luxury": {
+        "friendly": {
           "precision": 1.0,
           "recall": 1.0,
           "f1-score": 1.0,
           "support": 1.0
         },
-        "persuasive": {
-          "precision": 1.0,
+        "luxury": {
+          "precision": 0.6,
           "recall": 1.0,
-          "f1-score": 1.0,
-          "support": 18.0
+          "f1-score": 0.75,
+          "support": 3.0
+        },
+        "persuasive": {
+          "precision": 0.875,
+          "recall": 0.7777777777777778,
+          "f1-score": 0.8235294117647058,
+          "support": 9.0
         },
         "professional": {
           "precision": 1.0,
-          "recall": 1.0,
-          "f1-score": 1.0,
-          "support": 5.0
+          "recall": 0.9,
+          "f1-score": 0.9473684210526315,
+          "support": 10.0
         },
-        "accuracy": 1.0,
+        "accuracy": 0.8695652173913043,
         "macro avg": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1-score": 1.0,
-          "support": 24.0
+          "precision": 0.86875,
+          "recall": 0.9194444444444444,
+          "f1-score": 0.8802244582043343,
+          "support": 23.0
         },
         "weighted avg": {
-          "precision": 1.0,
+          "precision": 0.898913043478261,
+          "recall": 0.8695652173913043,
+          "f1-score": 0.8754543007134202,
+          "support": 23.0
+        }
+      }
+    },
+    {
+      "target": "tone",
+      "model": "sentencebert_xgboost",
+      "accuracy": 0.869565,
+      "weighted_f1": 0.863768,
+      "macro_f1": 0.740351,
+      "classification_report": {
+        "friendly": {
+          "precision": 0.5,
           "recall": 1.0,
-          "f1-score": 1.0,
-          "support": 24.0
+          "f1-score": 0.6666666666666666,
+          "support": 1.0
+        },
+        "luxury": {
+          "precision": 0.5,
+          "recall": 0.3333333333333333,
+          "f1-score": 0.4,
+          "support": 3.0
+        },
+        "persuasive": {
+          "precision": 0.9,
+          "recall": 1.0,
+          "f1-score": 0.9473684210526315,
+          "support": 9.0
+        },
+        "professional": {
+          "precision": 1.0,
+          "recall": 0.9,
+          "f1-score": 0.9473684210526315,
+          "support": 10.0
+        },
+        "accuracy": 0.8695652173913043,
+        "macro avg": {
+          "precision": 0.725,
+          "recall": 0.8083333333333332,
+          "f1-score": 0.7403508771929824,
+          "support": 23.0
+        },
+        "weighted avg": {
+          "precision": 0.8739130434782609,
+          "recall": 0.8695652173913043,
+          "f1-score": 0.863768115942029,
+          "support": 23.0
         }
       }
     }

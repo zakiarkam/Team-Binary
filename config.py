@@ -453,6 +453,16 @@ PIPELINE_STAGE_OUTPUTS = {
 PIPELINE_HASH_FIELDS = [
     "product_name",
     "website_url",
+]
+
+
+CONTENT_HASH_FIELDS = [
+    "product_name",
+    "website_url",
+]
+
+
+GENERATION_HASH_FIELDS = [
     "target_audience",
     "customer_segment",
     "preferred_platforms",
@@ -467,3 +477,9 @@ USER_INPUT_HASH_FIELDS = [
     "customer_segment",
     "preferred_platforms",
 ]
+
+STAGE_HASHES = {
+    "crawl": DATA / "crawl.hash",
+    "summary": DATA / "summary.hash",
+    "generate": DATA / "generate.hash",
+}

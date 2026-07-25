@@ -193,11 +193,27 @@ def load_labeled_dataset() -> pd.DataFrame:
 
         if not small_classes.empty:
 
-            raise ValueError(
-                f"Every {target_column} class requires at least "
-                "two training rows. Small classes: "
-                f"{small_classes.to_dict()}"
+            print(
+                f"Warning: dropping {target_column} classes with fewer "
+                "than two training rows (stratified train/test splitting "
+                f"needs at least two): {small_classes.to_dict()}"
             )
+
+            dataframe = dataframe[
+                ~dataframe[target_column].isin(
+                    small_classes.index,
+                )
+            ].reset_index(
+                drop=True,
+            )
+
+    if dataframe.empty:
+
+        raise ValueError(
+            "No training rows remain after dropping sparse goal/tone "
+            "classes. Lower the confidence thresholds in "
+            "dataset/build_final_dataset.py or gather more labeled data."
+        )
 
     print(
         "Loaded goal/tone training rows: "
@@ -480,6 +496,7 @@ def train() -> dict[str, str]:
             create_tfidf_pipeline()
         )
 
+        print("1")
         tfidf_model.fit(
             dataframe.iloc[
                 train_indexes
@@ -488,6 +505,8 @@ def train() -> dict[str, str]:
                 train_indexes
             ],
         )
+        print("2")
+        print("3")
 
         tfidf_predictions = (
             tfidf_model.predict(
@@ -496,6 +515,7 @@ def train() -> dict[str, str]:
                 ][TEXT_COLUMN]
             )
         )
+        print("4")
 
         tfidf_metrics = (
             calculate_metrics(
@@ -541,7 +561,12 @@ def train() -> dict[str, str]:
                 ),
             )
         )
+        print("5")
 
+        print(embeddings.shape)
+        print(embeddings.dtype)
+        print(encoded_labels.shape)
+        print(encoded_labels.dtype)
         xgboost_model.fit(
             embeddings[
                 train_indexes
@@ -550,6 +575,7 @@ def train() -> dict[str, str]:
                 train_indexes
             ],
         )
+        print("6")
 
         encoded_predictions = (
             xgboost_model

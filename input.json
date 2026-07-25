@@ -1,12 +1,12 @@
 {
-    "product_name": "Canva",
-    "website_url": "https://www.canva.com",
-    "target_audience": "students, marketers, educators, and small businesses",
-    "customer_segment": "graphic design beginners and content creators",
+    "product_name": "Slack",
+    "website_url": "https://slack.com",
+    "target_audience": "business professionals and remote teams",
+    "customer_segment": "organizations seeking workplace communication",
     "preferred_platforms": [
-        "instagram",
         "linkedin",
-        "tiktok",
-        "email"
+        "instagram",
+        "email",
+        "tiktok"
     ]
 }

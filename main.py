@@ -71,28 +71,80 @@ def _calculate_pipeline_hash(module_input: dict) -> str:
         config.PIPELINE_HASH_FIELDS
     )
 
+def stage_changed(name, current_hash):
+
+    path = config.STAGE_HASHES[name]
+
+    if not path.exists():
+        path.write_text(current_hash)
+        return True
+
+
+    old = path.read_text()
+
+
+    if old != current_hash:
+        path.write_text(current_hash)
+        return True
+
+
+    return False
 
 def run_pipeline(stages: list[str], force: bool = False):
     module_input = _load_input()
 
-    current_hash = _calculate_pipeline_hash(
-        module_input
+    content_hash = pipeline_cache.calculate_hash(
+        module_input,
+        config.CONTENT_HASH_FIELDS
     )
 
-    previous_hash = pipeline_cache.load_hash(
-        config.PIPELINE_METADATA_JSON
+
+    generation_hash = pipeline_cache.calculate_hash(
+        module_input,
+        config.GENERATION_HASH_FIELDS
+    )
+
+
+    previous_metadata = {}
+
+    if config.PIPELINE_METADATA_JSON.exists():
+
+        with open(
+            config.PIPELINE_METADATA_JSON,
+            encoding="utf-8"
+        ) as f:
+            previous_metadata = json.load(f)
+
+
+    previous_content_hash = previous_metadata.get(
+        "content_hash"
+    )
+
+
+    previous_generation_hash = previous_metadata.get(
+        "generation_hash"
+    )
+
+
+    content_changed = (
+        previous_content_hash != content_hash
+    )
+
+
+    generation_changed = (
+        previous_generation_hash != generation_hash
+    )
+
+
+    current_hash = pipeline_cache.calculate_hash(
+        module_input,
+        config.USER_INPUT_HASH_FIELDS
     )
     
-    cache_changed = (
-        previous_hash is None
-        or previous_hash != current_hash
-    )
-    
-    if cache_changed:
+    if content_changed:
 
-        print("[cache] input changed")
+        print("[cache] website input changed")
 
-        # delete downstream cache files
         pipeline_cache.invalidate("crawl")
 
         # remove metadata
@@ -104,6 +156,13 @@ def run_pipeline(stages: list[str], force: bool = False):
             config.PIPELINE_METADATA_JSON,
             current_hash
         )
+    elif generation_changed:
+
+        print("[cache] generation parameters changed")
+
+        pipeline_cache.invalidate(
+            "goal-tone-predict"
+        )
 
     else:
         print(
@@ -111,8 +170,8 @@ def run_pipeline(stages: list[str], force: bool = False):
             "using stage cache"
         )
 
-    upstream_changed = cache_changed
-    
+    upstream_changed = content_changed
+
     # Stage outputs we may reuse
     website_data = None
     kb = None
@@ -124,7 +183,7 @@ def run_pipeline(stages: list[str], force: bool = False):
 
     if "crawl" in stages:
         import crawler
-        if force  or cache_changed or not _exists(config.CRAWL_JSON):
+        if force  or content_changed or not _exists(config.CRAWL_JSON):
             website_data = crawler.run(module_input)
         else:
             # print(f"[skip] crawl ({config.CRAWL_JSON.name} exists)")
@@ -167,7 +226,17 @@ def run_pipeline(stages: list[str], force: bool = False):
 
     if "label-tone" in stages:
         from dataset import label_tone
-        label_tone.run(["--force"] if force else [])
+        if (
+            force
+            or not config.TONE_LABELED_DATASET.exists()
+        ):
+            label_tone.run(
+                ["--force"]
+                if force
+                else []
+            )
+        else:
+            print("[cache-hit] label-tone")
 
     if "build-dataset" in stages:
         from dataset import build_final_dataset
@@ -248,7 +317,20 @@ def run_pipeline(stages: list[str], force: bool = False):
         if kb is None:
             kb = knowledge_base.load_cached()
         summary_reran = False
-        if force or upstream_changed or not _exists(config.SUMMARY_JSON):
+        summary_hash = pipeline_cache.calculate_hash(
+            module_input,
+            config.PIPELINE_HASH_FIELDS
+        )
+
+
+        if (
+            force
+            or stage_changed(
+                "summary",
+                summary_hash
+            )
+            or not _exists(config.SUMMARY_JSON)
+        ):
             marketing_summary = summary.run(kb)
             summary_reran = True
         else:
@@ -315,7 +397,7 @@ def run_pipeline(stages: list[str], force: bool = False):
             ranked_df = evaluation.load_cached()
         optimization_reran = False
 
-        if force or upstream_changed or not _exists(config.OPTIMIZED_RANKED_CSV):
+        if force or not _exists(config.OPTIMIZED_RANKED_CSV):
             optimized_ranked, comparison = optimization.run(
                 ranked_df,
                 marketing_summary
@@ -409,7 +491,13 @@ def run_pipeline(stages: list[str], force: bool = False):
         config.PIPELINE_METADATA_JSON,
         {
             "hash": current_hash,
+
+            "content_hash": content_hash,
+
+            "generation_hash": generation_hash,
+
             "completed_stages": stages,
+
             "last_run": str(datetime.now())
         }
     )
