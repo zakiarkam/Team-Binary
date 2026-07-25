@@ -20,6 +20,11 @@ from pathlib import Path
 
 import pandas as pd
 from transformers import pipeline
+from utils.cache import (
+    file_hash,
+    save_hash,
+    load_hash,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -802,6 +807,10 @@ def label_dataset(
         )
 
     checkpoint_path = output_path.with_suffix(".checkpoint.csv")
+    hash_file = output_path.with_suffix(".hash.json")
+    current_hash = file_hash(input_path)
+
+    old_hash = load_hash(hash_file)
 
     if checkpoint_path.exists() and not force:
 
@@ -826,7 +835,11 @@ def label_dataset(
 
         print(f"Resuming Phi-3 from row {resume_from}")
     
-    elif output_path.exists() and not force:
+    elif (
+        output_path.exists()
+        and not force
+        and old_hash == current_hash
+    ):
         print(
             "Goal labels already exist."
         )
@@ -1140,7 +1153,11 @@ def label_dataset(
         output_path,
         index=False,
     )
-
+    save_hash(
+        hash_file,
+        current_hash
+    )
+    
     if checkpoint_path.exists():
         try:
             checkpoint_path.unlink()

@@ -185,6 +185,13 @@ def run_pipeline(stages: list[str], force: bool = False):
         import crawler
         if force  or content_changed or not _exists(config.CRAWL_JSON):
             website_data = crawler.run(module_input)
+            if website_data.get("status") == "failed":
+                print(
+                    "[pipeline] Crawler failed."
+                    "Skipping dependent stages."
+                )
+
+                return
         else:
             # print(f"[skip] crawl ({config.CRAWL_JSON.name} exists)")
             print(

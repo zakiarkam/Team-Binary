@@ -17,3 +17,5 @@ joblib
 datasets
 scipy
 torch
+playwright
+

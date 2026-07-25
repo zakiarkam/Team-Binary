@@ -1,12 +1,12 @@
 {
-    "product_name": "Slack",
-    "website_url": "https://slack.com",
-    "target_audience": "business professionals and remote teams",
-    "customer_segment": "organizations seeking workplace communication",
+    "product_name": "Airbnb",
+    "website_url": "https://www.airbnb.com",
+    "target_audience": "travelers and vacation planners",
+    "customer_segment": "people seeking unique accommodation experiences",
     "preferred_platforms": [
-        "linkedin",
         "instagram",
+        "tiktok",
         "email",
-        "tiktok"
+        "linkedin"
     ]
 }
