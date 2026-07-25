@@ -1,12 +1,12 @@
 {
-    "product_name": "Nike",
-    "website_url": "https://www.nike.com",
-    "target_audience": "athletes and fitness enthusiasts",
-    "customer_segment": "sports apparel and footwear customers",
+    "product_name": "GitHub",
+    "website_url": "https://github.com",
+    "target_audience": "software developers and engineering teams",
+    "customer_segment": "developers using version control and DevOps workflows",
     "preferred_platforms": [
+        "linkedin",
         "instagram",
-        "tiktok",
         "email",
-        "linkedin"
+        "tiktok"
     ]
 }

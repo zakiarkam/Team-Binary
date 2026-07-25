@@ -125,6 +125,11 @@ def run_pipeline(stages: list[str], force: bool = False):
         "generation_hash"
     )
 
+    dataset_hash = pipeline_cache.calculate_hash(
+        module_input,
+        config.DATASET_HASH_FIELDS
+    )
+
     previous_dataset_hash = previous_metadata.get(
         "dataset_hash"
     )
@@ -146,11 +151,6 @@ def run_pipeline(stages: list[str], force: bool = False):
     current_hash = pipeline_cache.calculate_hash(
         module_input,
         config.USER_INPUT_HASH_FIELDS
-    )
-
-    dataset_hash = pipeline_cache.calculate_hash(
-        module_input,
-        config.DATASET_HASH_FIELDS
     )
      
     if content_changed:
