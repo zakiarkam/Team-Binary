@@ -3,7 +3,7 @@ sentence-transformers==2.7.0
 accelerate==0.30.1
 sentencepiece
 scikit-learn
-xgboost
+xgboost==1.7.6
 pandas
 numpy
 matplotlib
@@ -17,3 +17,5 @@ joblib
 datasets
 scipy
 torch
+playwright
+

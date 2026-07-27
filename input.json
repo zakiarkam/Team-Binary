@@ -1,12 +1,12 @@
 {
-    "product_name": "Canva",
-    "website_url": "https://www.canva.com",
-    "target_audience": "students, marketers, educators, and small businesses",
-    "customer_segment": "graphic design beginners and content creators",
+    "product_name": "GitHub",
+    "website_url": "https://github.com",
+    "target_audience": "software developers and engineering teams",
+    "customer_segment": "developers using version control and DevOps workflows",
     "preferred_platforms": [
-        "instagram",
         "linkedin",
-        "tiktok",
-        "email"
+        "instagram",
+        "email",
+        "tiktok"
     ]
 }

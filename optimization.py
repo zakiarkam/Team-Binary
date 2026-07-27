@@ -111,7 +111,16 @@ def _rule(row) -> str:
 
 def _original_creative(row, spec):
 
-    if spec["visual"] == "image":
+    visual = spec.get(
+        "visual",
+        spec.get(
+            "default_visual",
+            "image"
+        )
+    )
+
+
+    if visual == "image":
 
         return (
             "Original Image Prompt:\n"
@@ -119,16 +128,15 @@ def _original_creative(row, spec):
         )
 
 
-    if spec["visual"] == "video":
+    if visual == "video":
 
         return (
-            "Original Shorts Prompt:\n"
+            "Original Video Prompt:\n"
             f"{evaluation.as_text(row.get('shorts_prompt'))}"
         )
 
 
     return ""
-
 
 
 # ---------------------------------------------------------

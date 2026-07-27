@@ -1,7 +1,24 @@
 {
-    "hash": "f735e62e25a21d0789f4c37a07cec350b5e73ca7f52b2d4733e19e897af716ed",
+    "hash": "2b38aee3461ccd6a7c3c649cc62066876daa4e6d4f99a116357210a38f52a3e4",
+    "content_hash": "2b38aee3461ccd6a7c3c649cc62066876daa4e6d4f99a116357210a38f52a3e4",
+    "generation_hash": "92966261675162ddf6becf7e1367eb0644f17c54af5b720bec54d69e8e872bcc",
     "completed_stages": [
-        "engagement-train"
+        "crawl",
+        "kb",
+        "preprocess-dataset",
+        "label-goal",
+        "label-tone",
+        "build-dataset",
+        "goal-tone-train",
+        "goal-tone-predict",
+        "summary",
+        "generate",
+        "engagement-train",
+        "engagement-score",
+        "evaluate",
+        "optimize",
+        "significance",
+        "human-baseline"
     ],
-    "last_run": "2026-07-24 06:40:39.104022"
+    "last_run": "2026-07-25 22:24:26.891397"
 }
