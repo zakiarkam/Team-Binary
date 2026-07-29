@@ -245,7 +245,7 @@ def test_dry_run_records_the_funnel_without_sending(site) -> None:
     assert row["sent_at"] is not None
 
     sent_events = db.fetch_one(
-        """SELECT count(*) c, bool_and(is_real) real FROM interactions
+        """SELECT count(*) c FROM interactions
            WHERE campaign_id=:c AND event_type='sent'""",
         c=created["campaign_id"])
     assert sent_events["c"] == 1
@@ -343,19 +343,19 @@ def test_a_single_send_is_credited_at_most_one_conversion(
 
 # ── Reachable-audience endpoint ──────────────────────────────────────────────
 
-def test_simulated_visitors_never_produce_real_funnel_events(
+def test_dataset_visitors_never_produce_live_funnel_events(
     site, client: TestClient
 ) -> None:
     """The honesty invariant for the whole project.
 
-    Demo traffic goes through the same real endpoints as a genuine visitor, so
-    `is_real` cannot be asserted by the caller — it is derived from whether the
-    visitor is synthetic. Without this, a demo would silently manufacture
-    "real" results.
+    Imported research users go through the same write paths as a live browser,
+    so `source` cannot be asserted by the caller — it is derived from the
+    visitor the event belongs to. Without this, replaying a dataset would
+    silently manufacture results that look observed.
     """
     real_id = _visitor(site["id"], "genuine", "genuine@x.com", True)
-    fake_id = _visitor(site["id"], "demo-fake", "fake@x.com", True)
-    db.execute("UPDATE visitors SET is_synthetic = TRUE WHERE id = :i", i=fake_id)
+    fake_id = _visitor(site["id"], "from-dataset", "ds@example.invalid", True)
+    db.execute("UPDATE visitors SET source = 'dataset' WHERE id = :i", i=fake_id)
 
     created = svc.create_campaign(site["id"], "Mixed", "hybrid")
     email_sender.deliver_due_sends(created["campaign_id"], force=True)
@@ -367,18 +367,18 @@ def test_simulated_visitors_never_produce_real_funnel_events(
         client.get(f"/track/open/{token_row['track_token']}.gif")
 
     flags = {
-        r["visitor_id"]: r["is_real"]
+        r["visitor_id"]: r["source"]
         for r in db.fetch_all(
-            "SELECT DISTINCT visitor_id, is_real FROM interactions WHERE campaign_id=:c",
+            "SELECT DISTINCT visitor_id, source FROM interactions WHERE campaign_id=:c",
             c=created["campaign_id"])
     }
-    assert flags[real_id] is True
-    assert flags[fake_id] is False
+    assert flags[real_id] == "live"
+    assert flags[fake_id] == "dataset"
 
     leaked = db.fetch_one(
         """SELECT count(*) n FROM interactions i
            JOIN visitors v ON v.id = i.visitor_id
-           WHERE i.is_real AND v.is_synthetic""")["n"]
+           WHERE i.source = 'live' AND v.source = 'dataset'""")["n"]
     assert leaked == 0
 
     metrics = svc.campaign_metrics(created["campaign_id"])

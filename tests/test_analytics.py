@@ -46,12 +46,13 @@ def site(client: TestClient):
 
 
 def _visitor(site_id: int, uid: str, utm: str | None = None,
-             synthetic: bool = False, segment: str = "High Intent") -> int:
+             dataset: bool = False, segment: str = "High Intent") -> int:
     row = db.fetch_one(
         """INSERT INTO visitors (site_id, visitor_uid, email, email_consent,
-                                 utm_source, is_synthetic, first_seen)
-           VALUES (:s, :u, :e, TRUE, :utm, :syn, :seen) RETURNING id""",
-        s=site_id, u=uid, e=f"{uid}@x.com", utm=utm, syn=synthetic,
+                                 utm_source, source, first_seen)
+           VALUES (:s, :u, :e, TRUE, :utm, :src, :seen) RETURNING id""",
+        s=site_id, u=uid, e=f"{uid}@x.com", utm=utm,
+        src="dataset" if dataset else "live",
         seen=NOW - timedelta(days=10))
     vid = int(row["id"])
     db.execute(
@@ -70,27 +71,28 @@ def _campaign(site_id: int, strategy: str = "hybrid") -> int:
 
 
 def _interaction(site_id: int, visitor_id: int, campaign_id: int, event: str,
-                 offset_hours: int = 0, is_real: bool = True,
+                 offset_hours: int = 0, source: str = "live",
                  platform: str = "email") -> None:
     db.execute(
         """INSERT INTO interactions (site_id, visitor_id, campaign_id, strategy,
-                                     channel, platform, event_type, is_real,
+                                     channel, platform, event_type, source,
                                      occurred_at)
-           VALUES (:s, :v, :c, 'hybrid', 'email', :p, :e, :r, :t)""",
+           VALUES (:s, :v, :c, 'hybrid', 'email', :p, :e, :src, :t)""",
         s=site_id, v=visitor_id, c=campaign_id, p=platform, e=event,
-        r=is_real, t=NOW - timedelta(days=5) + timedelta(hours=offset_hours))
+        src=source, t=NOW - timedelta(days=5) + timedelta(hours=offset_hours))
 
 
 def _journey(site_id: int, campaign_id: int, uid: str, utm: str,
              convert: bool = True, **kw) -> int:
     """A full sent → open → click (→ convert) journey for one visitor."""
     vid = _visitor(site_id, uid, utm=utm, **kw)
+    source = "dataset" if kw.get("dataset") else "live"
     for i, event in enumerate(["sent", "open", "click"]):
         _interaction(site_id, vid, campaign_id, event, offset_hours=i,
-                     is_real=not kw.get("synthetic", False))
+                     source=source)
     if convert:
         _interaction(site_id, vid, campaign_id, "convert", offset_hours=4,
-                     is_real=not kw.get("synthetic", False))
+                     source=source)
     return vid
 
 
@@ -207,19 +209,20 @@ def test_all_four_attribution_models_run(site) -> None:
 
 # ── Data basis ───────────────────────────────────────────────────────────────
 
-def test_results_declare_real_versus_simulated(site) -> None:
+def test_results_declare_live_versus_dataset(site) -> None:
     cid = _campaign(site["id"])
-    _journey(site["id"], cid, "real1", utm="linkedin", synthetic=False)
-    assert svc.build_funnel(site["id"])["data_basis"] == "real"
+    _journey(site["id"], cid, "real1", utm="linkedin", dataset=False)
+    assert svc.build_funnel(site["id"])["data_basis"] == "live"
 
-    _journey(site["id"], cid, "demo-fake1", utm="google", synthetic=True)
+    _journey(site["id"], cid, "from-dataset", utm="google", dataset=True)
     assert svc.build_funnel(site["id"])["data_basis"] == "mixed"
 
 
-def test_simulated_only_site_is_labelled_simulated(site) -> None:
+def test_dataset_only_site_is_labelled_dataset(site) -> None:
+    """The normal state of the research build: every figure must say so."""
     cid = _campaign(site["id"])
-    _journey(site["id"], cid, "demo-only", utm="linkedin", synthetic=True)
-    assert svc.build_funnel(site["id"])["data_basis"] == "simulated"
+    _journey(site["id"], cid, "ds-only", utm="linkedin", dataset=True)
+    assert svc.build_funnel(site["id"])["data_basis"] == "dataset"
 
 
 # ── Predictions ──────────────────────────────────────────────────────────────

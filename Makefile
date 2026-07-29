@@ -27,7 +27,7 @@ help:  ## Show this help
 	@echo "  make api        # terminal 2"
 	@echo "  make web        # terminal 3"
 	@echo "  make site       # terminal 4"
-	@echo "  make demo       # populate everything"
+	@echo "  make demo       # import the audience and run every module"
 
 setup:  ## Install Python and Node dependencies (one time)
 	$(PIP) install -q -r requirements.txt
@@ -51,11 +51,11 @@ api:  ## Run the FastAPI backend (foreground)
 web:  ## Run the Next.js dashboard (foreground)
 	cd web && npm run dev
 
-site:  ## Serve the demo client website on :4000 (foreground)
+site:  ## Serve the demo client store on :4000 (foreground)
 	python3 -m http.server 4000 --directory demo-site
 
-demo:  ## Populate a complete demonstration (needs db + api + site running)
-	$(PY) scripts/demo_reset.py
+demo:  ## Build the full research demonstration (needs db + api + site running)
+	$(PY) scripts/build_research_demo.py
 
 train:  ## Retrain the Module 4 models
 	$(PY) scripts/train_models.py

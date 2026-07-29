@@ -6,8 +6,9 @@ Three public routes, all reachable from a recipient's email client:
     GET /track/click/{token}/{i}    tracked link     → records a `click`, redirects
     GET /unsubscribe/{token}        one-click opt-out → revokes consent
 
-Every hit writes a row to `interactions` with `is_real = TRUE`, which is what
-makes the Module 3 funnel a measurement rather than a simulation.
+Every hit writes a row to `interactions`, carrying the provenance of the
+visitor it belongs to, which is what lets the Module 3 funnel say whether it
+measured a live browser or replayed the research dataset.
 
 Two design points worth defending in a viva:
 
@@ -82,13 +83,13 @@ def _record(send: dict, event_type: str, request: Request, **meta) -> None:
         """
         INSERT INTO interactions (site_id, visitor_id, campaign_id, send_id,
                                   strategy, channel, platform, event_type,
-                                  is_real, meta)
+                                  source, meta)
         VALUES (:site_id, :visitor_id, :campaign_id, :send_id,
                 :strategy, :channel, :platform, :event_type,
-                -- Derived, never asserted: an event belonging to a simulated
-                -- visitor is not evidence about real people, even though it
-                -- arrived through this real endpoint.
-                (SELECT NOT is_synthetic FROM visitors WHERE id = :visitor_id),
+                -- Derived, never asserted: an event inherits the provenance of
+                -- the visitor it belongs to, even though it arrived through
+                -- this same real endpoint.
+                (SELECT source FROM visitors WHERE id = :visitor_id),
                 CAST(:meta AS jsonb))
         """,
         site_id=send["site_id"],

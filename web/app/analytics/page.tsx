@@ -173,9 +173,9 @@ export default async function AnalyticsPage() {
                   render: (r) => (
                     <span>
                       {r.email ?? `#${r.visitor_id}`}
-                      {r.is_synthetic && (
-                        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-amber-700">
-                          SIM
+                      {r.source === "dataset" && (
+                        <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[0.65rem] font-bold text-slate-600">
+                          DATASET
                         </span>
                       )}
                     </span>

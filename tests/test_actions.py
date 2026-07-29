@@ -168,13 +168,13 @@ def test_marking_an_email_done_records_it_as_self_reported(site) -> None:
     assert result["messages"] >= 1
 
     row = db.fetch_one(
-        """SELECT event_type, meta, is_real FROM interactions
+        """SELECT event_type, meta, source FROM interactions
            WHERE campaign_id = :c LIMIT 1""", c=built["plan_id"])
     assert row["event_type"] == "sent"
     assert row["meta"].get("self_reported") is True, \
         "the platform did not watch it leave; the funnel must say so"
-    # Real visitor → real row. The is_real derivation is unchanged.
-    assert row["is_real"] is True
+    # Live visitor → live row. The `source` derivation is unchanged.
+    assert row["source"] == "live"
 
 
 def test_marking_a_post_done_takes_it_off_the_list(site) -> None:
@@ -196,12 +196,12 @@ def test_marking_a_post_done_takes_it_off_the_list(site) -> None:
     assert done["status"] == "executed" and done["executed_at"] is not None
 
 
-def test_simulated_visitors_never_produce_a_real_self_reported_send(site) -> None:
+def test_dataset_visitors_never_produce_a_live_self_reported_send(site) -> None:
     """The honesty invariant holds on this path too."""
     row = db.fetch_one(
         """INSERT INTO visitors (site_id, visitor_uid, email, email_consent,
-                                 consent_at, is_synthetic)
-           VALUES (:s, 'act-sim', 'sim@example.com', TRUE, now(), TRUE)
+                                 consent_at, source)
+           VALUES (:s, 'act-ds', 'ds@example.invalid', TRUE, now(), 'dataset')
            RETURNING id""", s=site["id"])
     db.execute(
         """INSERT INTO user_segments (site_id, visitor_id, segment_name,
@@ -218,7 +218,8 @@ def test_simulated_visitors_never_produce_a_real_self_reported_send(site) -> Non
     leaked = db.fetch_one(
         """SELECT count(*) AS n FROM interactions i
            JOIN visitors v ON v.id = i.visitor_id
-           WHERE i.site_id = :s AND i.is_real AND v.is_synthetic""",
+           WHERE i.site_id = :s AND i.source = 'live'
+             AND v.source = 'dataset'""",
         s=site["id"])
     assert leaked["n"] == 0
 

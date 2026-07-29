@@ -51,10 +51,11 @@ interface Provenance {
     }[];
   } | null;
   live: {
-    visitors?: { total: number; synthetic: number; real: number };
-    interactions?: { total: number; real: number; simulated: number };
-    real_share: number | null;
+    visitors?: { total: number; dataset: number; live: number };
+    interactions?: { total: number; dataset: number; live: number };
+    live_share: number | null;
     note?: string;
+    caveat?: string;
   };
   summary: {
     n_datasets: number;
@@ -113,27 +114,23 @@ export default async function ResearchPage() {
         <div className="mt-3 grid gap-4 md:grid-cols-2">
           <div className="text-sm text-slate-600">
             <p>
-              <b className="text-slate-800">{live.visitors?.real ?? 0}</b> real
-              visitors and{" "}
-              <b className="text-slate-800">{live.visitors?.synthetic ?? 0}</b>{" "}
-              simulated ones.
+              <b className="text-slate-800">{live.visitors?.dataset ?? 0}</b>{" "}
+              customers imported from the research dataset and{" "}
+              <b className="text-slate-800">{live.visitors?.live ?? 0}</b> from
+              live browser sessions.
             </p>
             <p className="mt-1">
-              <b className="text-slate-800">{live.interactions?.real ?? 0}</b> of{" "}
-              {live.interactions?.total ?? 0} funnel events are real
-              {live.real_share != null &&
-                ` (${(live.real_share * 100).toFixed(0)}%)`}
+              <b className="text-slate-800">{live.interactions?.live ?? 0}</b> of{" "}
+              {live.interactions?.total ?? 0} funnel events came from live
+              traffic
+              {live.live_share != null &&
+                ` (${(live.live_share * 100).toFixed(0)}%)`}
               .
             </p>
           </div>
           <p className="text-xs leading-relaxed text-slate-500">{live.note}</p>
         </div>
-        <Caveat>
-          Demo traffic is generated through the same public endpoints as a real
-          visitor, so it cannot be told apart after the fact. The distinction is
-          therefore stored per row when the event is written, and every figure
-          in this dashboard carries the resulting label.
-        </Caveat>
+        {live.caveat && <Caveat>{live.caveat}</Caveat>}
       </Card>
 
       <Card className="mt-4">

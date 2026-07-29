@@ -1,26 +1,24 @@
 #!/usr/bin/env python
-"""Put the system into a complete, demonstrable state in one command.
+"""Build the complete research demonstration in one command.
 
-Runs the whole loop end to end against a clean database:
+Puts the whole study into a runnable state against a clean database:
 
-    register the demo site  →  install its tracking snippet
-    generate visitor traffic →  segment the audience (Module 1)
-    read the website         →  generate scored content (Module 4)
-    compare all three automation policies (Module 2)
-    analyse the funnel, attribution and predictions (Module 3)
-    build the Action Plan    →  what to send and post, content included
+    register the Innov8Smart store  →  install its tracking snippet
+    import the 8,000-customer research dataset as that store's customers
+    segment them                    (Module 1)
+    read the store, generate content (Module 4)
+    run all three automation policies (Module 2)
+    analyse funnel, attribution, predictions (Module 3)
+    build the Action Plan           →  what to send and post, content written
 
-Nothing is emailed or published. The platform advises; the company executes.
+Nothing is emailed and nothing is published. The system advises; the company
+executes.
 
-Everything it creates is simulated and flagged as such: visitors carry
-`is_synthetic = TRUE` and every funnel row they produce carries
-`is_real = FALSE`, so the dashboard labels the numbers `simulated` rather than
-passing them off as an audience.
+    venv/bin/python scripts/build_research_demo.py              # full 8,000
+    venv/bin/python scripts/build_research_demo.py --customers 1000
+    venv/bin/python scripts/build_research_demo.py --keep-live  # keep live visitors
 
-    venv/bin/python scripts/demo_reset.py           # full reset and rebuild
-    venv/bin/python scripts/demo_reset.py --keep-real   # keep real visitors
-
-Prerequisites: PostgreSQL up, the API running, and the demo site served.
+Prerequisites: PostgreSQL up, the API running, and the store served on :4000.
 """
 
 from __future__ import annotations
@@ -39,6 +37,13 @@ sys.path.insert(0, str(ROOT))
 
 PYTHON = str(ROOT / "venv" / "bin" / "python")
 
+#: Recipients per campaign. Nearly every imported customer has opted in, and
+#: the `fixed` policy commits five messages each — so the whole audience would
+#: mean tens of thousands of drafts to demonstrate a difference that is already
+#: clear at this size. The cap applies equally to all three policies, so the
+#: comparison stays fair.
+CAMPAIGN_LIMIT = 400
+
 
 def step(n: int, total: int, title: str) -> None:
     print(f"\n\033[1m[{n}/{total}] {title}\033[0m")
@@ -49,7 +54,7 @@ def api_call(method: str, url: str, body: dict | None = None) -> dict:
     req = urllib.request.Request(
         url, data=data, method=method,
         headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=300) as res:
+    with urllib.request.urlopen(req, timeout=600) as res:
         raw = res.read()
         return json.loads(raw) if raw else {}
 
@@ -78,15 +83,18 @@ def wait_for_api(api: str, timeout: int = 30) -> bool:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--api", default="http://localhost:8000")
-    ap.add_argument("--visitors", type=int, default=150)
-    ap.add_argument("--keep-real", action="store_true",
-                    help="Delete only synthetic visitors, keeping real ones")
+    ap.add_argument("--customers", type=int, default=None,
+                    help="Import only the first N of the 8,000 (faster)")
+    ap.add_argument("--keep-live", action="store_true",
+                    help="Delete only imported customers, keeping live visitors")
     args = ap.parse_args()
     api = args.api.rstrip("/")
 
-    print("\033[1mMarketing OS — demo reset\033[0m")
+    print("\033[1mAI-Powered Digital Marketing Orchestration — research build\033[0m")
 
     if not wait_for_api(api):
         print(f"\n✗ The API is not responding at {api}.\n"
@@ -102,17 +110,17 @@ def main() -> int:
     total = 9
 
     # ── 1. Clean slate ──────────────────────────────────────────────────────
-    step(1, total, "Clearing previous demo data")
-    if args.keep_real:
-        db.execute("DELETE FROM visitors WHERE is_synthetic")
-        print("   Removed synthetic visitors; real ones kept.")
+    step(1, total, "Clearing previous build")
+    if args.keep_live:
+        db.execute("DELETE FROM visitors WHERE source = 'dataset'")
+        print("   Removed imported customers; live visitors kept.")
     else:
         # Cascades to events, segments, campaigns, interactions and content.
         db.execute("DELETE FROM sites")
         print("   Removed all sites and everything belonging to them.")
 
-    # ── 2. Register the site + install the snippet ──────────────────────────
-    step(2, total, "Registering the demo website and installing its snippet")
+    # ── 2. Register the store + install the snippet ─────────────────────────
+    step(2, total, "Registering the Innov8Smart store and installing its snippet")
     if not run_script("setup_demo_site.py", "--api", api):
         return 1
 
@@ -120,25 +128,29 @@ def main() -> int:
     site_id = site["id"]
     print(f"   site {site_id}: {site['name']} → {site['url']}")
 
-    # The demo site is served locally, so point the crawler at that origin.
+    # The store is served locally, so point the crawler at that origin.
     db.execute("UPDATE sites SET url = :u WHERE id = :i",
                u="http://localhost:4000/index.html", i=site_id)
 
-    # ── 3. Visitor traffic ──────────────────────────────────────────────────
-    step(3, total, f"Generating {args.visitors} simulated visitors")
-    if not run_script("generate_demo_traffic.py", "--api", api,
-                      "--site-id", str(site_id), "--visitors", str(args.visitors)):
+    # ── 3. The research audience ────────────────────────────────────────────
+    step(3, total, "Importing the research dataset as the store's customers")
+    import_args = ["--site-id", str(site_id)]
+    if args.customers:
+        import_args += ["--limit", str(args.customers)]
+    if not run_script("import_research_audience.py", *import_args):
         return 1
 
     # ── 4. Segmentation ─────────────────────────────────────────────────────
     step(4, total, "Segmenting the audience (Module 1)")
     seg = api_call("POST", f"{api}/sites/{site_id}/segment")
-    print(f"   mode: {seg['mode']} · {seg['n_visitors']} visitors")
+    print(f"   mode: {seg['mode']} · {seg['n_visitors']:,} customers")
     for name, count in sorted(seg["segments"].items(), key=lambda kv: -kv[1]):
-        print(f"     {name:<18} {count}")
+        print(f"     {name:<18} {count:>6,}")
+    if seg.get("diagnostics", {}).get("silhouette") is not None:
+        print(f"   silhouette: {seg['diagnostics']['silhouette']}")
 
-    # ── 5. Content from the website ─────────────────────────────────────────
-    step(5, total, "Reading the website and generating content (Module 4)")
+    # ── 5. Content from the store's own pages ───────────────────────────────
+    step(5, total, "Reading the store and generating content (Module 4)")
     try:
         content = api_call("POST", f"{api}/sites/{site_id}/content/generate",
                            {"engine": "fast"})
@@ -146,15 +158,16 @@ def main() -> int:
               f"{content['n_assets']} assets · goal={content['campaign_goal']} "
               f"tone={content['tone']}")
         if content.get("site_keywords"):
-            print(f"   keywords from the site: {', '.join(content['site_keywords'][:6])}")
+            print(f"   keywords from the store: {', '.join(content['site_keywords'][:6])}")
     except urllib.error.HTTPError as exc:
-        print(f"   ! content generation failed ({exc.code}) — is the demo site "
+        print(f"   ! content generation failed ({exc.code}) — is the store "
               "served on :4000? Continuing.")
 
     # ── 6. Campaigns ────────────────────────────────────────────────────────
     step(6, total, "Running all three automation policies (Module 2)")
     if not run_script("run_strategy_comparison.py", "--api", api,
-                      "--site-id", str(site_id), "--reset", "--simulate-engagement"):
+                      "--site-id", str(site_id), "--reset", "--respond",
+                      "--limit", str(CAMPAIGN_LIMIT)):
         return 1
 
     # ── 7. Analytics ────────────────────────────────────────────────────────
@@ -164,16 +177,17 @@ def main() -> int:
     print(f"   funnel: sent {funnel['sent']} → open {funnel['open']} → "
           f"click {funnel['click']} → convert {funnel['convert']} "
           f"[{analytics['funnel']['data_basis']}]")
-    print(f"   {analytics['predictions']['n_users']} visitors scored")
+    print(f"   {analytics['predictions']['n_users']:,} customers scored")
     print("\n   Findings:")
     for insight in analytics["insights"]:
         print(f"     · {insight}")
 
-    # ── 7b. The Action Plan ─────────────────────────────────────────────────
+    # ── 8. The Action Plan ──────────────────────────────────────────────────
     step(8, total, "Building the Action Plan (what to send and post)")
-    plan = api_call("POST", f"{api}/sites/{site_id}/plan", {"strategy": "hybrid"})
-    print(f"   {plan['email_actions']} email actions to "
-          f"{plan['reachable']} contactable people · "
+    plan = api_call("POST", f"{api}/sites/{site_id}/plan",
+                    {"strategy": "hybrid", "limit": CAMPAIGN_LIMIT})
+    print(f"   {plan['email_actions']} email actions · "
+          f"{plan['reachable']:,} contactable customers · "
           f"{plan['post_actions']} posts to publish")
     outstanding = api_call("GET", f"{api}/sites/{site_id}/plan")
     for action in outstanding["actions"][:4]:
@@ -185,10 +199,8 @@ def main() -> int:
     print("   Nothing was sent. These are recommendations with the content written.")
 
     # ── 9. The demo login ───────────────────────────────────────────────────
-    # The dashboard is a multi-tenant product: you sign in as a company and
-    # see that company's sites. Ownership is assigned LAST, on purpose — the
-    # pipeline steps above call the API without a token, and an owned site
-    # would (correctly) refuse them.
+    # Ownership is assigned LAST, on purpose — the pipeline steps above call the
+    # API without a token, and an owned site would (correctly) refuse them.
     step(9, total, "Creating the demo company account")
     demo_email = "demo@innov8smart.example"
     demo_password = "demo1234"
@@ -210,13 +222,15 @@ def main() -> int:
 
     Dashboard    http://localhost:3000/plan   ← start here: the Action Plan
                    sign in as  {demo_email}  /  {demo_password}
-                   (or create your own account and register a website)
-    Demo site    http://localhost:4000
+    Store        http://localhost:4000
     API docs     {api}/docs
 
-Every visitor above is simulated and flagged `is_synthetic`, so the dashboard
-labels these figures `simulated data`. Browse the demo site yourself to add a
-real visitor and watch the badge change to `real + simulated`.
+Every customer above came from the published research dataset and is labelled
+`source = 'dataset'`, so the dashboard reports these figures as research data
+rather than as observed live behaviour. Browse the store yourself to add a
+live visitor and watch the badge change to `dataset + live`.
+
+Next: `make research` reproduces every experiment and figure in the report.
 """)
     return 0
 

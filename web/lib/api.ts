@@ -84,8 +84,9 @@ export async function safeGet<T>(path: string): Promise<T | null> {
 
 // ── Types mirroring the FastAPI response models ──────────────────────────────
 
-/** Whether a figure rests on real people or on simulated traffic. */
-export type DataBasis = "real" | "simulated" | "mixed" | "no data yet" | null;
+/** Which audience a figure rests on: the imported research dataset, a live
+ * browser session, or both. */
+export type DataBasis = "live" | "dataset" | "mixed" | "no data yet" | null;
 
 export interface Health {
   status: "ok" | "degraded";
@@ -239,7 +240,7 @@ export interface Recommendation {
   recommendation: string;
   recommended_platform: string;
   confidence: number;
-  is_synthetic: boolean;
+  source: "live" | "dataset";
 }
 
 export interface ContentAsset {

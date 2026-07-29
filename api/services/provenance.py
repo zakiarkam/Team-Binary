@@ -315,32 +315,50 @@ def models() -> list[dict]:
 
 
 def live_data_basis() -> dict:
-    """How much of what the dashboard currently shows is real."""
+    """Which audience the dashboard is currently showing.
+
+    Two provenances exist, and they are not the same kind of evidence:
+
+      dataset — the 8,000 users of the published Kaggle campaign dataset,
+                imported as this website's customers. The per-user totals are
+                real measurements of real people; their event *timeline* is a
+                deterministic reconstruction of those totals, not something
+                anyone observed happening.
+      live    — a browser genuinely visited the site and mos.js reported it.
+    """
     try:
         visitors = db.fetch_one(
             """SELECT count(*) AS total,
-                      count(*) FILTER (WHERE is_synthetic)     AS synthetic,
-                      count(*) FILTER (WHERE NOT is_synthetic) AS real
+                      count(*) FILTER (WHERE source = 'dataset') AS dataset,
+                      count(*) FILTER (WHERE source = 'live')    AS live
                FROM visitors""") or {}
         interactions = db.fetch_one(
             """SELECT count(*) AS total,
-                      count(*) FILTER (WHERE is_real)     AS real,
-                      count(*) FILTER (WHERE NOT is_real) AS simulated
+                      count(*) FILTER (WHERE source = 'dataset') AS dataset,
+                      count(*) FILTER (WHERE source = 'live')    AS live
                FROM interactions""") or {}
     except Exception as exc:                            # pragma: no cover
         return {"error": str(exc)[:200]}
 
     total = interactions.get("total") or 0
-    real = interactions.get("real") or 0
+    live = interactions.get("live") or 0
     return {
         "visitors": visitors,
         "interactions": interactions,
-        "real_share": round(real / total, 3) if total else None,
+        "live_share": round(live / total, 3) if total else None,
         "note": (
-            "Simulated visitors flow through the same endpoints as real ones, so "
-            "the distinction is stored per row (visitors.is_synthetic, "
-            "interactions.is_real) rather than inferred. Every figure in the "
-            "dashboard carries the resulting basis label."
+            "Imported research users flow through the same write paths as a live "
+            "browser, so the distinction is stored per row (visitors.source, "
+            "interactions.source) and derived at write time rather than inferred "
+            "afterwards. Every figure in the dashboard carries the resulting "
+            "basis label."
+        ),
+        "caveat": (
+            "Dataset rows give per-user totals (visits, pages, time on site, "
+            "email opens and clicks). Expanding a total into individual "
+            "timestamped events is a reconstruction, so anything that depends on "
+            "event ORDER — attribution paths, journey length, inter-event timing "
+            "— is a property of that reconstruction as much as of the data."
         ),
     }
 

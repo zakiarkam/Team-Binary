@@ -23,7 +23,7 @@ export interface PlanAction {
   subject?: string | null;
   body?: string | null;
   audience_size?: number;
-  simulated_audience?: boolean;
+  dataset_audience?: boolean;
   // post
   id?: number;
   platform?: string;
@@ -133,7 +133,7 @@ export function ActionPlan({ actions }: { actions: PlanAction[] }) {
                   Publish this post
                 </span>
               )}
-              {a.simulated_audience && <Pill tone="warn">simulated audience</Pill>}
+              {a.dataset_audience && <Pill tone="muted">research audience</Pill>}
             </div>
 
             {a.rationale && (

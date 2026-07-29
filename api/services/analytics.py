@@ -18,8 +18,8 @@ genuine multi-platform journeys to attribute across.
 
 Honesty rules enforced here:
 
-*   Every result carries `data_basis` — real, simulated or mixed — derived from
-    `interactions.is_real`, never asserted.
+*   Every result carries `data_basis` — live, dataset or mixed — derived from
+    `interactions.source`, never asserted.
 *   Journey-length diagnostics are always returned, so a reader can see when
     attribution had only one touch to work with.
 *   Predictions say which data their model was fitted on. The shipped models
@@ -64,7 +64,7 @@ def journey_events(site_id: int) -> pd.DataFrame:
     """One long-format frame of every touchpoint, ready for Module 3.
 
     Columns: user_id, timestamp, channel, platform, campaign_id, strategy,
-             event_type, is_real
+             event_type, source
     """
     # 1. Email campaign touchpoints — the funnel proper.
     email = db.fetch_all(
@@ -78,7 +78,7 @@ def journey_events(site_id: int) -> pd.DataFrame:
                -- can never split one campaign across two strategies in the
                -- comparison that the whole of Module 2 rests on.
                COALESCE(c.strategy, i.strategy, 'none') AS strategy,
-               i.event_type, i.is_real
+               i.event_type, i.source
         FROM interactions i
         LEFT JOIN campaigns c ON c.id = i.campaign_id
         WHERE i.site_id = :s
@@ -99,7 +99,7 @@ def journey_events(site_id: int) -> pd.DataFrame:
                'none'                                 AS campaign_id,
                'none'                                 AS strategy,
                'click'                                AS event_type,
-               NOT v.is_synthetic                     AS is_real
+               v.source                               AS source
         FROM visitors v
         WHERE v.site_id = :s
         """,
@@ -116,7 +116,7 @@ def journey_events(site_id: int) -> pd.DataFrame:
                COALESCE(NULLIF(v.utm_source, ''), 'direct') AS platform,
                'none' AS campaign_id, 'none' AS strategy,
                'convert' AS event_type,
-               NOT v.is_synthetic AS is_real
+               v.source AS source
         FROM events e
         JOIN visitors v ON v.id = e.visitor_id
         WHERE e.site_id = :s AND e.event_type IN ('purchase', 'convert')
@@ -130,7 +130,7 @@ def journey_events(site_id: int) -> pd.DataFrame:
     rows = email + acquisition + organic
     if not rows:
         return pd.DataFrame(columns=["user_id", "timestamp", "channel", "platform",
-                                     "campaign_id", "strategy", "event_type", "is_real"])
+                                     "campaign_id", "strategy", "event_type", "source"])
 
     df = pd.DataFrame(rows)
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
@@ -159,10 +159,12 @@ def segment_frame(site_id: int) -> pd.DataFrame:
 
 
 def _data_basis(df: pd.DataFrame) -> str:
-    if df.empty or "is_real" not in df:
+    """Which audience these numbers rest on — derived from the rows themselves."""
+    if df.empty or "source" not in df:
         return "no data yet"
-    real, sim = bool(df["is_real"].any()), bool((~df["is_real"]).any())
-    return "mixed" if real and sim else "real" if real else "simulated"
+    live = bool((df["source"] == "live").any())
+    dataset = bool((df["source"] == "dataset").any())
+    return "mixed" if live and dataset else "live" if live else "dataset"
 
 
 # ── Funnel ───────────────────────────────────────────────────────────────────

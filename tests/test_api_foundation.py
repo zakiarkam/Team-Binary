@@ -76,16 +76,17 @@ def test_email_consent_defaults_to_false() -> None:
     assert row["is_nullable"] == "NO"
 
 
-def test_interactions_flag_real_vs_simulated() -> None:
-    """The funnel table must distinguish real observed events from simulated
-    ones, so research numbers can never be mistaken for production numbers."""
+def test_interactions_record_their_provenance() -> None:
+    """The funnel table must distinguish events produced by a live browser from
+    those reconstructed from the research dataset, so an experiment can never be
+    mistaken for a measurement of live behaviour."""
     row = db.fetch_one(
         """
         SELECT column_name FROM information_schema.columns
-        WHERE table_name = 'interactions' AND column_name = 'is_real'
+        WHERE table_name = 'interactions' AND column_name = 'source'
         """
     )
-    assert row is not None, "interactions.is_real is required for honest reporting"
+    assert row is not None, "interactions.source is required for honest reporting"
 
 
 def test_api_health_endpoint() -> None:

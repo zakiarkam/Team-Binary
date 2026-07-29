@@ -62,7 +62,7 @@ def recommendations(site_id: int, limit: int = Query(50, ge=1, le=500)) -> dict:
                a.drop_off_risk::float8        AS drop_off_risk,
                a.recommendation, a.recommended_platform,
                a.confidence::float8           AS confidence,
-               v.is_synthetic
+               v.source
         FROM analytics_output a
         JOIN visitors v ON v.id = a.visitor_id
         LEFT JOIN user_segments s ON s.visitor_id = a.visitor_id

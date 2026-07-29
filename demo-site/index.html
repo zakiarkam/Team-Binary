@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Innov8Smart — Smart technology for growing businesses</title>
-  <meta name="description" content="Innov8Smart builds smart automation for small and medium businesses." />
+  <title>Innov8Smart — Smart home devices that pay for themselves</title>
+  <meta name="description" content="Innov8Smart sells smart home and smart office devices that cut energy bills, secure your space and automate the small daily jobs. Free delivery over $75, two-year warranty, and loyalty points on every order." />
   <link rel="stylesheet" href="style.css" />
 
   <!-- ══════════════════════════════════════════════════════════════════════
@@ -12,70 +12,155 @@
        This one line is everything a client installs. data-site is filled in
        by scripts/setup_demo_site.py after the site is registered with the API.
        ══════════════════════════════════════════════════════════════════════ -->
-  <script defer src="http://localhost:8000/mos.js" data-site="mos_p41E0AfRbwqFMc5Z"></script>
+  <script defer src="http://localhost:8000/mos.js" data-site="mos_YB41Xmj54WFHcO_h"></script>
 </head>
 <body>
 
 <header class="nav">
   <a class="brand" href="index.html">◆ Innov8Smart</a>
   <nav>
-    <a href="index.html">Home</a>
-    <a href="pricing.html">Pricing</a>
-    <a href="#features">Features</a>
-    <a class="btn btn-sm" href="pricing.html" data-mos-track="nav_cta_get_started">Get started</a>
+    <a href="index.html">Shop</a>
+    <a href="#collection">Devices</a>
+    <a href="#loyalty">Rewards</a>
+    <a class="btn btn-sm" href="cart.html" data-mos-track="nav_cart">Basket <span data-cart-count>0</span></a>
   </nav>
 </header>
 
 <section class="hero">
   <div>
-    <p class="eyebrow">SMART TECHNOLOGY SOLUTIONS</p>
-    <h1>Automate the busywork.<br />Grow the business.</h1>
+    <p class="eyebrow">SMART HOME &amp; SMART OFFICE</p>
+    <h1>Devices that pay<br />for themselves.</h1>
     <p class="lede">
-      Innov8Smart connects your sales, support and operations into one smart
-      workspace — so your team stops copying data between tools and starts
-      serving customers.
+      Innov8Smart sells smart home and smart office devices that cut energy
+      bills, secure your space and automate the small daily jobs nobody wants to
+      do. Everything works together out of the box, and everything works on its
+      own if you only ever buy one.
     </p>
     <div class="row">
-      <a class="btn" href="pricing.html" data-mos-track="hero_cta_start_free">Start free</a>
-      <a class="btn btn-ghost" href="#demo" data-mos-track="hero_cta_book_demo">Book a demo</a>
+      <a class="btn" href="#collection" data-mos-track="hero_cta_shop">Shop the collection</a>
+      <a class="btn btn-ghost" href="#loyalty" data-mos-track="hero_cta_rewards">How rewards work</a>
     </div>
-    <p class="fineprint">No credit card required · Set up in under 10 minutes</p>
+    <p class="fineprint">Free delivery over $75 · Two-year warranty · 30-day returns</p>
   </div>
   <div class="hero-card">
-    <div class="stat"><b>38%</b><span>less manual data entry</span></div>
-    <div class="stat"><b>2.4×</b><span>faster response time</span></div>
-    <div class="stat"><b>12 hrs</b><span>saved per week, per team</span></div>
+    <div class="stat"><b>31%</b><span>average cut in standby energy use</span></div>
+    <div class="stat"><b>10 pts</b><span>earned per $1 you spend</span></div>
+    <div class="stat"><b>2 yrs</b><span>warranty on every device</span></div>
   </div>
 </section>
 
-<section id="features" class="features">
-  <h2>Built for teams that are growing fast</h2>
+<section id="collection" class="collection">
+  <h2>The collection</h2>
+  <p class="section-lede">
+    Six devices, one app. Start with the problem that annoys you most and add to
+    it later — nothing here needs a subscription and nothing stops working if
+    you never buy the rest.
+  </p>
+
+  <div class="grid products">
+
+    <article class="product">
+      <div class="thumb thumb-hub" aria-hidden="true"></div>
+      <h3><a href="product-aura-hub.html" data-mos-track="product_link_aura_hub">Aura Smart Hub</a></h3>
+      <p>The brain of the system. Connects every Innov8Smart device, works offline, and runs your automations locally so nothing depends on our servers.</p>
+      <div class="buy">
+        <span class="price">$129.00</span>
+        <button class="btn btn-sm" data-add-to-cart data-sku="aura-hub"
+                data-name="Aura Smart Hub" data-price="129"
+                data-mos-track="add_to_cart_aura_hub">Add to basket</button>
+      </div>
+    </article>
+
+    <article class="product">
+      <div class="thumb thumb-cam" aria-hidden="true"></div>
+      <h3><a href="product-vista-cam.html" data-mos-track="product_link_vista_cam">Vista Indoor Camera</a></h3>
+      <p>1440p indoor camera with on-device person detection. Footage stays on your own storage — there is no cloud plan to buy and no footage we can see.</p>
+      <div class="buy">
+        <span class="price">$89.00</span>
+        <button class="btn btn-sm" data-add-to-cart data-sku="vista-cam"
+                data-name="Vista Indoor Camera" data-price="89"
+                data-mos-track="add_to_cart_vista_cam">Add to basket</button>
+      </div>
+    </article>
+
+    <article class="product">
+      <div class="thumb thumb-light" aria-hidden="true"></div>
+      <h3><a href="product-lumen-light.html" data-mos-track="product_link_lumen_light">Lumen Motion Light</a></h3>
+      <p>Warm, dimmable light that comes on when someone walks in and goes off when the room empties. Six months on a charge, no wiring, no switch to find in the dark.</p>
+      <div class="buy">
+        <span class="price">$39.00</span>
+        <button class="btn btn-sm" data-add-to-cart data-sku="lumen-light"
+                data-name="Lumen Motion Light" data-price="39"
+                data-mos-track="add_to_cart_lumen_light">Add to basket</button>
+      </div>
+    </article>
+
+    <article class="product">
+      <div class="thumb thumb-climate" aria-hidden="true"></div>
+      <h3><a href="product-terra-climate.html" data-mos-track="product_link_terra_climate">Terra Climate Sensor</a></h3>
+      <p>Tracks temperature, humidity and damp risk room by room, then tells you which room is quietly costing you the most to heat.</p>
+      <div class="buy">
+        <span class="price">$34.00</span>
+        <button class="btn btn-sm" data-add-to-cart data-sku="terra-climate"
+                data-name="Terra Climate Sensor" data-price="34"
+                data-mos-track="add_to_cart_terra_climate">Add to basket</button>
+      </div>
+    </article>
+
+    <article class="product">
+      <div class="thumb thumb-plug" aria-hidden="true"></div>
+      <h3><a href="product-nimbus-plug.html" data-mos-track="product_link_nimbus_plug">Nimbus Smart Plug — 2 pack</a></h3>
+      <p>Measures what each appliance actually draws and cuts the standby drain on a schedule. Most people make the price back on the first winter bill.</p>
+      <div class="buy">
+        <span class="price">$29.00</span>
+        <button class="btn btn-sm" data-add-to-cart data-sku="nimbus-plug"
+                data-name="Nimbus Smart Plug 2-pack" data-price="29"
+                data-mos-track="add_to_cart_nimbus_plug">Add to basket</button>
+      </div>
+    </article>
+
+    <article class="product">
+      <div class="thumb thumb-sensor" aria-hidden="true"></div>
+      <h3><a href="product-pulse-sensor.html" data-mos-track="product_link_pulse_sensor">Pulse Door Sensor</a></h3>
+      <p>Knows the difference between a door opening and a door being forced. Pairs in seconds and runs for two years on one coin cell.</p>
+      <div class="buy">
+        <span class="price">$24.00</span>
+        <button class="btn btn-sm" data-add-to-cart data-sku="pulse-sensor"
+                data-name="Pulse Door Sensor" data-price="24"
+                data-mos-track="add_to_cart_pulse_sensor">Add to basket</button>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<section id="loyalty" class="loyalty">
+  <h2>Rewards that are worth having</h2>
   <div class="grid">
-    <article><h3>Unified workspace</h3><p>Sales, support and operations share one source of truth instead of five spreadsheets.</p></article>
-    <article><h3>Smart automation</h3><p>Rules and triggers handle the repetitive steps so your people handle the customers.</p></article>
-    <article><h3>Live insight</h3><p>See where deals stall and where customers drop off — while you can still act on it.</p></article>
-    <article><h3>Works with your stack</h3><p>Connects to the tools you already pay for. No rip-and-replace migration.</p></article>
+    <article><h3>Earn as you go</h3><p>Ten points for every dollar you spend, credited the moment your order ships. No card to carry and no tier to maintain.</p></article>
+    <article><h3>Spend them on anything</h3><p>1,000 points is $10 off, on any device, with no minimum basket and no blackout dates.</p></article>
+    <article><h3>Points for helping out</h3><p>Leave a review or refer a friend who orders, and we add points for that too — the same points, not a separate scheme.</p></article>
   </div>
 </section>
 
-<section id="demo" class="signup">
+<section id="newsletter" class="signup">
   <div class="signup-inner">
-    <h2>See it on your own data</h2>
-    <p>Leave your email and we'll send a short walkthrough built around how your team actually works.</p>
+    <h2>Get the drop list</h2>
+    <p>New devices, restocks and the occasional genuinely good discount. Roughly twice a month, never more.</p>
 
     <!--
       The tracker reads ONLY the field marked data-mos-email, and grants email
       consent ONLY when the data-mos-consent checkbox is ticked. No other form
       value is ever read.
     -->
-    <form name="demo_request" id="demo-form">
+    <form name="newsletter" id="signup-form">
       <input type="email" name="email" data-mos-email required
-             placeholder="you@company.com" aria-label="Work email" />
+             placeholder="you@example.com" aria-label="Email address" />
       <label class="consent">
         <input type="checkbox" name="consent" data-mos-consent />
-        <span>Email me the walkthrough and occasional product updates. I can unsubscribe anytime.</span>
+        <span>Email me new devices, restocks and offers. I can unsubscribe anytime.</span>
       </label>
-      <button class="btn" type="submit" data-mos-track="signup_submit">Send me the walkthrough</button>
+      <button class="btn" type="submit" data-mos-track="newsletter_submit">Join the list</button>
     </form>
 
     <p id="form-status" class="status" role="status"></p>
@@ -87,17 +172,18 @@
   <span id="mos-status" class="tracking-badge">tracking: checking…</span>
 </footer>
 
+<script src="shop.js"></script>
 <script src="tracking-status.js"></script>
 <script>
   // Demo only: keep the visitor on the page after submitting so the tracked
   // events are easy to follow live during the walkthrough.
-  document.getElementById("demo-form").addEventListener("submit", function (ev) {
+  document.getElementById("signup-form").addEventListener("submit", function (ev) {
     ev.preventDefault();
     var email = ev.target.querySelector("[data-mos-email]").value;
     var consent = ev.target.querySelector("[data-mos-consent]").checked;
     document.getElementById("form-status").textContent = consent
-      ? "Thanks — " + email + " is now a known, contactable visitor."
-      : "Thanks — " + email + " is now a known visitor (no email consent given).";
+      ? "Thanks — " + email + " is now a known, contactable customer."
+      : "Thanks — " + email + " is now a known customer (no email consent given).";
     ev.target.reset();
   });
 </script>

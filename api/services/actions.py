@@ -216,7 +216,7 @@ def current_plan(site_id: int, include_done: bool = False) -> dict[str, Any]:
                min(cs.rationale) AS rationale,
                count(*)          AS audience_size,
                min(cs.scheduled_for) AS scheduled_for,
-               bool_and(v.is_synthetic) AS all_synthetic,
+               bool_and(v.source = 'dataset') AS all_dataset,
                c.strategy
         FROM campaign_sends cs
         JOIN campaigns c ON c.id = cs.campaign_id
@@ -238,7 +238,7 @@ def current_plan(site_id: int, include_done: bool = False) -> dict[str, Any]:
         "audience_size": r["audience_size"],
         "rationale": r["rationale"],
         "scheduled_for": r["scheduled_for"],
-        "simulated_audience": r["all_synthetic"],
+        "dataset_audience": r["all_dataset"],
         "priority": PRIORITY_EMAIL + (r["step"] or 0),
     } for r in email_rows]
 
@@ -320,8 +320,8 @@ def mark_email_executed(campaign_id: int, step: int,
     """Record that the company sent this message from their own tool.
 
     A `sent` interaction is written so the funnel still starts somewhere — but
-    it is self-reported, not observed, and `is_real` is derived from whether
-    the recipients are real people exactly as everywhere else in the system.
+    it is self-reported, not observed, and `source` is derived from the
+    recipients' provenance exactly as everywhere else in the system.
     """
     status = "executed" if executed else "skipped"
     rows = db.fetch_all(
@@ -341,12 +341,12 @@ def mark_email_executed(campaign_id: int, step: int,
             """
             INSERT INTO interactions
                 (site_id, visitor_id, campaign_id, send_id, strategy, channel,
-                 platform, event_type, is_real, meta)
+                 platform, event_type, source, meta)
             VALUES (:site_id, :visitor_id, :campaign_id, :send_id, :strategy,
                     'email', 'email', 'sent',
-                    -- Derived, never asserted: a simulated visitor can never
-                    -- produce a row that counts as real.
-                    (SELECT NOT is_synthetic FROM visitors WHERE id = :visitor_id),
+                    -- Derived, never asserted: a dataset-derived visitor can
+                    -- never produce a row that claims to be live observation.
+                    (SELECT source FROM visitors WHERE id = :visitor_id),
                     CAST('{"self_reported": true}' AS jsonb))
             """,
             [{"site_id": camp["site_id"], "strategy": camp["strategy"],

@@ -10,7 +10,8 @@ opted-in visitors instead of a simulator:
 
 The research question — which policy gives the best engagement and conversion
 for the least operational complexity — is now measurable on observed data,
-because every send, open and click lands in `interactions` with `is_real=TRUE`.
+because every send, open and click lands in `interactions` carrying the
+provenance of the recipient it belongs to.
 
 Operational complexity is recorded per campaign as the number of distinct
 decision rules the policy needed, so the comparison is not purely about
@@ -40,38 +41,42 @@ STEPS: list[dict[str, Any]] = [
     {
         "key": "welcome", "day": 0,
         "subject": "Welcome to {product}",
-        "body": ("Thanks for your interest in {product}.\n\n"
-                 "We help teams stop copying data between tools and get back to "
-                 "serving customers.\n\n"
-                 "[See how it works]({site_url})"),
+        "body": ("Thanks for joining the {product} list.\n\n"
+                 "We make smart home devices that cut standby energy, secure the "
+                 "place and take care of the small daily jobs — and every one of "
+                 "them works on its own, so you can start with just the problem "
+                 "that annoys you most.\n\n"
+                 "[See the collection]({site_url})"),
     },
     {
         "key": "product_info", "day": 2,
-        "subject": "How teams use {product}",
-        "body": ("Most teams start by connecting the two tools that cause the most "
-                 "double-entry, and see the difference within a week.\n\n"
-                 "[Read the 3-minute overview]({site_url})"),
+        "subject": "Where most people start with {product}",
+        "body": ("Most customers begin with the plugs or the motion light, see "
+                 "the difference on the next bill, and add the hub later.\n\n"
+                 "[Browse the devices]({site_url})"),
     },
     {
         "key": "social_proof", "day": 4,
-        "subject": "What changed for teams like yours",
-        "body": ("Teams using {product} report around 38% less manual data entry "
-                 "and noticeably faster response times.\n\n"
-                 "[See the details]({site_url})"),
+        "subject": "What changed for homes like yours",
+        "body": ("Customers using {product} report around 31% less standby "
+                 "energy use, and most make the price of a plug pack back over "
+                 "one winter.\n\n"
+                 "[See what people bought]({site_url})"),
     },
     {
         "key": "discount", "day": 6,
         "subject": "A little help getting started",
-        "body": ("If cost is the blocker, the Starter plan is free and takes under "
-                 "ten minutes to set up.\n\n"
-                 "[Compare the plans]({site_url}/pricing.html)"),
+        "body": ("If price is the blocker, the Pulse Door Sensor starts at $24 "
+                 "and delivery is free over $75 — and you earn ten loyalty "
+                 "points on every dollar either way.\n\n"
+                 "[Check the prices]({site_url})"),
     },
     {
         "key": "final_reminder", "day": 8,
         "subject": "Last note from us",
         "body": ("We will stop emailing about this after today.\n\n"
-                 "If it is useful, everything is here:\n\n"
-                 "[Get started]({site_url})"),
+                 "If it is useful, the whole collection is here:\n\n"
+                 "[Shop {product}]({site_url})"),
     },
 ]
 
@@ -84,22 +89,25 @@ HYBRID_OPENERS = {
     "High Intent": {
         "subject": "Ready when you are, {product}",
         "body": ("You have been looking closely at {product} — happy to skip the "
-                 "introduction.\n\n[Start free, no card needed]({site_url}/pricing.html)"),
+                 "introduction.\n\n[Go straight to the collection]({site_url})"),
     },
     "Loyal Customer": {
-        "subject": "Something new in {product}",
-        "body": ("Thanks for being with us. Here is what we shipped recently.\n\n"
+        "subject": "Something new in store at {product}",
+        "body": ("Thanks for shopping with us. Here is what landed recently — "
+                 "and your loyalty points are waiting.\n\n"
                  "[See what's new]({site_url})"),
     },
     "Price Sensitive": {
         "subject": "{product} — what it costs",
-        "body": ("Straight to the point: the Starter plan is free, and Growth is "
-                 "$49/month.\n\n[Compare the plans]({site_url}/pricing.html)"),
+        "body": ("Straight to the point: devices start at $24, delivery is free "
+                 "over $75, and every dollar earns ten points.\n\n"
+                 "[Compare the devices]({site_url})"),
     },
     "New Cold User": {
         "subject": "Getting started with {product}",
         "body": ("You are new here, so here is the short version of what "
-                 "{product} does.\n\n[The 2-minute version]({site_url})"),
+                 "{product} makes and which device to buy first.\n\n"
+                 "[The 2-minute version]({site_url})"),
     },
 }
 
@@ -354,9 +362,9 @@ def campaign_metrics(campaign_id: int) -> dict[str, Any]:
           (SELECT count(*) FROM interactions
             WHERE campaign_id = c.id AND event_type = 'unsubscribe')    AS unsubscribes,
           (SELECT count(*) FROM interactions
-            WHERE campaign_id = c.id AND is_real)                       AS real_events,
+            WHERE campaign_id = c.id AND source = 'live')               AS live_events,
           (SELECT count(*) FROM interactions
-            WHERE campaign_id = c.id AND NOT is_real)                   AS simulated_events
+            WHERE campaign_id = c.id AND source = 'dataset')            AS dataset_events
         FROM campaigns c
         WHERE c.id = :cid
         """,
@@ -368,16 +376,17 @@ def campaign_metrics(campaign_id: int) -> dict[str, Any]:
     sent = row["sent"] or 0
     rate = lambda n: round((n or 0) / sent, 4) if sent else 0.0  # noqa: E731
 
-    # Say plainly what these numbers rest on. A rate computed over simulated
-    # recipients is a demonstration, not a finding, and the difference has to
-    # survive all the way to the report.
-    real, sim = row["real_events"] or 0, row["simulated_events"] or 0
-    if real and sim:
+    # Say plainly what these numbers rest on. A rate computed over the
+    # reconstructed research audience is a controlled experiment, not a
+    # measurement of live behaviour, and the difference has to survive all the
+    # way to the report.
+    live, dataset = row["live_events"] or 0, row["dataset_events"] or 0
+    if live and dataset:
         basis = "mixed"
-    elif sim:
-        basis = "simulated"
-    elif real:
-        basis = "real"
+    elif dataset:
+        basis = "dataset"
+    elif live:
+        basis = "live"
     else:
         basis = "no data yet"
 

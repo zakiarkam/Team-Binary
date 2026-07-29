@@ -92,19 +92,20 @@ export function Pill({
 }
 
 /**
- * Says whether a figure rests on real people or simulated traffic.
+ * Says which audience a figure rests on.
  *
- * Shown next to every number that could be mistaken for a result. Demo traffic
- * flows through the same endpoints as real visitors, so without this badge a
- * screenshot of the dashboard would be indistinguishable from a real one.
+ * Shown next to every number that could be mistaken for a result. Imported
+ * research users flow through the same write paths as a live browser, so
+ * without this badge a screenshot of the dashboard could not be told apart
+ * from one taken over live traffic.
  */
 export function BasisBadge({ basis }: { basis: DataBasis }) {
   if (!basis || basis === "no data yet") {
     return <Pill tone="muted">no data yet</Pill>;
   }
-  if (basis === "real") return <Pill tone="ok">real data</Pill>;
-  if (basis === "mixed") return <Pill tone="warn">real + simulated</Pill>;
-  return <Pill tone="warn">simulated data</Pill>;
+  if (basis === "live") return <Pill tone="ok">live traffic</Pill>;
+  if (basis === "mixed") return <Pill tone="warn">dataset + live</Pill>;
+  return <Pill tone="muted">research dataset</Pill>;
 }
 
 export function EmptyState({

@@ -54,7 +54,7 @@ def eligible_recipients(site_id: int, segments: list[str] | None = None,
         filters.append("s.segment_name = ANY(:segments)")
 
     sql = f"""
-        SELECT v.id AS visitor_id, v.email, v.name, v.is_synthetic,
+        SELECT v.id AS visitor_id, v.email, v.name, v.source,
                s.segment_name, s.segment_confidence, s.is_cold_start,
                a.predicted_conversion, a.drop_off_risk
         FROM visitors v
@@ -230,11 +230,11 @@ def deliver_due_sends(campaign_id: int, limit: int = 200,
                 """
                 INSERT INTO interactions (site_id, visitor_id, campaign_id, send_id,
                                           strategy, channel, platform, event_type,
-                                          is_real, meta)
+                                          source, meta)
                 SELECT c.site_id, s.visitor_id, s.campaign_id, s.id,
                        c.strategy, s.channel, 'email', 'sent',
-                       -- Simulated recipients produce simulated funnel rows.
-                       NOT v.is_synthetic,
+                       -- The funnel row inherits the recipient's provenance.
+                       v.source,
                        CAST(:meta AS jsonb)
                 FROM campaign_sends s
                 JOIN campaigns c ON c.id = s.campaign_id

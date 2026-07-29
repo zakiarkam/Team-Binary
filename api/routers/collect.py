@@ -172,10 +172,10 @@ def _attribute_conversion(site_id: int, visitor_id: int, props: dict) -> None:
         """
         INSERT INTO interactions (site_id, visitor_id, campaign_id, send_id,
                                   strategy, channel, platform, event_type,
-                                  is_real, meta)
+                                  source, meta)
         VALUES (:site_id, :vid, :cid, :sid, :strategy, :channel, 'email',
                 'convert',
-                (SELECT NOT is_synthetic FROM visitors WHERE id = :vid),
+                (SELECT source FROM visitors WHERE id = :vid),
                 CAST(:meta AS jsonb))
         """,
         site_id=site_id, vid=visitor_id, cid=click["campaign_id"],

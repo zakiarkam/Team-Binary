@@ -33,10 +33,12 @@ DEMO_SITE = {
     "url": "http://localhost:4000",
     "product_name": "Innov8Smart",
     "description": (
-        "Innov8Smart connects sales, support and operations into one smart "
-        "workspace, automating repetitive work for small and medium businesses."
+        "Innov8Smart sells smart home and smart office devices that cut energy "
+        "bills, secure your space and automate the small daily jobs. Free "
+        "delivery over $75, a two-year warranty, and loyalty points on every "
+        "order."
     ),
-    "target_audience": "small and medium businesses adopting smart technology",
+    "target_audience": "homeowners and small offices buying smart devices",
 }
 
 
@@ -110,7 +112,7 @@ Next:
          · click links and buttons        → click events
          · scroll to the bottom           → scroll-depth events
          · submit the form with the box ticked → a known, contactable visitor
-         · choose a plan on /pricing.html → a conversion
+         · check out a basket on /cart.html → a purchase conversion
 
   3. Watch the audience fill up:
          curl -s {api}/sites/{{id}}/audience/summary | python3 -m json.tool

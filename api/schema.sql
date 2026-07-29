@@ -85,16 +85,33 @@ CREATE TABLE IF NOT EXISTS visitors (
     referrer        TEXT,
     device          TEXT,
     country         TEXT,
-    -- TRUE for visitors created by scripts/generate_demo_traffic.py. Simulated
-    -- traffic is useful for demonstrating the system before a real audience
-    -- exists, but it must never be counted as a real result — so it is labelled
-    -- in the data itself, not just in a README.
-    is_synthetic    BOOLEAN     NOT NULL DEFAULT FALSE,
+    -- Where this visitor came from, recorded in the data itself rather than in
+    -- a README:
+    --   'live'    — a browser actually visited the site and mos.js reported it
+    --   'dataset' — reconstructed from the published research dataset by
+    --               scripts/import_research_audience.py
+    -- The research audience is real data about real people, but their event
+    -- timeline is a deterministic reconstruction of per-user totals, not an
+    -- observation. Keeping the two apart is what lets every figure say which
+    -- it is built on.
+    source          TEXT        NOT NULL DEFAULT 'live'
+                                CHECK (source IN ('live', 'dataset')),
+    -- Descriptive attributes that arrive with an imported research row (age,
+    -- gender, income, campaign type, …). Never used as segmentation features —
+    -- Module 1 segments on behaviour alone — but kept so the study can report
+    -- who ended up in which segment.
+    attributes      JSONB       NOT NULL DEFAULT '{}'::jsonb,
     UNIQUE (site_id, visitor_uid)
 );
 
--- Existing databases predate is_synthetic; add it in place.
-ALTER TABLE visitors ADD COLUMN IF NOT EXISTS is_synthetic BOOLEAN NOT NULL DEFAULT FALSE;
+-- Existing databases predate `source` and carry the older is_synthetic flag.
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'live';
+ALTER TABLE visitors DROP COLUMN IF EXISTS is_synthetic;
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS attributes JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- Imported research customers are read as a set constantly (segmentation,
+-- campaign targeting, every experiment), so the provenance filter is indexed.
+CREATE INDEX IF NOT EXISTS idx_visitors_source ON visitors (site_id, source);
 
 CREATE INDEX IF NOT EXISTS idx_visitors_site       ON visitors (site_id);
 CREATE INDEX IF NOT EXISTS idx_visitors_email      ON visitors (site_id, email);
@@ -259,10 +276,19 @@ CREATE TABLE IF NOT EXISTS interactions (
     platform    TEXT        NOT NULL DEFAULT 'email',
     event_type  TEXT        NOT NULL,            -- sent | open | click | convert
                                                  -- | bounce | unsubscribe
-    is_real     BOOLEAN     NOT NULL DEFAULT TRUE,  -- FALSE for simulated rows
+    -- Copied from the visitor this event belongs to, at write time. It is
+    -- always DERIVED (see the INSERTs in api/routers/tracking.py and
+    -- api/services/), never passed in by the caller — so a dataset-derived
+    -- visitor can never produce a row that claims to be live observation.
+    source      TEXT        NOT NULL DEFAULT 'live'
+                            CHECK (source IN ('live', 'dataset')),
     meta        JSONB       NOT NULL DEFAULT '{}'::jsonb,
     occurred_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Existing databases predate `source` and carry the older is_real flag.
+ALTER TABLE interactions ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'live';
+ALTER TABLE interactions DROP COLUMN IF EXISTS is_real;
 
 CREATE INDEX IF NOT EXISTS idx_interactions_site     ON interactions (site_id, occurred_at);
 CREATE INDEX IF NOT EXISTS idx_interactions_visitor  ON interactions (visitor_id, occurred_at);

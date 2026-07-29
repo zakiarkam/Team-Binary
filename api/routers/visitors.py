@@ -16,6 +16,15 @@ router = APIRouter(tags=["audience"])
 
 # Per-visitor behavioural features, computed from the raw event stream.
 # Kept as one SQL expression block so the API and Module 1 share a definition.
+#
+# `page_views` and `clicks` SUM an optional count carried on the event rather
+# than counting rows. A live browser reports one page view per page, so the
+# property is absent and the COALESCE makes it 1 — identical to counting rows.
+# The research importer reports one event per *visit* carrying that visit's
+# totals, because per-visit aggregates are exactly what the source dataset
+# measured; expanding them into individual page views would invent an ordering
+# nobody recorded. One definition therefore serves both, and neither has to
+# pretend to be the other.
 VISITOR_FEATURES_SQL = """
     SELECT
         v.id                                   AS visitor_id,
@@ -27,8 +36,10 @@ VISITOR_FEATURES_SQL = """
         v.device,
         v.first_seen,
         v.last_seen,
-        COUNT(*) FILTER (WHERE e.event_type = 'page_view')   AS page_views,
-        COUNT(*) FILTER (WHERE e.event_type = 'click')       AS clicks,
+        COALESCE(SUM(COALESCE((e.props->>'pages')::float8, 1))
+                 FILTER (WHERE e.event_type = 'page_view'), 0)::float8 AS page_views,
+        COALESCE(SUM(COALESCE((e.props->>'count')::float8, 1))
+                 FILTER (WHERE e.event_type = 'click'), 0)::float8      AS clicks,
         COUNT(*) FILTER (WHERE e.event_type = 'form_submit') AS form_submits,
         COUNT(*) FILTER (WHERE e.event_type = 'purchase')    AS purchases,
         COUNT(DISTINCT e.session_id)                         AS sessions,
