@@ -1,4 +1,4 @@
 strategy,recipients,sent,opens,clicks,conversions,click_through_rate,conversions_per_1000_sends,operational_complexity,data_basis
-fixed,400,500,297,130,40,0.26,80.0,1,dataset
-trigger,400,400,246,101,25,0.2525,62.5,4,dataset
-hybrid,400,400,252,111,35,0.2775,87.5,8,dataset
+fixed,400,500,305,144,36,0.288,72.0,1,dataset
+trigger,400,400,251,111,44,0.2775,110.0,4,dataset
+hybrid,400,400,269,108,39,0.27,97.5,8,dataset

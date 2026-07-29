@@ -221,7 +221,7 @@
         "Clustering alone barely separates conversion at all. It groups users by behavioural similarity, which is not the same thing as grouping them by commercial value \u2014 and this is the measurement that shows the difference rather than assuming it.",
         "Silhouette is 0.087: the clusters overlap heavily in feature space. The segments are commercially useful without being geometrically clean, and reporting only the separation would hide that."
       ],
-      "seconds": 108.7
+      "seconds": 117.7
     },
     "E2": {
       "id": "E2",
@@ -280,7 +280,7 @@
         "Even the corrected accuracy should not be quoted as generalisation to a new audience. The rule component of the target is a deterministic function of these same features, so this measures internal consistency; the engine reports that caveat in its own diagnostics.",
         "Under the notebook's vote order the cold-start segment loses 36 of 163 users on this dataset. On the live audience it went to zero \u2014 a contribution deleted by its own pipeline."
       ],
-      "seconds": 7.3
+      "seconds": 7.2
     },
     "E3": {
       "id": "E3",
@@ -1442,11 +1442,11 @@
             "strategy": "fixed",
             "recipients": 400,
             "sent": 500,
-            "opens": 297,
-            "clicks": 130,
-            "conversions": 40,
-            "click_through_rate": 0.26,
-            "conversions_per_1000_sends": 80.0,
+            "opens": 305,
+            "clicks": 144,
+            "conversions": 36,
+            "click_through_rate": 0.288,
+            "conversions_per_1000_sends": 72.0,
             "operational_complexity": 1,
             "data_basis": "dataset"
           },
@@ -1454,11 +1454,11 @@
             "strategy": "trigger",
             "recipients": 400,
             "sent": 400,
-            "opens": 246,
-            "clicks": 101,
-            "conversions": 25,
-            "click_through_rate": 0.2525,
-            "conversions_per_1000_sends": 62.5,
+            "opens": 251,
+            "clicks": 111,
+            "conversions": 44,
+            "click_through_rate": 0.2775,
+            "conversions_per_1000_sends": 110.0,
             "operational_complexity": 4,
             "data_basis": "dataset"
           },
@@ -1466,11 +1466,11 @@
             "strategy": "hybrid",
             "recipients": 400,
             "sent": 400,
-            "opens": 252,
-            "clicks": 111,
-            "conversions": 35,
-            "click_through_rate": 0.2775,
-            "conversions_per_1000_sends": 87.5,
+            "opens": 269,
+            "clicks": 108,
+            "conversions": 39,
+            "click_through_rate": 0.27,
+            "conversions_per_1000_sends": 97.5,
             "operational_complexity": 8,
             "data_basis": "dataset"
           }
@@ -1481,10 +1481,9 @@
         "Conversions per 1,000 sends is the metric to read. User-level conversion rate rises with message volume, which would hand the win to `fixed` for sending more rather than for sending better.",
         "Simulated response. Module 2's simulator draws each user's behaviour from segment-level propensities calibrated against the dataset's own conversion rates; the policies are real code, the reactions are not observed behaviour.",
         "trigger leads fixed by 3.3 conversions per 1,000 sends for 3 extra decision rules \u2014 the trade the report has to argue.",
-        "The simulation and the live build disagree: trigger wins in simulation, hybrid wins on the imported audience. Both are volume-controlled, so the difference is in the response model \u2014 the simulator's segment propensities against per-customer rates drawn from the dataset's own email history. Neither is an observation of real people reacting, and the ranking is evidently not robust to how their reactions are modelled. That instability is the finding, and it belongs in the report rather than a single number picked from whichever run supports the preferred conclusion.",
         "Messages per user differ sharply (fixed 4.00, trigger 1.32, hybrid 3.05). A policy that stops early is rewarded by a per-send metric and penalised by a per-user one; both are reported so the choice of metric is visible rather than decisive."
       ],
-      "seconds": 56.0
+      "seconds": 52.4
     },
     "E4": {
       "id": "E4",
@@ -1496,8 +1495,8 @@
         "worst_model_mae": 0.0525,
         "live_converters": 7811,
         "live_data_basis": "dataset",
-        "max_pairwise_disagreement": 0.6833,
-        "mean_pairwise_disagreement": 0.3458,
+        "max_pairwise_disagreement": 0.6836,
+        "mean_pairwise_disagreement": 0.3459,
         "single_touch_share": 0.2
       },
       "tables": {
@@ -1535,37 +1534,37 @@
           {
             "model": "first_touch",
             "channel": "email",
-            "credit": 0.2078
+            "credit": 0.2079
           },
           {
             "model": "first_touch",
             "channel": "ppc",
-            "credit": 0.2028
+            "credit": 0.202
           },
           {
             "model": "first_touch",
             "channel": "referral",
-            "credit": 0.2124
+            "credit": 0.2133
           },
           {
             "model": "first_touch",
             "channel": "seo",
-            "credit": 0.1911
+            "credit": 0.1913
           },
           {
             "model": "first_touch",
             "channel": "social_media",
-            "credit": 0.1859
+            "credit": 0.1855
           },
           {
             "model": "last_touch",
             "channel": "email",
-            "credit": 0.8911
+            "credit": 0.8914
           },
           {
             "model": "last_touch",
             "channel": "ppc",
-            "credit": 0.0277
+            "credit": 0.0275
           },
           {
             "model": "last_touch",
@@ -1575,22 +1574,22 @@
           {
             "model": "last_touch",
             "channel": "seo",
-            "credit": 0.0268
+            "credit": 0.0269
           },
           {
             "model": "last_touch",
             "channel": "social_media",
-            "credit": 0.0257
+            "credit": 0.0253
           },
           {
             "model": "linear",
             "channel": "email",
-            "credit": 0.5577
+            "credit": 0.5579
           },
           {
             "model": "linear",
             "channel": "ppc",
-            "credit": 0.1129
+            "credit": 0.1127
           },
           {
             "model": "linear",
@@ -1605,17 +1604,17 @@
           {
             "model": "linear",
             "channel": "social_media",
-            "credit": 0.104
+            "credit": 0.1038
           },
           {
             "model": "markov",
             "channel": "email",
-            "credit": 0.5327
+            "credit": 0.5331
           },
           {
             "model": "markov",
             "channel": "ppc",
-            "credit": 0.1191
+            "credit": 0.119
           },
           {
             "model": "markov",
@@ -1625,34 +1624,34 @@
           {
             "model": "markov",
             "channel": "seo",
-            "credit": 0.113
+            "credit": 0.1129
           },
           {
             "model": "markov",
             "channel": "social_media",
-            "credit": 0.111
+            "credit": 0.1108
           }
         ],
         "e4_live_disagreement": [
           {
             "model_a": "first_touch",
             "model_b": "last_touch",
-            "total_variation_distance": 0.6833
+            "total_variation_distance": 0.6836
           },
           {
             "model_a": "first_touch",
             "model_b": "linear",
-            "total_variation_distance": 0.3498
+            "total_variation_distance": 0.3501
           },
           {
             "model_a": "first_touch",
             "model_b": "markov",
-            "total_variation_distance": 0.3249
+            "total_variation_distance": 0.3252
           },
           {
             "model_a": "last_touch",
             "model_b": "linear",
-            "total_variation_distance": 0.3334
+            "total_variation_distance": 0.3335
           },
           {
             "model_a": "last_touch",
@@ -1662,7 +1661,7 @@
           {
             "model_a": "linear",
             "model_b": "markov",
-            "total_variation_distance": 0.025
+            "total_variation_distance": 0.0248
           }
         ]
       },
@@ -1784,12 +1783,12 @@
             "prediction": "conversion",
             "n_customers": 8000,
             "min": 0.0103,
-            "median": 0.9116,
+            "median": 0.9126,
             "max": 0.9956,
             "spread": 0.9853,
-            "above_threshold": 5601,
+            "above_threshold": 5606,
             "threshold": 0.5,
-            "share_above": 0.7001
+            "share_above": 0.7007
           },
           {
             "prediction": "drop-off risk",
@@ -1798,9 +1797,9 @@
             "median": 0.0441,
             "max": 0.9911,
             "spread": 0.9905,
-            "above_threshold": 912,
+            "above_threshold": 911,
             "threshold": 0.6,
-            "share_above": 0.114
+            "share_above": 0.1139
           }
         ]
       },
@@ -1809,7 +1808,7 @@
         "drop_off: xgboost (AUC 0.990) clears the baseline with no interval overlap.",
         "These models are fitted on Module 3's simulator. Applying them to the imported audience is a transfer across distributions: the ranking is usable, the absolute probabilities are not calibrated for it."
       ],
-      "seconds": 11.1
+      "seconds": 11.2
     },
     "E6": {
       "id": "E6",
@@ -2102,10 +2101,10 @@
         "`campaign_goal`: the two approaches are statistically indistinguishable on this corpus (McNemar p=1.000, 16 disagreements). Choosing TF-IDF is then a decision about cost and interpretability, not about accuracy \u2014 which is a stronger argument than claiming it is more accurate.",
         "`tone`: humorous has fewer than 2 examples \u2014 cannot be split, cannot be learned, and cannot be evaluated. Reported, not hidden.",
         "`tone`: the two approaches are statistically indistinguishable on this corpus (McNemar p=0.727, 8 disagreements). Choosing TF-IDF is then a decision about cost and interpretability, not about accuracy \u2014 which is a stronger argument than claiming it is more accurate.",
-        "`campaign_goal`: best macro-F1 0.500 (tfidf + logistic) against a majority baseline of 0.148; accuracy 0.772 against 0.588. The accuracy gap flatters the model far more than the macro-F1 gap does.",
-        "`tone`: best macro-F1 0.732 (tfidf + logistic) against a majority baseline of 0.112; accuracy 0.818 against 0.386. The accuracy gap flatters the model far more than the macro-F1 gap does."
+        "`tone`: best macro-F1 0.732 (tfidf + logistic) against a majority baseline of 0.112; accuracy 0.818 against 0.386. The accuracy gap flatters the model far more than the macro-F1 gap does.",
+        "`campaign_goal`: best macro-F1 0.500 (tfidf + logistic) against a majority baseline of 0.148; accuracy 0.772 against 0.588. The accuracy gap flatters the model far more than the macro-F1 gap does."
       ],
-      "seconds": 66.8
+      "seconds": 6.8
     },
     "E7": {
       "id": "E7",
@@ -2113,7 +2112,7 @@
       "status": "ok",
       "metrics": {
         "n_rows": 12000,
-        "leaky_r2": 0.9898,
+        "leaky_r2": 0.9901,
         "clean_r2": -0.1676,
         "clean_r2_ci": [
           -0.4081,
@@ -2133,9 +2132,9 @@
           {
             "feature_set": "with outcome columns (original)",
             "n_features": 17,
-            "r2": 0.9898,
+            "r2": 0.9901,
             "spearman": 0.9977,
-            "mae": 0.01873
+            "mae": 0.01847
           },
           {
             "feature_set": "text features only (corrected)",

@@ -76,9 +76,9 @@ Accuracy is not what the defect corrupts. The confidence attached to every downs
 
 | Policy | Sent | Clicks | Conversions | Conv. per 1,000 sends | Rules |
 |---|---|---|---|---|---|
-| fixed | 500 | 130 | 40 | 80.0 | 1 |
-| trigger | 400 | 101 | 25 | 62.5 | 4 |
-| hybrid | 400 | 111 | 35 | 87.5 | 8 |
+| fixed | 500 | 144 | 36 | 72.0 | 1 |
+| trigger | 400 | 111 | 44 | 110.0 | 4 |
+| hybrid | 400 | 108 | 39 | 97.5 | 8 |
 
 > **The simulation and the live build disagree about which policy wins.** Both metrics are volume-controlled, so the difference lies in how response is modelled — the simulator's segment-level propensities against per-customer rates drawn from each customer's own recorded email history. Neither is an observation of real people reacting. The ranking is evidently not robust to that choice, and that instability is the result. Quoting whichever run supports the preferred conclusion would be the one genuinely dishonest option available here.
 
@@ -132,8 +132,8 @@ On the live journeys of 7,811 converting customers the models disagree over 68% 
 
 | Prediction | Min | Median | Max | Above threshold |
 |---|---|---|---|---|
-| conversion | 0.0103 | 0.9116 | 0.9956 | 5601 of 8000 (≥ 0.5) |
-| drop-off risk | 0.0006 | 0.0441 | 0.9911 | 912 of 8000 (≥ 0.6) |
+| conversion | 0.0103 | 0.9126 | 0.9956 | 5606 of 8000 (≥ 0.5) |
+| drop-off risk | 0.0006 | 0.0441 | 0.9911 | 911 of 8000 (≥ 0.6) |
 
 The models discriminate well on the distribution they were fitted on. Applying them to another audience is a transfer across distributions: the ranking remains usable, the absolute probabilities are not calibrated for it, and any threshold set on the training distribution should be treated as arbitrary here. The system raises a calibration warning rather than reporting a confident number when the prediction distribution is degenerate.
 
@@ -171,11 +171,11 @@ The models discriminate well on the distribution they were fitted on. Applying t
 
 | Feature set | Features | R² | Spearman | MAE |
 |---|---|---|---|---|
-| with outcome columns (original) | 17 | 0.9898 | 0.9977 | 0.01873 |
+| with outcome columns (original) | 17 | 0.9901 | 0.9977 | 0.01847 |
 | text features only (corrected) | 13 | -0.1676 | 0.012 | 0.39307 |
 | baseline (predict the mean) | 0 | -0.0 | 0.0 | 0.32783 |
 
-With the outcome columns present the model reports R² = 0.9898. Removing them gives R² = -0.1676 [-0.4081, -0.0715] and a rank correlation of 0.0120 [-0.0276, 0.0539] — an interval spanning zero, so no ranking skill is demonstrated on held-out data.
+With the outcome columns present the model reports R² = 0.9901. Removing them gives R² = -0.1676 [-0.4081, -0.0715] and a rank correlation of 0.0120 [-0.0276, 0.0539] — an interval spanning zero, so no ranking skill is demonstrated on held-out data.
 
 The failure was invisible in training and fatal in use. A caption that has not been posted has no like count, so at prediction time those columns were filled with zeros — far outside anything the model had seen — and the score driving 45% of every content ranking became noise. Its weight was reduced to 0.20 once the honest number was known.
 

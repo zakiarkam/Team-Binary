@@ -79,9 +79,17 @@ def run() -> dict:
     clean_columns = engagement.model_feature_columns(features)
     # The notebook's selection: everything except the text and the target — which
     # silently kept the four outcome columns.
-    leaky_columns = clean_columns + [
+    #
+    # `sorted` is load-bearing, not tidiness. LEAKY_COLUMNS is a set, and set
+    # iteration order over strings varies between processes because Python
+    # randomises string hashing per interpreter. That reordered the feature
+    # matrix on every run, changed how the forest broke ties between equally
+    # good splits, and moved the reported R² in the fourth decimal — a
+    # reproducibility bug in the experiment whose entire subject is a
+    # reproducibility bug.
+    leaky_columns = clean_columns + sorted(
         c for c in engagement.LEAKY_COLUMNS
-        if c != "engagement_rate" and c in features.columns]
+        if c != "engagement_rate" and c in features.columns)
 
     idx_train, idx_test = train_test_split(
         np.arange(len(features)), test_size=0.2, random_state=config.SEED)
