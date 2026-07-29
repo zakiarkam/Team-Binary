@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Header, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from api import db
 from api.services import campaigns as svc
 from api.services import email_sender
+from api.services import research_m2
 from api.settings import get_settings
 
 router = APIRouter(tags=["campaigns"])
@@ -95,6 +97,31 @@ def list_campaigns(site_id: int) -> dict:
         "campaigns": svc.compare_strategies(site_id),
         "email_delivery": "live" if get_settings().email_enabled else "dry_run",
     }
+
+
+@router.get("/research/m2/results")
+def module2_research_results() -> dict:
+    """Module 2's actual controlled-simulation research output, read from
+    the committed pipeline result files. Distinct from the live
+    operational campaign view."""
+    return research_m2.get_results()
+
+
+@router.get("/research/m2/figures/{name}")
+def module2_figure(name: str) -> FileResponse:
+    """Serve one of Module 2's 6 result figures by exact filename.
+
+    Validated against a fixed allowlist — same reasoning as the mos.js route
+    in api/main.py, but for these six files specifically, so this can never
+    become an arbitrary path read."""
+    path = research_m2.figure_path(name)
+    if path is None:
+        raise HTTPException(404, "Figure not found")
+    return FileResponse(
+        path,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=300"},
+    )
 
 
 @router.get("/campaigns/{campaign_id}")

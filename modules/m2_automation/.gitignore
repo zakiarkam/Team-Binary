@@ -1,4 +1,8 @@
-outputs/
+outputs/*
+!outputs/strategy_comparison.csv
+!outputs/multiseed_summary.csv
+!outputs/figures/
+!outputs/figures/*.png
 data/processed/
 __pycache__/
 .venv/
