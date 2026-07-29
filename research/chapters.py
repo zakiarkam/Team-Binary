@@ -190,12 +190,14 @@ def setup(r: Results) -> list[Block]:
          "527-row goal/tone corpus", "Macro-F1, McNemar"],
         ["E7", "Engagement leakage and text signal",
          "12,000-row engagement corpus", "R², Spearman, Holm–Bonferroni"],
+        ["E8", "Targeting by uplift versus by predicted response",
+         "Hillstrom, 64,000 randomised", "Qini, incremental response"],
     ]
     return [
         ("h1", "EXPERIMENTAL SETUP"),
 
         ("h2", "2.1 The experiments"),
-        ("p", "Seven experiments cover the four modules. Each writes its tables "
+        ("p", "Eight experiments cover the four modules. Each writes its tables "
               "to `research/results/`, and every figure in the next chapter is "
               "drawn from those tables rather than plotted by hand, so a chart "
               "cannot drift away from the number it shows."),
@@ -543,6 +545,90 @@ def results_chapter(r: Results) -> list[Block]:
                     "Figure R9 — The leak, and the absence of text signal."),
         ]
 
+    # ── E8 ──────────────────────────────────────────────────────────────────
+    if r.ok("E8"):
+        summary = r.table("e8_policy_summary")
+        actions = r.table("e8_action_assignment")
+        overlap = r.m("E8", "top_share_overlap")
+
+        blocks += [
+            ("h2", "3.8 Who to target is not who will convert"),
+            ("p", "The recommender ranks customers by predicted conversion and "
+                  "gives the strongest action to the top of that ranking. That "
+                  "is the intuitive thing to do and it answers the wrong "
+                  "question. What matters is not who will convert but for whom "
+                  "the action *changes* whether they convert — a customer "
+                  "certain to buy anyway gains nothing from a discount, and the "
+                  "discount is wasted on them."),
+            ("p", "Answering that needs counterfactuals, and this project's own "
+                  "audience cannot supply any: every imported customer received "
+                  "one treatment, nobody recorded which, and no comparable "
+                  "customer received an alternative. No model can recover a "
+                  "causal effect from data where the cause never varied. The "
+                  "experiment therefore moves to the **Hillstrom MineThatData** "
+                  "dataset — 64,000 customers randomly assigned to one of three "
+                  "arms (mens email, womens email, no email) with observed "
+                  "visits. Random assignment is what makes the counterfactual "
+                  "estimable."),
+            _table_block(
+                "Table R13 — Targeting policies scored on held-out customers. "
+                "Qini is incremental responders above random targeting; the "
+                "final column is what a 30% email budget buys.",
+                ["Policy", "Qini", "95% CI", "Extra visits per 1,000 targeted"],
+                [[row["policy"], row["qini_coefficient"],
+                  f"[{row['ci_low']}, {row['ci_high']}]",
+                  row["uplift_per_1000"]] for row in summary]),
+            _figure("fig_e8_uplift",
+                    "Figure R10 — Qini curves and what each policy buys at a "
+                    "fixed budget."),
+            ("p", f"Ranking by uplift and ranking by predicted response select "
+                  f"substantially different people: the two scores correlate at "
+                  f"Spearman {r.m('E8', 'rank_agreement_spearman'):.2f}, and at a "
+                  f"30% budget the two policies share only "
+                  f"{_pct(overlap, 0)} of their chosen customers — so about "
+                  f"{_pct(1 - overlap, 0)} of the list would be emailed by one "
+                  f"and not the other."),
+            ("note", "**What this does and does not establish.** The best uplift "
+                     "learner buys more incremental visits than the current "
+                     "policy, but their Qini intervals overlap, so the ordering "
+                     "of the two is not established on this split. The two uplift "
+                     "learners also disagree with each other, one of them falling "
+                     "below the current policy — so “use uplift modelling” is not "
+                     "a conclusion on its own. What the data does support is the "
+                     "weaker and more useful claim: these are different policies "
+                     "that target different people, and the difference is large "
+                     "enough to matter."),
+        ]
+
+        if actions:
+            blocks += [
+                _table_block(
+                    "Table R14 — The three-arm version: which action each "
+                    "customer should receive, rather than whether to act.",
+                    ["Assigned action", "Customers", "Share",
+                     "Observed uplift per 1,000"],
+                    [[row["assigned_action"], row["customers"],
+                      f"{float(row['share']):.1%}",
+                      row["observed_uplift_per_1000"] or "—"]
+                     for row in actions]),
+                ("p", "This is the next-best-action problem proper: not send or "
+                      "do not send, but which of several actions. Note that the "
+                      "policy assigns a share of customers to *no email at all* "
+                      "— an output the current rule cannot produce, because "
+                      "every customer is given some action regardless of whether "
+                      "acting helps."),
+            ]
+
+        blocks += [
+            ("p", "Hillstrom's actions are mens and womens email, not this "
+                  "project's premium, personalised, reactivation and reminder. "
+                  "The experiment demonstrates the method on real randomised "
+                  "data and shows that the current policy is answering a "
+                  "different question from the one it should. It does not "
+                  "produce a policy deployable to the imported audience, and "
+                  "nothing in this report should be read as claiming it does."),
+        ]
+
     return blocks
 
 
@@ -569,6 +655,12 @@ def discussion(r: Results) -> list[Block]:
             "**Simpler models won twice.** TF-IDF matched Sentence-BERT on goal "
             "and tone, and interpretable rules matched the full hybrid on "
             "conversion separation. Neither result was expected.",
+            "**The recommender was answering the wrong question.** Ranking "
+            "customers by predicted conversion and ranking them by the "
+            "*incremental effect* of the action select materially different "
+            "people — they share only about half their choices at a realistic "
+            "budget. This is the clearest direction for future work the project "
+            "produced.",
         ]),
 
         ("h2", "4.2 What the evidence does not support"),
@@ -583,7 +675,12 @@ def discussion(r: Results) -> list[Block]:
             "corpus, where no text feature survives correction.",
             "**That the prediction thresholds transfer.** They were set on the "
             "distribution the models were fitted on and do not carry to another "
-            "audience.",
+            "audience. The production recommender was changed to rank rather "
+            "than threshold as a direct consequence.",
+            "**That uplift modelling is straightforwardly better.** The best "
+            "uplift learner beat the current policy, but the intervals overlap "
+            "and the second uplift learner did worse. The framing is right; the "
+            "evidence for any particular learner is not yet strong.",
         ]),
 
         ("h1", "THREATS TO VALIDITY"),
@@ -642,6 +739,10 @@ def discussion(r: Results) -> list[Block]:
             "block the pixel, so click-through is the reliable engagement signal.",
             "**Three real platform datasets ship unused** — they are "
             "comment-level scrapes that pair no post text with post engagement.",
+            "**No action was ever randomised on this project's own audience**, "
+            "so the next-best-action recommendation cannot be validated on it at "
+            "all. E8 borrows a dataset where treatment *was* randomised, and the "
+            "actions there are not this project's actions.",
         ]),
     ]
     return blocks

@@ -184,3 +184,39 @@ Testing each of the 8 text features against the target individually, 0 survive H
 ![Figure R9 — The leak, and the absence of text signal.](../../research/figures/fig_e7_engagement.png)
 
 *Figure R9 — The leak, and the absence of text signal.*
+
+
+## 3.8 Who to target is not who will convert
+
+The recommender ranks customers by predicted conversion and gives the strongest action to the top of that ranking. That is the intuitive thing to do and it answers the wrong question. What matters is not who will convert but for whom the action *changes* whether they convert — a customer certain to buy anyway gains nothing from a discount, and the discount is wasted on them.
+
+Answering that needs counterfactuals, and this project's own audience cannot supply any: every imported customer received one treatment, nobody recorded which, and no comparable customer received an alternative. No model can recover a causal effect from data where the cause never varied. The experiment therefore moves to the **Hillstrom MineThatData** dataset — 64,000 customers randomly assigned to one of three arms (mens email, womens email, no email) with observed visits. Random assignment is what makes the counterfactual estimable.
+
+**Table R13 — Targeting policies scored on held-out customers. Qini is incremental responders above random targeting; the final column is what a 30% email budget buys.**
+
+| Policy | Qini | 95% CI | Extra visits per 1,000 targeted |
+|---|---|---|---|
+| uplift (S-learner) | 93.62 | [56.11, 129.76] | 103.45 |
+| predicted response (current policy) | 75.91 | [38.8, 109.98] | 91.26 |
+| uplift (T-learner) | 70.36 | [30.19, 112.29] | 92.0 |
+| random targeting | -9.75 | [-48.65, 26.95] | 57.76 |
+
+![Figure R10 — Qini curves and what each policy buys at a fixed budget.](../../research/figures/fig_e8_uplift.png)
+
+*Figure R10 — Qini curves and what each policy buys at a fixed budget.*
+
+Ranking by uplift and ranking by predicted response select substantially different people: the two scores correlate at Spearman 0.40, and at a 30% budget the two policies share only 56% of their chosen customers — so about 44% of the list would be emailed by one and not the other.
+
+> **What this does and does not establish.** The best uplift learner buys more incremental visits than the current policy, but their Qini intervals overlap, so the ordering of the two is not established on this split. The two uplift learners also disagree with each other, one of them falling below the current policy — so “use uplift modelling” is not a conclusion on its own. What the data does support is the weaker and more useful claim: these are different policies that target different people, and the difference is large enough to matter.
+
+**Table R14 — The three-arm version: which action each customer should receive, rather than whether to act.**
+
+| Assigned action | Customers | Share | Observed uplift per 1,000 |
+|---|---|---|---|
+| Mens E-Mail | 13601 | 70.8% | 71.27 |
+| Womens E-Mail | 5054 | 26.3% | 87.47 |
+| No E-Mail | 545 | 2.8% | 0.0 |
+
+This is the next-best-action problem proper: not send or do not send, but which of several actions. Note that the policy assigns a share of customers to *no email at all* — an output the current rule cannot produce, because every customer is given some action regardless of whether acting helps.
+
+Hillstrom's actions are mens and womens email, not this project's premium, personalised, reactivation and reminder. The experiment demonstrates the method on real randomised data and shows that the current policy is answering a different question from the one it should. It does not produce a policy deployable to the imported audience, and nothing in this report should be read as claiming it does.

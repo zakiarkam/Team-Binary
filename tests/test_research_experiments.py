@@ -142,6 +142,82 @@ def test_experiment_feature_order_survives_hash_randomisation() -> None:
         f"feature order varies with PYTHONHASHSEED: {outputs}")
 
 
+# ── Uplift evaluation ────────────────────────────────────────────────────────
+
+def _uplift_population(n: int = 4_000, seed: int = 0):
+    """A randomised trial where only the first half of the ranking is persuadable.
+
+    Everyone else responds at the same rate whether treated or not, so a perfect
+    targeting rule puts the persuadable half first and a bad one puts them last.
+    """
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    treated = rng.integers(0, 2, n)
+    persuadable = np.zeros(n, dtype=bool)
+    persuadable[: n // 2] = True
+
+    base = rng.random(n) < 0.10
+    lifted = rng.random(n) < 0.40
+    outcome = np.where(persuadable & (treated == 1), lifted, base).astype(int)
+    return treated, outcome, persuadable
+
+
+def test_qini_rewards_a_ranking_that_finds_persuadable_customers_first() -> None:
+    import numpy as np
+
+    from research.experiments.e8_uplift import qini_coefficient, qini_curve
+
+    treated, outcome, persuadable = _uplift_population()
+
+    perfect = persuadable.astype(float)          # persuadable ranked first
+    inverted = 1.0 - perfect                     # persuadable ranked last
+    random_scores = np.random.default_rng(1).random(len(treated))
+
+    scored = {}
+    for name, s in (("perfect", perfect), ("inverted", inverted),
+                    ("random", random_scores)):
+        x, gain = qini_curve(s, treated, outcome)
+        scored[name] = qini_coefficient(x, gain)
+
+    assert scored["perfect"] > scored["random"] > scored["inverted"], scored
+    assert scored["perfect"] > 0 and scored["inverted"] < 0
+
+
+def test_qini_of_random_targeting_is_about_zero() -> None:
+    """Random targeting is the definition of the baseline the coefficient is
+    measured against, so it must sit near zero rather than merely 'low'."""
+    import numpy as np
+
+    from research.experiments.e8_uplift import qini_coefficient, qini_curve
+
+    treated, outcome, _ = _uplift_population()
+    scores = np.random.default_rng(2).random(len(treated))
+
+    x, gain = qini_curve(scores, treated, outcome)
+    coefficient = qini_coefficient(x, gain)
+
+    # Scaled by the total incremental responders, so the tolerance means
+    # "within 15% of the whole effect" rather than an arbitrary absolute number.
+    assert abs(coefficient) < 0.15 * abs(gain[-1])
+
+
+def test_incremental_at_budget_recovers_a_known_treatment_effect() -> None:
+    """Targeting only persuadable customers must recover their true uplift.
+
+    Built with a 30-point effect among the persuadable half, so a policy that
+    selects exactly them should measure roughly 300 per 1,000 — the check that
+    the estimator is not quietly biased.
+    """
+    from research.experiments.e8_uplift import incremental_at_budget
+
+    treated, outcome, persuadable = _uplift_population(n=20_000, seed=5)
+    result = incremental_at_budget(persuadable.astype(float), treated, outcome,
+                                   budget=0.5)
+
+    assert 250 <= result["uplift_per_1000"] <= 350, result
+
+
 def test_results_loader_refuses_to_invent_a_missing_metric() -> None:
     """A silently-missing metric would render as an empty cell in the report."""
     from research.chapters import Results

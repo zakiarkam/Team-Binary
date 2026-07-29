@@ -431,6 +431,59 @@ def fig_engagement() -> list[str]:
     return _save(fig, "fig_e7_engagement")
 
 
+# ── E8 ───────────────────────────────────────────────────────────────────────
+def fig_uplift() -> list[str]:
+    curves = _table("e8_qini_curves")
+    summary = _table("e8_policy_summary")
+    if curves is None or summary is None:
+        return []
+    import matplotlib.pyplot as plt
+
+    fig, (left, right) = plt.subplots(1, 2, figsize=(9.6, 3.8),
+                                      gridspec_kw={"width_ratios": [1.25, 1]})
+
+    style = {
+        "uplift (S-learner)": (config.PALETTE["green"], "-"),
+        "uplift (T-learner)": (config.PALETTE["teal"], "-"),
+        "predicted response (current policy)": (config.PALETTE["blue"], "-"),
+        "random targeting": (config.PALETTE["slate"], ":"),
+    }
+
+    for policy, group in curves.groupby("policy"):
+        colour, dash = style.get(str(policy), (config.PALETTE["slate"], "-"))
+        group = group.sort_values("share_targeted")
+        left.plot(group["share_targeted"], group["incremental_responders"],
+                  label=policy, color=colour, linestyle=dash, linewidth=1.8)
+
+    left.axhline(0, color=config.INK, linewidth=0.8)
+    left.set_xlabel("share of the list targeted")
+    left.set_ylabel("incremental visits gained")
+    left.set_title("Qini — who to email first")
+    left.legend(frameon=False, fontsize=7.5, loc="upper left")
+
+    # The number a marketer can act on.
+    summary = summary.sort_values("uplift_per_1000")
+    colours = [style.get(str(p), (config.PALETTE["slate"], "-"))[0]
+               for p in summary["policy"]]
+    y = np.arange(len(summary))
+    right.barh(y, summary["uplift_per_1000"], color=colours, height=0.6)
+    for i, value in enumerate(summary["uplift_per_1000"]):
+        right.text(value + 1.5, i, f"{value:.0f}", va="center", fontsize=8)
+    right.set_yticks(y, [str(p).replace(" (", "\n(") for p in summary["policy"]],
+                     fontsize=7.5)
+    right.set_xlabel("extra visits per 1,000 targeted (30% budget)")
+    right.set_title("What each policy buys")
+    right.set_xlim(0, summary["uplift_per_1000"].max() * 1.25)
+    right.grid(axis="y", visible=False)
+
+    fig.suptitle("Module 3 — ranking by uplift is not ranking by response",
+                 fontsize=11, fontweight="bold")
+    fig.tight_layout()
+    _caption(left, "Hillstrom MineThatData: 64,000 customers, randomised arms. "
+                   "Causal because assignment was random.")
+    return _save(fig, "fig_e8_uplift")
+
+
 BUILDERS = (
     fig_segmentation_ablation,
     fig_segment_profile,
@@ -441,6 +494,7 @@ BUILDERS = (
     fig_prediction,
     fig_goal_tone,
     fig_engagement,
+    fig_uplift,
 )
 
 

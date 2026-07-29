@@ -3,7 +3,7 @@
 
 ## 2.1 The experiments
 
-Seven experiments cover the four modules. Each writes its tables to `research/results/`, and every figure in the next chapter is drawn from those tables rather than plotted by hand, so a chart cannot drift away from the number it shows.
+Eight experiments cover the four modules. Each writes its tables to `research/results/`, and every figure in the next chapter is drawn from those tables rather than plotted by hand, so a chart cannot drift away from the number it shows.
 
 **Table R2 — The seven experiments.**
 
@@ -16,6 +16,7 @@ Seven experiments cover the four modules. Each writes its tables to `research/re
 | E5 | Prediction quality and its transfer | Module 3 features + live audience | ROC-AUC, PR-AUC, Brier |
 | E6 | TF-IDF versus Sentence-BERT | 527-row goal/tone corpus | Macro-F1, McNemar |
 | E7 | Engagement leakage and text signal | 12,000-row engagement corpus | R², Spearman, Holm–Bonferroni |
+| E8 | Targeting by uplift versus by predicted response | Hillstrom, 64,000 randomised | Qini, incremental response |
 
 
 ## 2.2 Choice of statistics

@@ -346,6 +346,100 @@ def test_recommendations_are_searchable_and_paged(
     assert everyone["mix"] == page_two["mix"]
 
 
+# ── The recommender ──────────────────────────────────────────────────────────
+
+def test_segment_labels_reach_module_three_intact(site) -> None:
+    """Regression: the cold-start segment was being erased at this boundary.
+
+    Module 1 emits "New Cold User"; Module 3 was trained on
+    "new_cold_customer". A local lower-and-underscore produced
+    "new_cold_user", which the trained encoder does not recognise — and with
+    handle_unknown="ignore" the segment silently became an all-zero vector, so
+    cold-start customers reached the model with no segment at all.
+    """
+    from adapters.segment_labels import CANONICAL_SNAKE
+
+    vid = _visitor(site["id"], "cold-1", segment="New Cold User")
+    assert vid
+
+    frame = svc.segment_frame(site["id"])
+    assert not frame.empty
+    labels = set(frame["segment"])
+    assert labels <= set(CANONICAL_SNAKE), (
+        f"{labels - set(CANONICAL_SNAKE)} is not a label Module 3 knows")
+    assert "new_cold_customer" in labels
+
+
+def test_cold_start_customers_never_receive_the_strongest_action() -> None:
+    """The segment exists because we lack evidence about these people.
+
+    The most aggressive treatment is the one that most needs evidence behind
+    it, so it is withheld regardless of what the transferred model scores them.
+    """
+    from api.services import _recommend_rules as rules
+
+    # A cold-start customer scored top of the audience.
+    p_conv = [0.99] + [0.1] * 19
+    p_drop = [0.05] * 20
+    segments = ["new_cold_customer"] + ["high_intent"] * 19
+
+    actions = rules.rank_based_actions(p_conv, p_drop, segments)
+    assert actions[0] != "send_premium_offer"
+
+
+def test_recommendations_survive_a_distorted_probability_scale() -> None:
+    """The property that makes ranking the right answer to the transfer problem.
+
+    A model moved to another audience keeps its ordering and loses its
+    calibration. Squashing every probability through a monotone function is
+    exactly that distortion, and it must not change who is recommended what.
+    """
+    import numpy as np
+
+    from api.services import _recommend_rules as rules
+
+    rng = np.random.default_rng(0)
+    p_conv = rng.uniform(0.01, 0.99, 200)
+    p_drop = rng.uniform(0.01, 0.99, 200)
+    segments = ["high_intent"] * 200
+
+    original = rules.rank_based_actions(p_conv, p_drop, segments)
+    # Monotone, and severe: everything is crushed towards 1, which is what the
+    # transferred conversion model actually does on the imported audience.
+    squashed = rules.rank_based_actions(p_conv**0.05, p_drop**0.05, segments)
+
+    assert original == squashed
+
+    # The absolute-threshold rule does NOT survive it — which is the defect.
+    before = [rules.next_best_action(c, d, "high_intent")
+              for c, d in zip(p_conv, p_drop)]
+    after = [rules.next_best_action(c**0.05, d**0.05, "high_intent")
+             for c, d in zip(p_conv, p_drop)]
+    assert before != after, (
+        "if this ever passes, the absolute rule became scale-invariant and this "
+        "test is no longer demonstrating anything")
+
+
+def test_the_strongest_action_stays_selective() -> None:
+    """A premium offer given to everyone is not a premium offer.
+
+    Absolute thresholds handed it to 64% of the imported audience. The budget
+    is a share of the audience, so it cannot drift with the score distribution.
+    """
+    import numpy as np
+
+    from api.services import _recommend_rules as rules
+
+    rng = np.random.default_rng(1)
+    p_conv = rng.uniform(0, 1, 1_000)
+    p_drop = rng.uniform(0, 1, 1_000)
+    actions = rules.rank_based_actions(p_conv, p_drop, ["high_intent"] * 1_000)
+
+    premium = actions.count("send_premium_offer") / len(actions)
+    assert premium <= rules.TOP_TIER_SHARE + 0.02, (
+        f"{premium:.0%} of the audience got the strongest action")
+
+
 def test_analytics_endpoints_404_on_unknown_site(client: TestClient) -> None:
     for path in ("analytics/funnel", "analytics/attribution",
                  "analytics/recommendations"):

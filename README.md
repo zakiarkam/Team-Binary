@@ -127,7 +127,7 @@ scripts/        setup, dataset import, training
 
 ## Results
 
-`make research` runs seven experiments and regenerates every figure from the
+`make research` runs eight experiments and regenerates every figure from the
 results it just wrote, so a chart cannot disagree with the number it plots.
 Full write-up in **[docs/research/](docs/research/)**.
 
@@ -159,6 +159,29 @@ markov        email 53%    · referral 12% · ppc 12% · seo 11% · social 11%
 Across 7,811 converting journeys the widest pair disagrees over **68% of all
 attributed credit**. A company reading only last-touch would conclude email is
 everything and cut the acquisition spend that built the audience.
+
+### Module 3 — the recommender was answering the wrong question
+
+Ranking customers by **predicted conversion** is not the same as ranking them by
+whether the action *changes* what they do. On the Hillstrom dataset — 64,000
+customers randomly assigned to mens email / womens email / no email, so the
+counterfactual is estimable — the two policies share only **56%** of their
+choices at a 30% budget (Spearman 0.40):
+
+| Policy | Qini | 95% CI | Extra visits per 1,000 targeted |
+|---|---:|---|---:|
+| uplift (S-learner) | 93.6 | [56.1, 129.8] | **103** |
+| uplift (T-learner) | 70.4 | [30.2, 112.3] | 92 |
+| predicted response *(what the recommender did)* | 75.9 | [38.8, 110.0] | 91 |
+| random targeting | −9.8 | [−48.7, 27.0] | 58 |
+
+**Stated carefully:** the intervals overlap, and the second uplift learner does
+*worse* than the current policy — so "use uplift modelling" is not a conclusion
+on its own. What the data supports is that these are different policies choosing
+different people, by a margin large enough to matter.
+
+This cannot be validated on the project's own audience at all: no action was
+ever randomised there, so no counterfactual exists.
 
 ### Module 4 — the simpler model wins, and macro-F1 is why we know
 
@@ -206,6 +229,9 @@ the crawler that turned every em-dash in the store's copy into mojibake.
 - **The engagement dataset carries no usable text signal** — 0 of 8 text
   features survive Holm–Bonferroni correction. Not a modelling failure.
 - **`humorous` tone has one training example** and cannot be learned.
+- **No action was ever randomised on this audience**, so the next-best-action
+  recommendation cannot be validated on it. E8 borrows a dataset where treatment
+  *was* randomised; those actions are not this project's actions.
 - **Open rates under-report** — most mail clients block the pixel. Click-through
   is the reliable signal.
 - Three real platform datasets ship unused: comment-level scrapes that pair no

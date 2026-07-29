@@ -150,10 +150,19 @@ def segment_frame(site_id: int) -> pd.DataFrame:
     if not rows:
         return pd.DataFrame(columns=["user_id", "segment", "confidence"])
 
+    # Route through the adapter rather than lower-casing here. Module 1 emits
+    # "New Cold User"; Module 3 was trained on "new_cold_customer". A local
+    # `.lower().replace(" ", "_")` produced "new_cold_user", which the model's
+    # encoder does not recognise — and because it is configured with
+    # handle_unknown="ignore", the segment silently became an all-zero vector.
+    # Cold-start customers were reaching the model with no segment at all: the
+    # same failure as the vote-order defect, one module boundary further on.
+    from adapters.segment_labels import to_snake
+
     df = pd.DataFrame(rows)
     return pd.DataFrame({
         "user_id": df["user_id"].astype(str),
-        "segment": df["segment_name"].str.lower().str.replace(" ", "_"),
+        "segment": df["segment_name"].map(to_snake),
         "confidence": pd.to_numeric(df["segment_confidence"], errors="coerce").fillna(0.5),
     })
 
@@ -408,15 +417,23 @@ def _score(site_id: int, feature_df: pd.DataFrame,
 
     best_platform = _best_platform_per_user(events)
 
+    frame = feature_df.reset_index(drop=True)
+
+    # Decided by rank across this audience, not by the absolute cut-offs Module
+    # 3's rule uses. Those cut-offs belong to the distribution the models were
+    # fitted on; see rank_based_actions() and experiment E5.
+    actions = rules.rank_based_actions(
+        p_conv, p_drop, frame.get("segment", pd.Series([""] * len(frame))))
+
     records = []
-    for i, row in feature_df.reset_index(drop=True).iterrows():
+    for i, row in frame.iterrows():
         pc, dr = float(p_conv[i]), float(p_drop[i])
         records.append({
             "site_id": site_id,
             "visitor_id": int(row["user_id"]),
             "pc": round(pc, 4),
             "dr": round(dr, 4),
-            "rec": rules.next_best_action(pc, dr, str(row.get("segment", ""))),
+            "rec": actions[i],
             "plat": best_platform.get(str(row["user_id"]), "email"),
             "attr": "last_touch",
             "conf": round(rules.confidence(pc, dr), 4),
