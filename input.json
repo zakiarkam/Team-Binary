@@ -1,12 +1,12 @@
 {
-    "product_name": "GitHub",
-    "website_url": "https://github.com",
-    "target_audience": "software developers and engineering teams",
-    "customer_segment": "developers using version control and DevOps workflows",
+    "product_name": "Duolingo",
+    "website_url": "https://www.duolingo.com",
+    "target_audience": "students and language learners",
+    "customer_segment": "people learning new languages online",
     "preferred_platforms": [
-        "linkedin",
         "instagram",
-        "email",
-        "tiktok"
+        "tiktok",
+        "linkedin",
+        "email"
     ]
 }

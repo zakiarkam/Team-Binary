@@ -102,8 +102,17 @@ SEMANTIC_WEIGHT = 0.40
 PLATFORM_WEIGHT = 0.40
 ENGAGEMENT_WEIGHT = 0.20
 
+# Content-service selection policy. These affect generation/ranking only and
+# deliberately never retrain or overwrite the goal/tone classifiers.
+FAST_CANDIDATES_PER_PLATFORM = 3
+LOW_CONTENT_SCORE_THRESHOLD = 0.75
+LOW_SCORE_RETRY_CANDIDATES = 2
+
 # Default platforms
-PLATFORMS = ["instagram", "linkedin", "shorts", "email"]
+# M4 product scope. Other platform specifications remain below only for
+# backward-compatible reading of historical artifacts; the app never offers
+# them as new campaign targets.
+PLATFORMS = ["instagram", "tiktok", "linkedin", "email"]
 
 # ---------------------------------------------------------------------------
 # Platform capabilities

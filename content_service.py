@@ -217,7 +217,8 @@ def _hashtags(keywords: list[str], lo: int, hi: int, goal: str) -> list[str]:
     return out[:target]
 
 
-def _template_asset(platform: str, summary: dict, keywords: list[str]) -> dict:
+def _template_asset(platform: str, summary: dict, keywords: list[str],
+                    candidate_index: int = 0) -> dict:
     spec = config.platform_spec(platform)
     visual = config.select_visual(platform, summary)
     name = summary["product_name"]; aud = _aud_short(summary["target_audience"])
@@ -225,6 +226,16 @@ def _template_asset(platform: str, summary: dict, keywords: list[str]) -> dict:
     lo, hi = spec["caption_words"]
 
     hook = _HOOK_BY_TONE.get(tone, _HOOK_BY_TONE["professional"]).format(name=name, aud=aud)
+    # Different hooks create alternatives but keep the model-selected campaign
+    # goal and tone fixed; business intent must not change to chase a score.
+    alternatives = [
+        hook,
+        f"What could {aud} achieve with less busywork?",
+        f"A better way for {aud} to get results starts here.",
+        f"One small change can make a meaningful difference for {aud}.",
+        f"Ready to make your next step simpler, {aud}?",
+    ]
+    hook = alternatives[candidate_index % len(alternatives)]
     cta = _CTA_BY_GOAL.get(goal, _CTA_BY_GOAL["awareness"]).format(name=name)
     benefit = _benefit(summary)
 
@@ -252,6 +263,7 @@ def _template_asset(platform: str, summary: dict, keywords: list[str]) -> dict:
     row["caption"] = caption
     row["hashtags"] = tags
     row["cta"] = cta
+    row["candidate_index"] = candidate_index
     if visual == "video":
         row["shorts_prompt"] = (f"Open on a scene that shows {aud} using {name}; "
                                 f"quick cuts of the key benefit, end on the logo and CTA.")
@@ -261,7 +273,8 @@ def _template_asset(platform: str, summary: dict, keywords: list[str]) -> dict:
     return row
 
 
-def _template_assets(summary: dict, platforms: list[str]) -> pd.DataFrame:
+def _template_assets(summary: dict, platforms: list[str],
+                     candidate_indexes: range | list[int] | None = None) -> pd.DataFrame:
     # Keywords lifted from the site's own headings when we have them; the brief
     # is only a fallback, because a company names its product better than we can
     # infer it from an audience description.
@@ -269,9 +282,17 @@ def _template_assets(summary: dict, platforms: list[str]) -> pd.DataFrame:
         {"product_name": summary["product_name"],
          "target_audience": summary["target_audience"],
          "customer_segment": summary["customer_segment"]})
-    rows = [_template_asset(p, summary, keywords) for p in platforms]
-    return pd.DataFrame(rows, columns=["platform", "caption", "hashtags", "cta",
-                                       "image_prompt", "shorts_prompt"])
+    candidate_indexes = candidate_indexes or range(config.FAST_CANDIDATES_PER_PLATFORM)
+    rows = [_template_asset(platform, summary, keywords, candidate_index)
+            for platform in platforms for candidate_index in candidate_indexes]
+    return pd.DataFrame(rows)
+
+
+def _best_per_platform(ranked: pd.DataFrame) -> pd.DataFrame:
+    """Keep the best candidate for each platform under the composite score."""
+    ordered = ranked.sort_values(["platform", "final_score"], ascending=[True, False]).copy()
+    ordered["rank_in_platform"] = ordered.groupby("platform").cumcount() + 1
+    return ordered[ordered["rank_in_platform"] == 1].copy()
 
 
 # --------------------------------------------------------------------------- #
@@ -361,6 +382,27 @@ def generate(product_input: dict, priorities: dict | None = None,
     _l(f"[M4] scoring assets (engagement + {semantic_method}-semantic + platform-fit)…")
     ranked = score_assets(assets, summary, semantic_method=semantic_method)
 
+    retry_count = 0
+    if engine == "fast":
+        selected = _best_per_platform(ranked)
+        weak_platforms = selected.loc[
+            selected["final_score"] < config.LOW_CONTENT_SCORE_THRESHOLD, "platform"
+        ].tolist()
+        if weak_platforms:
+            retry_count = config.LOW_SCORE_RETRY_CANDIDATES
+            _l("[M4] low-score retry for " + ", ".join(weak_platforms) +
+               f" (threshold {config.LOW_CONTENT_SCORE_THRESHOLD:.2f})…")
+            retry_assets = _template_assets(
+                summary, weak_platforms,
+                range(config.FAST_CANDIDATES_PER_PLATFORM,
+                      config.FAST_CANDIDATES_PER_PLATFORM + retry_count),
+            )
+            ranked = pd.concat(
+                [ranked, score_assets(retry_assets, summary, semantic_method=semantic_method)],
+                ignore_index=True,
+            )
+        ranked = _best_per_platform(ranked).sort_values("final_score", ascending=False)
+
     # Serialise hashtags as list for JSON friendliness.
     records = ranked.to_dict(orient="records")
     _l(f"[M4] done — top platform: {records[0]['platform']} "
@@ -372,6 +414,9 @@ def generate(product_input: dict, priorities: dict | None = None,
         "priorities": priorities or {},
         "platform_order": platforms,
         "content_source": summary["content_source"],
+        "candidates_per_platform": (config.FAST_CANDIDATES_PER_PLATFORM + retry_count
+                                    if engine == "fast" else 1),
+        "low_score_threshold": config.LOW_CONTENT_SCORE_THRESHOLD if engine == "fast" else None,
     }
 
 
