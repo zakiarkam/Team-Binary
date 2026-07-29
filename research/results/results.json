@@ -221,7 +221,7 @@
         "Clustering alone barely separates conversion at all. It groups users by behavioural similarity, which is not the same thing as grouping them by commercial value \u2014 and this is the measurement that shows the difference rather than assuming it.",
         "Silhouette is 0.087: the clusters overlap heavily in feature space. The segments are commercially useful without being geometrically clean, and reporting only the separation would hide that."
       ],
-      "seconds": 108.8
+      "seconds": 108.9
     },
     "E2": {
       "id": "E2",
@@ -1466,11 +1466,11 @@
             "strategy": "hybrid",
             "recipients": 400,
             "sent": 400,
-            "opens": 269,
-            "clicks": 108,
-            "conversions": 39,
-            "click_through_rate": 0.27,
-            "conversions_per_1000_sends": 97.5,
+            "opens": 268,
+            "clicks": 109,
+            "conversions": 42,
+            "click_through_rate": 0.2725,
+            "conversions_per_1000_sends": 105.0,
             "operational_complexity": 8,
             "data_basis": "dataset"
           }
@@ -1483,7 +1483,7 @@
         "trigger leads fixed by 3.3 conversions per 1,000 sends for 3 extra decision rules \u2014 the trade the report has to argue.",
         "Messages per user differ sharply (fixed 4.00, trigger 1.32, hybrid 3.05). A policy that stops early is rewarded by a per-send metric and penalised by a per-user one; both are reported so the choice of metric is visible rather than decisive."
       ],
-      "seconds": 53.7
+      "seconds": 53.0
     },
     "E4": {
       "id": "E4",
@@ -1609,7 +1609,7 @@
           {
             "model": "markov",
             "channel": "email",
-            "credit": 0.5331
+            "credit": 0.533
           },
           {
             "model": "markov",
@@ -1619,7 +1619,7 @@
           {
             "model": "markov",
             "channel": "referral",
-            "credit": 0.1242
+            "credit": 0.1243
           },
           {
             "model": "markov",
@@ -1646,7 +1646,7 @@
           {
             "model_a": "first_touch",
             "model_b": "markov",
-            "total_variation_distance": 0.3252
+            "total_variation_distance": 0.3251
           },
           {
             "model_a": "last_touch",
@@ -1661,7 +1661,7 @@
           {
             "model_a": "linear",
             "model_b": "markov",
-            "total_variation_distance": 0.0248
+            "total_variation_distance": 0.0249
           }
         ]
       },
@@ -1808,7 +1808,7 @@
         "drop_off: xgboost (AUC 0.990) clears the baseline with no interval overlap.",
         "These models are fitted on Module 3's simulator. Applying them to the imported audience is a transfer across distributions: the ranking is usable, the absolute probabilities are not calibrated for it."
       ],
-      "seconds": 11.3
+      "seconds": 11.5
     },
     "E6": {
       "id": "E6",
@@ -2104,7 +2104,7 @@
         "`tone`: best macro-F1 0.732 (tfidf + logistic) against a majority baseline of 0.112; accuracy 0.818 against 0.386. The accuracy gap flatters the model far more than the macro-F1 gap does.",
         "`campaign_goal`: best macro-F1 0.500 (tfidf + logistic) against a majority baseline of 0.148; accuracy 0.772 against 0.588. The accuracy gap flatters the model far more than the macro-F1 gap does."
       ],
-      "seconds": 7.8
+      "seconds": 7.3
     },
     "E7": {
       "id": "E7",
@@ -2220,7 +2220,7 @@
         "None of the 8 text features correlates with engagement after Holm\u2013Bonferroni correction. This is a property of the dataset, not a modelling failure \u2014 no model can extract a signal that is not there, and the honest response is to reduce the weight this score carries in content ranking rather than to keep tuning.",
         "The corrected model's rank correlation is 0.012 [-0.028, 0.054] \u2014 the interval spans zero, so no ranking skill is demonstrated on held-out data."
       ],
-      "seconds": 15.4
+      "seconds": 15.1
     },
     "E8": {
       "id": "E8",

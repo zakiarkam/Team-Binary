@@ -14,8 +14,8 @@ linear,ppc,0.1127
 linear,referral,0.1187
 linear,seo,0.1068
 linear,social_media,0.1038
-markov,email,0.5331
+markov,email,0.533
 markov,ppc,0.119
-markov,referral,0.1242
+markov,referral,0.1243
 markov,seo,0.1129
 markov,social_media,0.1108

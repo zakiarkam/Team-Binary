@@ -32,7 +32,8 @@ tools. That is Module 3 of the report: **Decision Support**.
 
 ```bash
 make setup     # once — Python, Node, Chromium, .env
-make db        # PostgreSQL in Docker
+make db        # PostgreSQL — Homebrew service if present, else Docker
+make db-create # once, on the Homebrew path — creates the role and database
 
 make api       # terminal 2
 make web       # terminal 3
