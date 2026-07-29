@@ -13,7 +13,7 @@ PIP     := venv/bin/pip
 UVICORN := venv/bin/uvicorn
 
 .DEFAULT_GOAL := help
-.PHONY: help setup db api web site demo test test-fast lint clean reset stop status train
+.PHONY: help setup db api web site demo research test test-fast lint clean reset stop status train
 
 help:  ## Show this help
 	@echo "AI-Powered Digital Marketing Orchestration"
@@ -28,6 +28,7 @@ help:  ## Show this help
 	@echo "  make web        # terminal 3"
 	@echo "  make site       # terminal 4"
 	@echo "  make demo       # import the audience and run every module"
+	@echo "  make research   # reproduce every experiment and figure"
 
 setup:  ## Install Python and Node dependencies (one time)
 	$(PIP) install -q -r requirements.txt
@@ -56,6 +57,9 @@ site:  ## Serve the demo client store on :4000 (foreground)
 
 demo:  ## Build the full research demonstration (needs db + api + site running)
 	$(PY) scripts/build_research_demo.py
+
+research:  ## Run every experiment and rebuild the report's figures
+	$(PY) -m research.run_all
 
 train:  ## Retrain the Module 4 models
 	$(PY) scripts/train_models.py

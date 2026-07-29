@@ -1,0 +1,2232 @@
+{
+  "generated_by": "research/run_all.py",
+  "seed": 42,
+  "n_bootstrap": 10000,
+  "n_seeds": 30,
+  "experiments": {
+    "E1": {
+      "id": "E1",
+      "title": "Module 1 \u2014 hybrid segmentation versus each component alone",
+      "status": "ok",
+      "metrics": {
+        "n_users": 8000,
+        "silhouette": 0.0869,
+        "unanimous_share": 0.0575,
+        "all_disagree_share": 0.353,
+        "mean_confidence": 0.712,
+        "cold_start_users": 1,
+        "hybrid_separation": 0.3838,
+        "best_single_method": "rules only",
+        "best_single_separation": 0.3837,
+        "hybrid_advantage": -0.0008,
+        "hybrid_advantage_ci": [
+          -0.001,
+          -0.0006
+        ]
+      },
+      "tables": {
+        "e1_method_comparison": [
+          {
+            "method": "rules only",
+            "n_segments": 5,
+            "separation": 0.3837,
+            "ci_low": 0.3088,
+            "ci_high": 0.4635,
+            "largest_segment_share": 0.4374,
+            "finds_cold_start": true,
+            "cold_start_users": 163
+          },
+          {
+            "method": "k-means only",
+            "n_segments": 4,
+            "separation": 0.0693,
+            "ci_low": 0.0489,
+            "ci_high": 0.09,
+            "largest_segment_share": 0.2631,
+            "finds_cold_start": false,
+            "cold_start_users": 0
+          },
+          {
+            "method": "hierarchical only",
+            "n_segments": 4,
+            "separation": 0.0343,
+            "ci_low": 0.0193,
+            "ci_high": 0.0588,
+            "largest_segment_share": 0.3879,
+            "finds_cold_start": false,
+            "cold_start_users": 0
+          },
+          {
+            "method": "hybrid (vote)",
+            "n_segments": 5,
+            "separation": 0.3838,
+            "ci_low": 0.3069,
+            "ci_high": 0.4632,
+            "largest_segment_share": 0.423,
+            "finds_cold_start": true,
+            "cold_start_users": 163
+          }
+        ],
+        "e1_segment_profile": [
+          {
+            "method": "rules only",
+            "segment": "Low Engagement",
+            "users": 3499,
+            "share": 0.4374,
+            "conversion_rate": 0.8625,
+            "counted_in_separation": true
+          },
+          {
+            "method": "rules only",
+            "segment": "Loyal Customer",
+            "users": 1942,
+            "share": 0.2427,
+            "conversion_rate": 0.9135,
+            "counted_in_separation": true
+          },
+          {
+            "method": "rules only",
+            "segment": "Price Sensitive",
+            "users": 1451,
+            "share": 0.1814,
+            "conversion_rate": 0.8725,
+            "counted_in_separation": true
+          },
+          {
+            "method": "rules only",
+            "segment": "High Intent",
+            "users": 945,
+            "share": 0.1181,
+            "conversion_rate": 0.9175,
+            "counted_in_separation": true
+          },
+          {
+            "method": "rules only",
+            "segment": "New Cold User",
+            "users": 163,
+            "share": 0.0204,
+            "conversion_rate": 0.5337,
+            "counted_in_separation": true
+          },
+          {
+            "method": "k-means only",
+            "segment": "High Intent",
+            "users": 2105,
+            "share": 0.2631,
+            "conversion_rate": 0.9088,
+            "counted_in_separation": true
+          },
+          {
+            "method": "k-means only",
+            "segment": "Loyal Customer",
+            "users": 1980,
+            "share": 0.2475,
+            "conversion_rate": 0.8854,
+            "counted_in_separation": true
+          },
+          {
+            "method": "k-means only",
+            "segment": "Price Sensitive",
+            "users": 1959,
+            "share": 0.2449,
+            "conversion_rate": 0.8698,
+            "counted_in_separation": true
+          },
+          {
+            "method": "k-means only",
+            "segment": "Low Engagement",
+            "users": 1956,
+            "share": 0.2445,
+            "conversion_rate": 0.8395,
+            "counted_in_separation": true
+          },
+          {
+            "method": "hierarchical only",
+            "segment": "Loyal Customer",
+            "users": 3103,
+            "share": 0.3879,
+            "conversion_rate": 0.8837,
+            "counted_in_separation": true
+          },
+          {
+            "method": "hierarchical only",
+            "segment": "Low Engagement",
+            "users": 2499,
+            "share": 0.3124,
+            "conversion_rate": 0.8563,
+            "counted_in_separation": true
+          },
+          {
+            "method": "hierarchical only",
+            "segment": "Price Sensitive",
+            "users": 1429,
+            "share": 0.1786,
+            "conversion_rate": 0.8866,
+            "counted_in_separation": true
+          },
+          {
+            "method": "hierarchical only",
+            "segment": "High Intent",
+            "users": 969,
+            "share": 0.1211,
+            "conversion_rate": 0.8906,
+            "counted_in_separation": true
+          },
+          {
+            "method": "hybrid (vote)",
+            "segment": "Low Engagement",
+            "users": 3384,
+            "share": 0.423,
+            "conversion_rate": 0.8599,
+            "counted_in_separation": true
+          },
+          {
+            "method": "hybrid (vote)",
+            "segment": "Loyal Customer",
+            "users": 2247,
+            "share": 0.2809,
+            "conversion_rate": 0.9097,
+            "counted_in_separation": true
+          },
+          {
+            "method": "hybrid (vote)",
+            "segment": "Price Sensitive",
+            "users": 1393,
+            "share": 0.1741,
+            "conversion_rate": 0.8794,
+            "counted_in_separation": true
+          },
+          {
+            "method": "hybrid (vote)",
+            "segment": "High Intent",
+            "users": 813,
+            "share": 0.1016,
+            "conversion_rate": 0.9176,
+            "counted_in_separation": true
+          },
+          {
+            "method": "hybrid (vote)",
+            "segment": "New Cold User",
+            "users": 163,
+            "share": 0.0204,
+            "conversion_rate": 0.5337,
+            "counted_in_separation": true
+          }
+        ]
+      },
+      "notes": [
+        "Conversion is an evaluation column only \u2014 never a clustering feature and never a rule input \u2014 so the separation is not circular.",
+        "Segments under 30 users are reported but excluded from the separation statistic.",
+        "The hybrid separates conversion no better than the rules alone (0.3838 against 0.3837). On this metric the clustering adds nothing, and the honest reading is that the rules carry the commercial signal. The hybrid earns its place elsewhere \u2014 it produces a calibrated confidence from the level of agreement between three independent methods, and it is the vote that makes cold start explicit \u2014 but not by separating conversion further.",
+        "Clustering alone barely separates conversion at all. It groups users by behavioural similarity, which is not the same thing as grouping them by commercial value \u2014 and this is the measurement that shows the difference rather than assuming it.",
+        "Silhouette is 0.087: the clusters overlap heavily in feature space. The segments are commercially useful without being geometrically clean, and reporting only the separation would hide that."
+      ],
+      "seconds": 107.9
+    },
+    "E2": {
+      "id": "E2",
+      "title": "Module 1 \u2014 leakage and the deleted cold-start segment",
+      "status": "ok",
+      "metrics": {
+        "cold_start_detected": 163,
+        "cold_start_kept_notebook": 127,
+        "cold_start_kept_corrected": 163,
+        "cold_start_conversion": 0.5337,
+        "other_segments_conversion": 0.8836,
+        "leaky_accuracy": 0.9213,
+        "clean_accuracy": 0.92,
+        "clean_accuracy_ci": [
+          0.9057,
+          0.9323
+        ],
+        "users_at_certainty_leaky": 450,
+        "users_at_certainty_clean": 3
+      },
+      "tables": {
+        "e2_vote_order": [
+          {
+            "vote_order": "notebook (ml == hier tested first)",
+            "cold_start_detected_by_rules": 163,
+            "cold_start_surviving": 127,
+            "share_lost": 0.2209
+          },
+          {
+            "vote_order": "corrected (cold start resolved second)",
+            "cold_start_detected_by_rules": 163,
+            "cold_start_surviving": 163,
+            "share_lost": 0.0
+          }
+        ],
+        "e2_leakage": [
+          {
+            "feature_set": "with rule_encoded (notebook)",
+            "held_out_accuracy": 0.9213,
+            "users_at_confidence_1.00": 450,
+            "share_at_confidence_1.00": 0.0563,
+            "mean_confidence": 0.9262
+          },
+          {
+            "feature_set": "behavioural features only (corrected)",
+            "held_out_accuracy": 0.92,
+            "users_at_confidence_1.00": 3,
+            "share_at_confidence_1.00": 0.0004,
+            "mean_confidence": 0.8772
+          }
+        ]
+      },
+      "notes": [
+        "Leakage barely moves accuracy (0.9213 against 0.9200) but inflates certainty by a factor of 150: 450 users come out at confidence 1.00 with the rule label among the inputs, against 3 without it. Accuracy is not what the defect corrupts \u2014 the confidence attached to every downstream decision is.",
+        "That is also why it survived review. Nothing fails, no test goes red, and the only symptom is a confidence column that looks impressive.",
+        "Even the corrected accuracy should not be quoted as generalisation to a new audience. The rule component of the target is a deterministic function of these same features, so this measures internal consistency; the engine reports that caveat in its own diagnostics.",
+        "Under the notebook's vote order the cold-start segment loses 36 of 163 users on this dataset. On the live audience it went to zero \u2014 a contribution deleted by its own pipeline."
+      ],
+      "seconds": 7.1
+    },
+    "E3": {
+      "id": "E3",
+      "title": "Module 2 \u2014 fixed vs trigger vs hybrid, over 30 paired seeds",
+      "status": "ok",
+      "metrics": {
+        "n_seeds": 30,
+        "n_users": 8000,
+        "best_policy": "trigger",
+        "best_conversions_per_1000": 10.45,
+        "simplest_policy": "fixed",
+        "simplest_conversions_per_1000": 7.15,
+        "efficiency_gap": 3.3,
+        "hybrid_beats_fixed": true,
+        "live_measured": true
+      },
+      "tables": {
+        "e3_policy_summary": [
+          {
+            "strategy": "fixed",
+            "seeds": 30,
+            "conversions_per_1000_sends": 7.15,
+            "sd": 0.2,
+            "ci_low": 6.75,
+            "ci_high": 7.49,
+            "open_rate": 0.2421,
+            "ctr": 0.0473,
+            "messages_per_user": 4.0,
+            "operational_complexity": 1
+          },
+          {
+            "strategy": "trigger",
+            "seeds": 30,
+            "conversions_per_1000_sends": 10.45,
+            "sd": 0.46,
+            "ci_low": 9.62,
+            "ci_high": 11.17,
+            "open_rate": 0.2477,
+            "ctr": 0.0482,
+            "messages_per_user": 1.32,
+            "operational_complexity": 4
+          },
+          {
+            "strategy": "hybrid",
+            "seeds": 30,
+            "conversions_per_1000_sends": 7.99,
+            "sd": 0.28,
+            "ci_low": 7.45,
+            "ci_high": 8.41,
+            "open_rate": 0.2311,
+            "ctr": 0.0428,
+            "messages_per_user": 3.05,
+            "operational_complexity": 9
+          }
+        ],
+        "e3_policy_contests": [
+          {
+            "comparison": "hybrid \u2212 fixed",
+            "mean_difference": 0.837,
+            "ci_low": 0.727,
+            "ci_high": 0.944,
+            "wilcoxon_p": 1.862645149230957e-09,
+            "cliffs_delta": 0.991,
+            "effect_size": "large",
+            "significant": true,
+            "extra_rules": 8
+          },
+          {
+            "comparison": "hybrid \u2212 trigger",
+            "mean_difference": -2.462,
+            "ci_low": -2.574,
+            "ci_high": -2.347,
+            "wilcoxon_p": 1.862645149230957e-09,
+            "cliffs_delta": -1.0,
+            "effect_size": "large",
+            "significant": true,
+            "extra_rules": 5
+          },
+          {
+            "comparison": "trigger \u2212 fixed",
+            "mean_difference": 3.299,
+            "ci_low": 3.146,
+            "ci_high": 3.447,
+            "wilcoxon_p": 1.862645149230957e-09,
+            "cliffs_delta": 1.0,
+            "effect_size": "large",
+            "significant": true,
+            "extra_rules": 3
+          }
+        ],
+        "e3_per_seed": [
+          {
+            "seed": 42,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2425,
+            "ctr": 0.0468,
+            "conversions": 216,
+            "conversions_per_1000_sends": 6.75,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 42,
+            "strategy": "trigger",
+            "messages_sent": 10596,
+            "users": 8000,
+            "open_rate": 0.2475,
+            "ctr": 0.0478,
+            "conversions": 108,
+            "conversions_per_1000_sends": 10.1925,
+            "messages_per_user": 1.3245
+          },
+          {
+            "seed": 42,
+            "strategy": "hybrid",
+            "messages_sent": 24348,
+            "users": 8000,
+            "open_rate": 0.2311,
+            "ctr": 0.0421,
+            "conversions": 187,
+            "conversions_per_1000_sends": 7.6803,
+            "messages_per_user": 3.0435
+          },
+          {
+            "seed": 43,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2428,
+            "ctr": 0.0469,
+            "conversions": 225,
+            "conversions_per_1000_sends": 7.0312,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 43,
+            "strategy": "trigger",
+            "messages_sent": 10596,
+            "users": 8000,
+            "open_rate": 0.2476,
+            "ctr": 0.0477,
+            "conversions": 114,
+            "conversions_per_1000_sends": 10.7588,
+            "messages_per_user": 1.3245
+          },
+          {
+            "seed": 43,
+            "strategy": "hybrid",
+            "messages_sent": 24400,
+            "users": 8000,
+            "open_rate": 0.2331,
+            "ctr": 0.043,
+            "conversions": 195,
+            "conversions_per_1000_sends": 7.9918,
+            "messages_per_user": 3.05
+          },
+          {
+            "seed": 44,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2431,
+            "ctr": 0.0475,
+            "conversions": 227,
+            "conversions_per_1000_sends": 7.0938,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 44,
+            "strategy": "trigger",
+            "messages_sent": 10639,
+            "users": 8000,
+            "open_rate": 0.2506,
+            "ctr": 0.0495,
+            "conversions": 105,
+            "conversions_per_1000_sends": 9.8693,
+            "messages_per_user": 1.3299
+          },
+          {
+            "seed": 44,
+            "strategy": "hybrid",
+            "messages_sent": 24446,
+            "users": 8000,
+            "open_rate": 0.2314,
+            "ctr": 0.0431,
+            "conversions": 196,
+            "conversions_per_1000_sends": 8.0177,
+            "messages_per_user": 3.0558
+          },
+          {
+            "seed": 45,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2418,
+            "ctr": 0.0471,
+            "conversions": 234,
+            "conversions_per_1000_sends": 7.3125,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 45,
+            "strategy": "trigger",
+            "messages_sent": 10612,
+            "users": 8000,
+            "open_rate": 0.2494,
+            "ctr": 0.0499,
+            "conversions": 117,
+            "conversions_per_1000_sends": 11.0253,
+            "messages_per_user": 1.3265
+          },
+          {
+            "seed": 45,
+            "strategy": "hybrid",
+            "messages_sent": 24429,
+            "users": 8000,
+            "open_rate": 0.2312,
+            "ctr": 0.0431,
+            "conversions": 202,
+            "conversions_per_1000_sends": 8.2689,
+            "messages_per_user": 3.0536
+          },
+          {
+            "seed": 46,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2415,
+            "ctr": 0.0472,
+            "conversions": 227,
+            "conversions_per_1000_sends": 7.0938,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 46,
+            "strategy": "trigger",
+            "messages_sent": 10564,
+            "users": 8000,
+            "open_rate": 0.2452,
+            "ctr": 0.0474,
+            "conversions": 115,
+            "conversions_per_1000_sends": 10.886,
+            "messages_per_user": 1.3205
+          },
+          {
+            "seed": 46,
+            "strategy": "hybrid",
+            "messages_sent": 24362,
+            "users": 8000,
+            "open_rate": 0.2285,
+            "ctr": 0.0431,
+            "conversions": 199,
+            "conversions_per_1000_sends": 8.1685,
+            "messages_per_user": 3.0452
+          },
+          {
+            "seed": 47,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2421,
+            "ctr": 0.0465,
+            "conversions": 227,
+            "conversions_per_1000_sends": 7.0938,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 47,
+            "strategy": "trigger",
+            "messages_sent": 10587,
+            "users": 8000,
+            "open_rate": 0.2467,
+            "ctr": 0.0469,
+            "conversions": 101,
+            "conversions_per_1000_sends": 9.54,
+            "messages_per_user": 1.3234
+          },
+          {
+            "seed": 47,
+            "strategy": "hybrid",
+            "messages_sent": 24374,
+            "users": 8000,
+            "open_rate": 0.2313,
+            "ctr": 0.0417,
+            "conversions": 182,
+            "conversions_per_1000_sends": 7.467,
+            "messages_per_user": 3.0468
+          },
+          {
+            "seed": 48,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2416,
+            "ctr": 0.047,
+            "conversions": 227,
+            "conversions_per_1000_sends": 7.0938,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 48,
+            "strategy": "trigger",
+            "messages_sent": 10613,
+            "users": 8000,
+            "open_rate": 0.2487,
+            "ctr": 0.0479,
+            "conversions": 116,
+            "conversions_per_1000_sends": 10.93,
+            "messages_per_user": 1.3266
+          },
+          {
+            "seed": 48,
+            "strategy": "hybrid",
+            "messages_sent": 24422,
+            "users": 8000,
+            "open_rate": 0.2322,
+            "ctr": 0.0438,
+            "conversions": 200,
+            "conversions_per_1000_sends": 8.1893,
+            "messages_per_user": 3.0528
+          },
+          {
+            "seed": 49,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2422,
+            "ctr": 0.0481,
+            "conversions": 228,
+            "conversions_per_1000_sends": 7.125,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 49,
+            "strategy": "trigger",
+            "messages_sent": 10594,
+            "users": 8000,
+            "open_rate": 0.2471,
+            "ctr": 0.0491,
+            "conversions": 116,
+            "conversions_per_1000_sends": 10.9496,
+            "messages_per_user": 1.3242
+          },
+          {
+            "seed": 49,
+            "strategy": "hybrid",
+            "messages_sent": 24358,
+            "users": 8000,
+            "open_rate": 0.2296,
+            "ctr": 0.0432,
+            "conversions": 202,
+            "conversions_per_1000_sends": 8.293,
+            "messages_per_user": 3.0448
+          },
+          {
+            "seed": 50,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2427,
+            "ctr": 0.047,
+            "conversions": 219,
+            "conversions_per_1000_sends": 6.8438,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 50,
+            "strategy": "trigger",
+            "messages_sent": 10593,
+            "users": 8000,
+            "open_rate": 0.2472,
+            "ctr": 0.0469,
+            "conversions": 112,
+            "conversions_per_1000_sends": 10.573,
+            "messages_per_user": 1.3241
+          },
+          {
+            "seed": 50,
+            "strategy": "hybrid",
+            "messages_sent": 24386,
+            "users": 8000,
+            "open_rate": 0.2318,
+            "ctr": 0.0425,
+            "conversions": 187,
+            "conversions_per_1000_sends": 7.6683,
+            "messages_per_user": 3.0482
+          },
+          {
+            "seed": 51,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2418,
+            "ctr": 0.0468,
+            "conversions": 228,
+            "conversions_per_1000_sends": 7.125,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 51,
+            "strategy": "trigger",
+            "messages_sent": 10591,
+            "users": 8000,
+            "open_rate": 0.2466,
+            "ctr": 0.048,
+            "conversions": 105,
+            "conversions_per_1000_sends": 9.9141,
+            "messages_per_user": 1.3239
+          },
+          {
+            "seed": 51,
+            "strategy": "hybrid",
+            "messages_sent": 24355,
+            "users": 8000,
+            "open_rate": 0.2299,
+            "ctr": 0.0423,
+            "conversions": 189,
+            "conversions_per_1000_sends": 7.7602,
+            "messages_per_user": 3.0444
+          },
+          {
+            "seed": 52,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2416,
+            "ctr": 0.0483,
+            "conversions": 232,
+            "conversions_per_1000_sends": 7.25,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 52,
+            "strategy": "trigger",
+            "messages_sent": 10610,
+            "users": 8000,
+            "open_rate": 0.2485,
+            "ctr": 0.0486,
+            "conversions": 113,
+            "conversions_per_1000_sends": 10.6503,
+            "messages_per_user": 1.3262
+          },
+          {
+            "seed": 52,
+            "strategy": "hybrid",
+            "messages_sent": 24383,
+            "users": 8000,
+            "open_rate": 0.2298,
+            "ctr": 0.0424,
+            "conversions": 197,
+            "conversions_per_1000_sends": 8.0794,
+            "messages_per_user": 3.0479
+          },
+          {
+            "seed": 53,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2419,
+            "ctr": 0.0481,
+            "conversions": 237,
+            "conversions_per_1000_sends": 7.4062,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 53,
+            "strategy": "trigger",
+            "messages_sent": 10614,
+            "users": 8000,
+            "open_rate": 0.2484,
+            "ctr": 0.0496,
+            "conversions": 118,
+            "conversions_per_1000_sends": 11.1174,
+            "messages_per_user": 1.3268
+          },
+          {
+            "seed": 53,
+            "strategy": "hybrid",
+            "messages_sent": 24401,
+            "users": 8000,
+            "open_rate": 0.2327,
+            "ctr": 0.0437,
+            "conversions": 199,
+            "conversions_per_1000_sends": 8.1554,
+            "messages_per_user": 3.0501
+          },
+          {
+            "seed": 54,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2412,
+            "ctr": 0.0472,
+            "conversions": 216,
+            "conversions_per_1000_sends": 6.75,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 54,
+            "strategy": "trigger",
+            "messages_sent": 10575,
+            "users": 8000,
+            "open_rate": 0.2455,
+            "ctr": 0.0475,
+            "conversions": 102,
+            "conversions_per_1000_sends": 9.6454,
+            "messages_per_user": 1.3219
+          },
+          {
+            "seed": 54,
+            "strategy": "hybrid",
+            "messages_sent": 24344,
+            "users": 8000,
+            "open_rate": 0.2329,
+            "ctr": 0.0433,
+            "conversions": 189,
+            "conversions_per_1000_sends": 7.7637,
+            "messages_per_user": 3.043
+          },
+          {
+            "seed": 55,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2427,
+            "ctr": 0.0474,
+            "conversions": 227,
+            "conversions_per_1000_sends": 7.0938,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 55,
+            "strategy": "trigger",
+            "messages_sent": 10617,
+            "users": 8000,
+            "open_rate": 0.2494,
+            "ctr": 0.0472,
+            "conversions": 103,
+            "conversions_per_1000_sends": 9.7014,
+            "messages_per_user": 1.3271
+          },
+          {
+            "seed": 55,
+            "strategy": "hybrid",
+            "messages_sent": 24386,
+            "users": 8000,
+            "open_rate": 0.2329,
+            "ctr": 0.0431,
+            "conversions": 190,
+            "conversions_per_1000_sends": 7.7914,
+            "messages_per_user": 3.0482
+          },
+          {
+            "seed": 56,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2401,
+            "ctr": 0.047,
+            "conversions": 236,
+            "conversions_per_1000_sends": 7.375,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 56,
+            "strategy": "trigger",
+            "messages_sent": 10579,
+            "users": 8000,
+            "open_rate": 0.2463,
+            "ctr": 0.0478,
+            "conversions": 110,
+            "conversions_per_1000_sends": 10.398,
+            "messages_per_user": 1.3224
+          },
+          {
+            "seed": 56,
+            "strategy": "hybrid",
+            "messages_sent": 24359,
+            "users": 8000,
+            "open_rate": 0.2306,
+            "ctr": 0.0413,
+            "conversions": 188,
+            "conversions_per_1000_sends": 7.7179,
+            "messages_per_user": 3.0449
+          },
+          {
+            "seed": 57,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2418,
+            "ctr": 0.0472,
+            "conversions": 241,
+            "conversions_per_1000_sends": 7.5312,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 57,
+            "strategy": "trigger",
+            "messages_sent": 10593,
+            "users": 8000,
+            "open_rate": 0.2479,
+            "ctr": 0.0481,
+            "conversions": 113,
+            "conversions_per_1000_sends": 10.6674,
+            "messages_per_user": 1.3241
+          },
+          {
+            "seed": 57,
+            "strategy": "hybrid",
+            "messages_sent": 24399,
+            "users": 8000,
+            "open_rate": 0.2301,
+            "ctr": 0.0417,
+            "conversions": 191,
+            "conversions_per_1000_sends": 7.8282,
+            "messages_per_user": 3.0499
+          },
+          {
+            "seed": 58,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2417,
+            "ctr": 0.0472,
+            "conversions": 237,
+            "conversions_per_1000_sends": 7.4062,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 58,
+            "strategy": "trigger",
+            "messages_sent": 10592,
+            "users": 8000,
+            "open_rate": 0.2474,
+            "ctr": 0.0472,
+            "conversions": 109,
+            "conversions_per_1000_sends": 10.2908,
+            "messages_per_user": 1.324
+          },
+          {
+            "seed": 58,
+            "strategy": "hybrid",
+            "messages_sent": 24356,
+            "users": 8000,
+            "open_rate": 0.232,
+            "ctr": 0.043,
+            "conversions": 189,
+            "conversions_per_1000_sends": 7.7599,
+            "messages_per_user": 3.0445
+          },
+          {
+            "seed": 59,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2433,
+            "ctr": 0.0465,
+            "conversions": 222,
+            "conversions_per_1000_sends": 6.9375,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 59,
+            "strategy": "trigger",
+            "messages_sent": 10628,
+            "users": 8000,
+            "open_rate": 0.2493,
+            "ctr": 0.0481,
+            "conversions": 113,
+            "conversions_per_1000_sends": 10.6323,
+            "messages_per_user": 1.3285
+          },
+          {
+            "seed": 59,
+            "strategy": "hybrid",
+            "messages_sent": 24367,
+            "users": 8000,
+            "open_rate": 0.2333,
+            "ctr": 0.0431,
+            "conversions": 200,
+            "conversions_per_1000_sends": 8.2078,
+            "messages_per_user": 3.0459
+          },
+          {
+            "seed": 60,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2418,
+            "ctr": 0.0481,
+            "conversions": 233,
+            "conversions_per_1000_sends": 7.2812,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 60,
+            "strategy": "trigger",
+            "messages_sent": 10579,
+            "users": 8000,
+            "open_rate": 0.2459,
+            "ctr": 0.0489,
+            "conversions": 111,
+            "conversions_per_1000_sends": 10.4925,
+            "messages_per_user": 1.3224
+          },
+          {
+            "seed": 60,
+            "strategy": "hybrid",
+            "messages_sent": 24342,
+            "users": 8000,
+            "open_rate": 0.2314,
+            "ctr": 0.043,
+            "conversions": 202,
+            "conversions_per_1000_sends": 8.2984,
+            "messages_per_user": 3.0428
+          },
+          {
+            "seed": 61,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2413,
+            "ctr": 0.0466,
+            "conversions": 235,
+            "conversions_per_1000_sends": 7.3438,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 61,
+            "strategy": "trigger",
+            "messages_sent": 10574,
+            "users": 8000,
+            "open_rate": 0.2454,
+            "ctr": 0.0477,
+            "conversions": 108,
+            "conversions_per_1000_sends": 10.2137,
+            "messages_per_user": 1.3218
+          },
+          {
+            "seed": 61,
+            "strategy": "hybrid",
+            "messages_sent": 24319,
+            "users": 8000,
+            "open_rate": 0.2279,
+            "ctr": 0.0416,
+            "conversions": 189,
+            "conversions_per_1000_sends": 7.7717,
+            "messages_per_user": 3.0399
+          },
+          {
+            "seed": 62,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.243,
+            "ctr": 0.0478,
+            "conversions": 234,
+            "conversions_per_1000_sends": 7.3125,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 62,
+            "strategy": "trigger",
+            "messages_sent": 10623,
+            "users": 8000,
+            "open_rate": 0.2497,
+            "ctr": 0.0479,
+            "conversions": 111,
+            "conversions_per_1000_sends": 10.449,
+            "messages_per_user": 1.3279
+          },
+          {
+            "seed": 62,
+            "strategy": "hybrid",
+            "messages_sent": 24382,
+            "users": 8000,
+            "open_rate": 0.2306,
+            "ctr": 0.0426,
+            "conversions": 196,
+            "conversions_per_1000_sends": 8.0387,
+            "messages_per_user": 3.0478
+          },
+          {
+            "seed": 63,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.242,
+            "ctr": 0.0472,
+            "conversions": 227,
+            "conversions_per_1000_sends": 7.0938,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 63,
+            "strategy": "trigger",
+            "messages_sent": 10574,
+            "users": 8000,
+            "open_rate": 0.2459,
+            "ctr": 0.048,
+            "conversions": 107,
+            "conversions_per_1000_sends": 10.1192,
+            "messages_per_user": 1.3218
+          },
+          {
+            "seed": 63,
+            "strategy": "hybrid",
+            "messages_sent": 24347,
+            "users": 8000,
+            "open_rate": 0.2289,
+            "ctr": 0.0423,
+            "conversions": 189,
+            "conversions_per_1000_sends": 7.7628,
+            "messages_per_user": 3.0434
+          },
+          {
+            "seed": 64,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2425,
+            "ctr": 0.0468,
+            "conversions": 239,
+            "conversions_per_1000_sends": 7.4688,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 64,
+            "strategy": "trigger",
+            "messages_sent": 10584,
+            "users": 8000,
+            "open_rate": 0.2463,
+            "ctr": 0.0485,
+            "conversions": 114,
+            "conversions_per_1000_sends": 10.771,
+            "messages_per_user": 1.323
+          },
+          {
+            "seed": 64,
+            "strategy": "hybrid",
+            "messages_sent": 24314,
+            "users": 8000,
+            "open_rate": 0.2305,
+            "ctr": 0.0427,
+            "conversions": 202,
+            "conversions_per_1000_sends": 8.308,
+            "messages_per_user": 3.0392
+          },
+          {
+            "seed": 65,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.241,
+            "ctr": 0.0477,
+            "conversions": 223,
+            "conversions_per_1000_sends": 6.9688,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 65,
+            "strategy": "trigger",
+            "messages_sent": 10603,
+            "users": 8000,
+            "open_rate": 0.2481,
+            "ctr": 0.0504,
+            "conversions": 112,
+            "conversions_per_1000_sends": 10.563,
+            "messages_per_user": 1.3254
+          },
+          {
+            "seed": 65,
+            "strategy": "hybrid",
+            "messages_sent": 24396,
+            "users": 8000,
+            "open_rate": 0.2302,
+            "ctr": 0.0434,
+            "conversions": 197,
+            "conversions_per_1000_sends": 8.0751,
+            "messages_per_user": 3.0495
+          },
+          {
+            "seed": 66,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2435,
+            "ctr": 0.048,
+            "conversions": 229,
+            "conversions_per_1000_sends": 7.1562,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 66,
+            "strategy": "trigger",
+            "messages_sent": 10626,
+            "users": 8000,
+            "open_rate": 0.2493,
+            "ctr": 0.0479,
+            "conversions": 106,
+            "conversions_per_1000_sends": 9.9755,
+            "messages_per_user": 1.3282
+          },
+          {
+            "seed": 66,
+            "strategy": "hybrid",
+            "messages_sent": 24405,
+            "users": 8000,
+            "open_rate": 0.232,
+            "ctr": 0.0429,
+            "conversions": 181,
+            "conversions_per_1000_sends": 7.4165,
+            "messages_per_user": 3.0506
+          },
+          {
+            "seed": 67,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2416,
+            "ctr": 0.0474,
+            "conversions": 234,
+            "conversions_per_1000_sends": 7.3125,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 67,
+            "strategy": "trigger",
+            "messages_sent": 10588,
+            "users": 8000,
+            "open_rate": 0.2473,
+            "ctr": 0.0479,
+            "conversions": 114,
+            "conversions_per_1000_sends": 10.7669,
+            "messages_per_user": 1.3235
+          },
+          {
+            "seed": 67,
+            "strategy": "hybrid",
+            "messages_sent": 24315,
+            "users": 8000,
+            "open_rate": 0.2314,
+            "ctr": 0.0433,
+            "conversions": 199,
+            "conversions_per_1000_sends": 8.1842,
+            "messages_per_user": 3.0394
+          },
+          {
+            "seed": 68,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2416,
+            "ctr": 0.0475,
+            "conversions": 224,
+            "conversions_per_1000_sends": 7.0,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 68,
+            "strategy": "trigger",
+            "messages_sent": 10591,
+            "users": 8000,
+            "open_rate": 0.247,
+            "ctr": 0.0482,
+            "conversions": 108,
+            "conversions_per_1000_sends": 10.1973,
+            "messages_per_user": 1.3239
+          },
+          {
+            "seed": 68,
+            "strategy": "hybrid",
+            "messages_sent": 24360,
+            "users": 8000,
+            "open_rate": 0.231,
+            "ctr": 0.0429,
+            "conversions": 197,
+            "conversions_per_1000_sends": 8.087,
+            "messages_per_user": 3.045
+          },
+          {
+            "seed": 69,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2433,
+            "ctr": 0.0485,
+            "conversions": 227,
+            "conversions_per_1000_sends": 7.0938,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 69,
+            "strategy": "trigger",
+            "messages_sent": 10620,
+            "users": 8000,
+            "open_rate": 0.2494,
+            "ctr": 0.0493,
+            "conversions": 116,
+            "conversions_per_1000_sends": 10.9228,
+            "messages_per_user": 1.3275
+          },
+          {
+            "seed": 69,
+            "strategy": "hybrid",
+            "messages_sent": 24424,
+            "users": 8000,
+            "open_rate": 0.2325,
+            "ctr": 0.044,
+            "conversions": 211,
+            "conversions_per_1000_sends": 8.639,
+            "messages_per_user": 3.053
+          },
+          {
+            "seed": 70,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2437,
+            "ctr": 0.0481,
+            "conversions": 232,
+            "conversions_per_1000_sends": 7.25,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 70,
+            "strategy": "trigger",
+            "messages_sent": 10620,
+            "users": 8000,
+            "open_rate": 0.2493,
+            "ctr": 0.0497,
+            "conversions": 120,
+            "conversions_per_1000_sends": 11.2994,
+            "messages_per_user": 1.3275
+          },
+          {
+            "seed": 70,
+            "strategy": "hybrid",
+            "messages_sent": 24395,
+            "users": 8000,
+            "open_rate": 0.2314,
+            "ctr": 0.0437,
+            "conversions": 203,
+            "conversions_per_1000_sends": 8.3214,
+            "messages_per_user": 3.0494
+          },
+          {
+            "seed": 71,
+            "strategy": "fixed",
+            "messages_sent": 32000,
+            "users": 8000,
+            "open_rate": 0.2417,
+            "ctr": 0.0468,
+            "conversions": 223,
+            "conversions_per_1000_sends": 6.9688,
+            "messages_per_user": 4.0
+          },
+          {
+            "seed": 71,
+            "strategy": "trigger",
+            "messages_sent": 10587,
+            "users": 8000,
+            "open_rate": 0.2464,
+            "ctr": 0.0475,
+            "conversions": 106,
+            "conversions_per_1000_sends": 10.0123,
+            "messages_per_user": 1.3234
+          },
+          {
+            "seed": 71,
+            "strategy": "hybrid",
+            "messages_sent": 24384,
+            "users": 8000,
+            "open_rate": 0.2318,
+            "ctr": 0.043,
+            "conversions": 194,
+            "conversions_per_1000_sends": 7.956,
+            "messages_per_user": 3.048
+          }
+        ],
+        "e3_sparsity": [
+          {
+            "signal_sparsity": 0.0,
+            "strategy": "fixed",
+            "conversions_per_1000_sends": 7.06,
+            "sd": 0.16
+          },
+          {
+            "signal_sparsity": 0.0,
+            "strategy": "hybrid",
+            "conversions_per_1000_sends": 7.95,
+            "sd": 0.29
+          },
+          {
+            "signal_sparsity": 0.0,
+            "strategy": "trigger",
+            "conversions_per_1000_sends": 10.46,
+            "sd": 0.54
+          },
+          {
+            "signal_sparsity": 0.3,
+            "strategy": "fixed",
+            "conversions_per_1000_sends": 7.69,
+            "sd": 0.21
+          },
+          {
+            "signal_sparsity": 0.3,
+            "strategy": "hybrid",
+            "conversions_per_1000_sends": 7.69,
+            "sd": 0.43
+          },
+          {
+            "signal_sparsity": 0.3,
+            "strategy": "trigger",
+            "conversions_per_1000_sends": 9.44,
+            "sd": 0.37
+          },
+          {
+            "signal_sparsity": 0.6,
+            "strategy": "fixed",
+            "conversions_per_1000_sends": 7.69,
+            "sd": 0.21
+          },
+          {
+            "signal_sparsity": 0.6,
+            "strategy": "hybrid",
+            "conversions_per_1000_sends": 7.35,
+            "sd": 0.44
+          },
+          {
+            "signal_sparsity": 0.6,
+            "strategy": "trigger",
+            "conversions_per_1000_sends": 9.03,
+            "sd": 0.27
+          },
+          {
+            "signal_sparsity": 0.9,
+            "strategy": "fixed",
+            "conversions_per_1000_sends": 7.69,
+            "sd": 0.21
+          },
+          {
+            "signal_sparsity": 0.9,
+            "strategy": "hybrid",
+            "conversions_per_1000_sends": 6.76,
+            "sd": 0.39
+          },
+          {
+            "signal_sparsity": 0.9,
+            "strategy": "trigger",
+            "conversions_per_1000_sends": 8.37,
+            "sd": 0.32
+          }
+        ],
+        "e3_live_measured": [
+          {
+            "strategy": "fixed",
+            "recipients": 400,
+            "sent": 500,
+            "opens": 297,
+            "clicks": 130,
+            "conversions": 40,
+            "click_through_rate": 0.26,
+            "conversions_per_1000_sends": 80.0,
+            "operational_complexity": 1,
+            "data_basis": "dataset"
+          },
+          {
+            "strategy": "trigger",
+            "recipients": 400,
+            "sent": 400,
+            "opens": 246,
+            "clicks": 101,
+            "conversions": 25,
+            "click_through_rate": 0.2525,
+            "conversions_per_1000_sends": 62.5,
+            "operational_complexity": 4,
+            "data_basis": "dataset"
+          },
+          {
+            "strategy": "hybrid",
+            "recipients": 400,
+            "sent": 400,
+            "opens": 252,
+            "clicks": 111,
+            "conversions": 35,
+            "click_through_rate": 0.2775,
+            "conversions_per_1000_sends": 87.5,
+            "operational_complexity": 8,
+            "data_basis": "dataset"
+          }
+        ]
+      },
+      "notes": [
+        "Every seed puts the same 8,000 users through all three policies, so the comparison is paired and the tests are paired accordingly.",
+        "Conversions per 1,000 sends is the metric to read. User-level conversion rate rises with message volume, which would hand the win to `fixed` for sending more rather than for sending better.",
+        "Simulated response. Module 2's simulator draws each user's behaviour from segment-level propensities calibrated against the dataset's own conversion rates; the policies are real code, the reactions are not observed behaviour.",
+        "trigger leads fixed by 3.3 conversions per 1,000 sends for 3 extra decision rules \u2014 the trade the report has to argue.",
+        "The simulation and the live build disagree: trigger wins in simulation, hybrid wins on the imported audience. Both are volume-controlled, so the difference is in the response model \u2014 the simulator's segment propensities against per-customer rates drawn from the dataset's own email history. Neither is an observation of real people reacting, and the ranking is evidently not robust to how their reactions are modelled. That instability is the finding, and it belongs in the report rather than a single number picked from whichever run supports the preferred conclusion.",
+        "Messages per user differ sharply (fixed 4.00, trigger 1.32, hybrid 3.05). A policy that stops early is rewarded by a per-send metric and penalised by a per-user one; both are reported so the choice of metric is visible rather than decisive."
+      ],
+      "seconds": 53.3
+    },
+    "E4": {
+      "id": "E4",
+      "title": "Module 3 \u2014 attribution model comparison and disagreement",
+      "status": "ok",
+      "metrics": {
+        "best_model_vs_ground_truth": "first_touch",
+        "best_model_mae": 0.0178,
+        "worst_model_mae": 0.0525,
+        "live_converters": 7811,
+        "live_data_basis": "dataset",
+        "max_pairwise_disagreement": 0.6833,
+        "mean_pairwise_disagreement": 0.3458,
+        "single_touch_share": 0.2
+      },
+      "tables": {
+        "e4_ground_truth_mae": [
+          {
+            "model": "first_touch",
+            "mae": 0.0178,
+            "ci_low": 0.0112,
+            "ci_high": 0.0268,
+            "n_channels": 5
+          },
+          {
+            "model": "linear",
+            "mae": 0.0178,
+            "ci_low": 0.0086,
+            "ci_high": 0.0292,
+            "n_channels": 5
+          },
+          {
+            "model": "last_touch",
+            "mae": 0.026,
+            "ci_low": 0.0094,
+            "ci_high": 0.0448,
+            "n_channels": 5
+          },
+          {
+            "model": "markov",
+            "mae": 0.0525,
+            "ci_low": 0.0345,
+            "ci_high": 0.0791,
+            "n_channels": 5
+          }
+        ],
+        "e4_live_credits": [
+          {
+            "model": "first_touch",
+            "channel": "email",
+            "credit": 0.2078
+          },
+          {
+            "model": "first_touch",
+            "channel": "ppc",
+            "credit": 0.2028
+          },
+          {
+            "model": "first_touch",
+            "channel": "referral",
+            "credit": 0.2124
+          },
+          {
+            "model": "first_touch",
+            "channel": "seo",
+            "credit": 0.1911
+          },
+          {
+            "model": "first_touch",
+            "channel": "social_media",
+            "credit": 0.1859
+          },
+          {
+            "model": "last_touch",
+            "channel": "email",
+            "credit": 0.8911
+          },
+          {
+            "model": "last_touch",
+            "channel": "ppc",
+            "credit": 0.0277
+          },
+          {
+            "model": "last_touch",
+            "channel": "referral",
+            "credit": 0.0288
+          },
+          {
+            "model": "last_touch",
+            "channel": "seo",
+            "credit": 0.0268
+          },
+          {
+            "model": "last_touch",
+            "channel": "social_media",
+            "credit": 0.0257
+          },
+          {
+            "model": "linear",
+            "channel": "email",
+            "credit": 0.5577
+          },
+          {
+            "model": "linear",
+            "channel": "ppc",
+            "credit": 0.1129
+          },
+          {
+            "model": "linear",
+            "channel": "referral",
+            "credit": 0.1187
+          },
+          {
+            "model": "linear",
+            "channel": "seo",
+            "credit": 0.1068
+          },
+          {
+            "model": "linear",
+            "channel": "social_media",
+            "credit": 0.104
+          },
+          {
+            "model": "markov",
+            "channel": "email",
+            "credit": 0.5327
+          },
+          {
+            "model": "markov",
+            "channel": "ppc",
+            "credit": 0.1191
+          },
+          {
+            "model": "markov",
+            "channel": "referral",
+            "credit": 0.1242
+          },
+          {
+            "model": "markov",
+            "channel": "seo",
+            "credit": 0.113
+          },
+          {
+            "model": "markov",
+            "channel": "social_media",
+            "credit": 0.111
+          }
+        ],
+        "e4_live_disagreement": [
+          {
+            "model_a": "first_touch",
+            "model_b": "last_touch",
+            "total_variation_distance": 0.6833
+          },
+          {
+            "model_a": "first_touch",
+            "model_b": "linear",
+            "total_variation_distance": 0.3498
+          },
+          {
+            "model_a": "first_touch",
+            "model_b": "markov",
+            "total_variation_distance": 0.3249
+          },
+          {
+            "model_a": "last_touch",
+            "model_b": "linear",
+            "total_variation_distance": 0.3334
+          },
+          {
+            "model_a": "last_touch",
+            "model_b": "markov",
+            "total_variation_distance": 0.3584
+          },
+          {
+            "model_a": "linear",
+            "model_b": "markov",
+            "total_variation_distance": 0.025
+          }
+        ]
+      },
+      "notes": [
+        "first_touch has the lowest error, but its interval overlaps linear's \u2014 with only 5 channels to average over, the ranking is suggestive rather than established.",
+        "20% of converting journeys had a single touchpoint (mean 1.8 distinct channels). On those, every model agrees by arithmetic \u2014 the agreement is not evidence.",
+        "first_touch and last_touch disagree over 68% of all attributed credit on the same journeys \u2014 the single clearest argument in this project against trusting one attribution model.",
+        "Ground-truth scoring is only possible on simulated journeys, where the true channel influence is known by construction. No such column exists for a real audience, which is why the live half reports disagreement rather than accuracy."
+      ],
+      "seconds": 2.5
+    },
+    "E5": {
+      "id": "E5",
+      "title": "Module 3 \u2014 prediction quality, and its transfer to another audience",
+      "status": "ok",
+      "metrics": {
+        "targets_evaluated": [
+          "conversion",
+          "drop_off"
+        ],
+        "n_models": 4,
+        "best_conversion_auc": 0.9725,
+        "best_drop_off_auc": 0.99,
+        "transfer_checked": true
+      },
+      "tables": {
+        "e5_model_scores": [
+          {
+            "target": "conversion",
+            "model": "baseline (stratified)",
+            "roc_auc": 0.4983,
+            "roc_auc_ci_low": 0.4772,
+            "roc_auc_ci_high": 0.5221,
+            "pr_auc": 0.1147,
+            "brier": 0.205,
+            "positive_rate": 0.115,
+            "n_test": 2000
+          },
+          {
+            "target": "conversion",
+            "model": "logistic regression",
+            "roc_auc": 0.9651,
+            "roc_auc_ci_low": 0.9541,
+            "roc_auc_ci_high": 0.9743,
+            "pr_auc": 0.8371,
+            "brier": 0.0409,
+            "positive_rate": 0.115,
+            "n_test": 2000
+          },
+          {
+            "target": "conversion",
+            "model": "random forest",
+            "roc_auc": 0.9722,
+            "roc_auc_ci_low": 0.9642,
+            "roc_auc_ci_high": 0.9793,
+            "pr_auc": 0.8667,
+            "brier": 0.0375,
+            "positive_rate": 0.115,
+            "n_test": 2000
+          },
+          {
+            "target": "conversion",
+            "model": "xgboost",
+            "roc_auc": 0.9725,
+            "roc_auc_ci_low": 0.9654,
+            "roc_auc_ci_high": 0.9793,
+            "pr_auc": 0.8624,
+            "brier": 0.038,
+            "positive_rate": 0.115,
+            "n_test": 2000
+          },
+          {
+            "target": "drop_off",
+            "model": "baseline (stratified)",
+            "roc_auc": 0.4898,
+            "roc_auc_ci_low": 0.4687,
+            "roc_auc_ci_high": 0.5107,
+            "pr_auc": 0.6328,
+            "brier": 0.4715,
+            "positive_rate": 0.6375,
+            "n_test": 2000
+          },
+          {
+            "target": "drop_off",
+            "model": "logistic regression",
+            "roc_auc": 0.9306,
+            "roc_auc_ci_low": 0.9168,
+            "roc_auc_ci_high": 0.9442,
+            "pr_auc": 0.9377,
+            "brier": 0.0829,
+            "positive_rate": 0.6375,
+            "n_test": 2000
+          },
+          {
+            "target": "drop_off",
+            "model": "random forest",
+            "roc_auc": 0.9876,
+            "roc_auc_ci_low": 0.9829,
+            "roc_auc_ci_high": 0.9915,
+            "pr_auc": 0.9917,
+            "brier": 0.0362,
+            "positive_rate": 0.6375,
+            "n_test": 2000
+          },
+          {
+            "target": "drop_off",
+            "model": "xgboost",
+            "roc_auc": 0.99,
+            "roc_auc_ci_low": 0.9867,
+            "roc_auc_ci_high": 0.9929,
+            "pr_auc": 0.9941,
+            "brier": 0.0355,
+            "positive_rate": 0.6375,
+            "n_test": 2000
+          }
+        ],
+        "e5_transfer": [
+          {
+            "prediction": "conversion",
+            "n_customers": 8000,
+            "min": 0.0103,
+            "median": 0.9116,
+            "max": 0.9956,
+            "spread": 0.9853,
+            "above_threshold": 5601,
+            "threshold": 0.5,
+            "share_above": 0.7001
+          },
+          {
+            "prediction": "drop-off risk",
+            "n_customers": 8000,
+            "min": 0.0006,
+            "median": 0.0441,
+            "max": 0.9911,
+            "spread": 0.9905,
+            "above_threshold": 912,
+            "threshold": 0.6,
+            "share_above": 0.114
+          }
+        ]
+      },
+      "notes": [
+        "conversion: xgboost (AUC 0.973) clears the baseline with no interval overlap.",
+        "drop_off: xgboost (AUC 0.990) clears the baseline with no interval overlap.",
+        "These models are fitted on Module 3's simulator. Applying them to the imported audience is a transfer across distributions: the ranking is usable, the absolute probabilities are not calibrated for it."
+      ],
+      "seconds": 11.1
+    },
+    "E6": {
+      "id": "E6",
+      "title": "Module 4 \u2014 goal and tone classification, TF-IDF versus Sentence-BERT",
+      "status": "ok",
+      "metrics": {
+        "targets": [
+          "campaign_goal",
+          "tone"
+        ],
+        "goal_best_macro_f1": 0.4998,
+        "tone_best_macro_f1": 0.7315,
+        "sbert_evaluated": true
+      },
+      "tables": {
+        "e6_model_summary": [
+          {
+            "target": "campaign_goal",
+            "model": "majority baseline",
+            "accuracy": 0.5877,
+            "macro_f1": 0.1481,
+            "weighted_f1": 0.4351,
+            "n_train": 339,
+            "n_test": 114,
+            "n_classes": 5,
+            "majority_class_share": 0.5916
+          },
+          {
+            "target": "campaign_goal",
+            "model": "tfidf + logistic",
+            "accuracy": 0.7719,
+            "macro_f1": 0.4998,
+            "weighted_f1": 0.7628,
+            "n_train": 339,
+            "n_test": 114,
+            "n_classes": 5,
+            "majority_class_share": 0.5916
+          },
+          {
+            "target": "campaign_goal",
+            "model": "sbert + xgboost",
+            "accuracy": 0.7719,
+            "macro_f1": 0.4042,
+            "weighted_f1": 0.7391,
+            "n_train": 339,
+            "n_test": 114,
+            "n_classes": 5,
+            "majority_class_share": 0.5916
+          },
+          {
+            "target": "tone",
+            "model": "majority baseline",
+            "accuracy": 0.3864,
+            "macro_f1": 0.1115,
+            "weighted_f1": 0.2154,
+            "n_train": 130,
+            "n_test": 44,
+            "n_classes": 6,
+            "majority_class_share": 0.4023
+          },
+          {
+            "target": "tone",
+            "model": "tfidf + logistic",
+            "accuracy": 0.8182,
+            "macro_f1": 0.7315,
+            "weighted_f1": 0.8153,
+            "n_train": 130,
+            "n_test": 44,
+            "n_classes": 6,
+            "majority_class_share": 0.4023
+          },
+          {
+            "target": "tone",
+            "model": "sbert + xgboost",
+            "accuracy": 0.7727,
+            "macro_f1": 0.5912,
+            "weighted_f1": 0.7482,
+            "n_train": 130,
+            "n_test": 44,
+            "n_classes": 6,
+            "majority_class_share": 0.4023
+          }
+        ],
+        "e6_per_class": [
+          {
+            "target": "campaign_goal",
+            "model": "tfidf + logistic",
+            "class": "awareness",
+            "support": 67,
+            "precision": 0.9492,
+            "recall": 0.8358,
+            "f1": 0.8889
+          },
+          {
+            "target": "campaign_goal",
+            "model": "tfidf + logistic",
+            "class": "conversion",
+            "support": 27,
+            "precision": 0.6316,
+            "recall": 0.8889,
+            "f1": 0.7385
+          },
+          {
+            "target": "campaign_goal",
+            "model": "tfidf + logistic",
+            "class": "engagement",
+            "support": 3,
+            "precision": 0.3333,
+            "recall": 0.3333,
+            "f1": 0.3333
+          },
+          {
+            "target": "campaign_goal",
+            "model": "tfidf + logistic",
+            "class": "lead_generation",
+            "support": 12,
+            "precision": 0.5,
+            "recall": 0.5833,
+            "f1": 0.5385
+          },
+          {
+            "target": "campaign_goal",
+            "model": "tfidf + logistic",
+            "class": "retention",
+            "support": 5,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "target": "campaign_goal",
+            "model": "sbert + xgboost",
+            "class": "awareness",
+            "support": 67,
+            "precision": 0.863,
+            "recall": 0.9403,
+            "f1": 0.9
+          },
+          {
+            "target": "campaign_goal",
+            "model": "sbert + xgboost",
+            "class": "conversion",
+            "support": 27,
+            "precision": 0.6364,
+            "recall": 0.7778,
+            "f1": 0.7
+          },
+          {
+            "target": "campaign_goal",
+            "model": "sbert + xgboost",
+            "class": "engagement",
+            "support": 3,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "target": "campaign_goal",
+            "model": "sbert + xgboost",
+            "class": "lead_generation",
+            "support": 12,
+            "precision": 0.5714,
+            "recall": 0.3333,
+            "f1": 0.4211
+          },
+          {
+            "target": "campaign_goal",
+            "model": "sbert + xgboost",
+            "class": "retention",
+            "support": 5,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "target": "tone",
+            "model": "tfidf + logistic",
+            "class": "emotional",
+            "support": 2,
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6667
+          },
+          {
+            "target": "tone",
+            "model": "tfidf + logistic",
+            "class": "friendly",
+            "support": 2,
+            "precision": 0.5,
+            "recall": 0.5,
+            "f1": 0.5
+          },
+          {
+            "target": "tone",
+            "model": "tfidf + logistic",
+            "class": "luxury",
+            "support": 6,
+            "precision": 1.0,
+            "recall": 0.6667,
+            "f1": 0.8
+          },
+          {
+            "target": "tone",
+            "model": "tfidf + logistic",
+            "class": "persuasive",
+            "support": 17,
+            "precision": 0.7619,
+            "recall": 0.9412,
+            "f1": 0.8421
+          },
+          {
+            "target": "tone",
+            "model": "tfidf + logistic",
+            "class": "professional",
+            "support": 17,
+            "precision": 0.875,
+            "recall": 0.8235,
+            "f1": 0.8485
+          },
+          {
+            "target": "tone",
+            "model": "sbert + xgboost",
+            "class": "emotional",
+            "support": 2,
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6667
+          },
+          {
+            "target": "tone",
+            "model": "sbert + xgboost",
+            "class": "friendly",
+            "support": 2,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0
+          },
+          {
+            "target": "tone",
+            "model": "sbert + xgboost",
+            "class": "luxury",
+            "support": 6,
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1": 0.6667
+          },
+          {
+            "target": "tone",
+            "model": "sbert + xgboost",
+            "class": "persuasive",
+            "support": 17,
+            "precision": 0.7143,
+            "recall": 0.8824,
+            "f1": 0.7895
+          },
+          {
+            "target": "tone",
+            "model": "sbert + xgboost",
+            "class": "professional",
+            "support": 17,
+            "precision": 0.7895,
+            "recall": 0.8824,
+            "f1": 0.8333
+          }
+        ],
+        "e6_mcnemar": [
+          {
+            "target": "campaign_goal",
+            "comparison": "tfidf + logistic vs sbert + xgboost",
+            "b01": 8,
+            "b10": 8,
+            "n_discordant": 16,
+            "p_value": 1.0,
+            "significant": false,
+            "note": "B is right where A is wrong more often than the reverse"
+          },
+          {
+            "target": "tone",
+            "comparison": "tfidf + logistic vs sbert + xgboost",
+            "b01": 5,
+            "b10": 3,
+            "n_discordant": 8,
+            "p_value": 0.7265625,
+            "significant": false,
+            "note": "A is right where B is wrong more often than the reverse"
+          }
+        ]
+      },
+      "notes": [
+        "`campaign_goal`: the two approaches are statistically indistinguishable on this corpus (McNemar p=1.000, 16 disagreements). Choosing TF-IDF is then a decision about cost and interpretability, not about accuracy \u2014 which is a stronger argument than claiming it is more accurate.",
+        "`tone`: humorous has fewer than 2 examples \u2014 cannot be split, cannot be learned, and cannot be evaluated. Reported, not hidden.",
+        "`tone`: the two approaches are statistically indistinguishable on this corpus (McNemar p=0.727, 8 disagreements). Choosing TF-IDF is then a decision about cost and interpretability, not about accuracy \u2014 which is a stronger argument than claiming it is more accurate.",
+        "`tone`: best macro-F1 0.732 (tfidf + logistic) against a majority baseline of 0.112; accuracy 0.818 against 0.386. The accuracy gap flatters the model far more than the macro-F1 gap does.",
+        "`campaign_goal`: best macro-F1 0.500 (tfidf + logistic) against a majority baseline of 0.148; accuracy 0.772 against 0.588. The accuracy gap flatters the model far more than the macro-F1 gap does."
+      ],
+      "seconds": 7.4
+    },
+    "E7": {
+      "id": "E7",
+      "title": "Module 4 \u2014 engagement prediction, leakage and the absence of signal",
+      "status": "ok",
+      "metrics": {
+        "n_rows": 12000,
+        "leaky_r2": 0.9898,
+        "clean_r2": -0.1676,
+        "clean_r2_ci": [
+          -0.4081,
+          -0.0715
+        ],
+        "clean_spearman": 0.012,
+        "clean_spearman_ci": [
+          -0.0276,
+          0.0539
+        ],
+        "baseline_r2": -0.0,
+        "features_with_signal": 0,
+        "n_features_tested": 8
+      },
+      "tables": {
+        "e7_leakage_comparison": [
+          {
+            "feature_set": "with outcome columns (original)",
+            "n_features": 17,
+            "r2": 0.9898,
+            "spearman": 0.9977,
+            "mae": 0.01873
+          },
+          {
+            "feature_set": "text features only (corrected)",
+            "n_features": 13,
+            "r2": -0.1676,
+            "spearman": 0.012,
+            "spearman_ci_low": -0.0276,
+            "spearman_ci_high": 0.0539,
+            "r2_ci_low": -0.4081,
+            "r2_ci_high": -0.0715,
+            "mae": 0.39307
+          },
+          {
+            "feature_set": "baseline (predict the mean)",
+            "n_features": 0,
+            "r2": -0.0,
+            "spearman": 0.0,
+            "mae": 0.32783
+          }
+        ],
+        "e7_feature_signal": [
+          {
+            "feature": "emoji_count",
+            "pearson_r": -0.0117,
+            "p_value": 0.1992,
+            "holm_threshold": 0.00625,
+            "significant_after_correction": false
+          },
+          {
+            "feature": "hashtag_count",
+            "pearson_r": -0.0117,
+            "p_value": 0.1999,
+            "holm_threshold": 0.00714,
+            "significant_after_correction": false
+          },
+          {
+            "feature": "sentiment_score",
+            "pearson_r": 0.0113,
+            "p_value": 0.2146,
+            "holm_threshold": 0.00833,
+            "significant_after_correction": false
+          },
+          {
+            "feature": "word_count",
+            "pearson_r": -0.011,
+            "p_value": 0.2273,
+            "holm_threshold": 0.01,
+            "significant_after_correction": false
+          },
+          {
+            "feature": "cta_present",
+            "pearson_r": -0.01,
+            "p_value": 0.272,
+            "holm_threshold": 0.0125,
+            "significant_after_correction": false
+          },
+          {
+            "feature": "char_length",
+            "pearson_r": -0.0099,
+            "p_value": 0.2801,
+            "holm_threshold": 0.01667,
+            "significant_after_correction": false
+          },
+          {
+            "feature": "question_hook",
+            "pearson_r": 0.0034,
+            "p_value": 0.7119,
+            "holm_threshold": 0.025,
+            "significant_after_correction": false
+          },
+          {
+            "feature": "readability_score",
+            "pearson_r": 0.0026,
+            "p_value": 0.7733,
+            "holm_threshold": 0.05,
+            "significant_after_correction": false
+          }
+        ]
+      },
+      "notes": [
+        "The leaky model scores far better on every metric. That is the point: nothing about the training run flags the defect, and the corrected number looks like a regression to anyone reading only the headline.",
+        "Spearman is the metric to read. The model ranks candidate captions; it is not required to predict an engagement rate in absolute terms.",
+        "None of the 8 text features correlates with engagement after Holm\u2013Bonferroni correction. This is a property of the dataset, not a modelling failure \u2014 no model can extract a signal that is not there, and the honest response is to reduce the weight this score carries in content ranking rather than to keep tuning.",
+        "The corrected model's rank correlation is 0.012 [-0.028, 0.054] \u2014 the interval spans zero, so no ranking skill is demonstrated on held-out data."
+      ],
+      "seconds": 15.0
+    }
+  },
+  "status_counts": {
+    "ok": 7,
+    "skipped": 0,
+    "failed": 0
+  }
+}

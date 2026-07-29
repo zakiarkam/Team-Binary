@@ -1,0 +1,13 @@
+signal_sparsity,strategy,conversions_per_1000_sends,sd
+0.0,fixed,7.06,0.16
+0.0,hybrid,7.95,0.29
+0.0,trigger,10.46,0.54
+0.3,fixed,7.69,0.21
+0.3,hybrid,7.69,0.43
+0.3,trigger,9.44,0.37
+0.6,fixed,7.69,0.21
+0.6,hybrid,7.35,0.44
+0.6,trigger,9.03,0.27
+0.9,fixed,7.69,0.21
+0.9,hybrid,6.76,0.39
+0.9,trigger,8.37,0.32

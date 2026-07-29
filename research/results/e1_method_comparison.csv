@@ -1,0 +1,5 @@
+method,n_segments,separation,ci_low,ci_high,largest_segment_share,finds_cold_start,cold_start_users
+rules only,5,0.3837,0.3088,0.4635,0.4374,True,163
+k-means only,4,0.0693,0.0489,0.09,0.2631,False,0
+hierarchical only,4,0.0343,0.0193,0.0588,0.3879,False,0
+hybrid (vote),5,0.3838,0.3069,0.4632,0.423,True,163

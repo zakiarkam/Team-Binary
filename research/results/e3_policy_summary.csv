@@ -1,0 +1,4 @@
+strategy,seeds,conversions_per_1000_sends,sd,ci_low,ci_high,open_rate,ctr,messages_per_user,operational_complexity
+fixed,30,7.15,0.2,6.75,7.49,0.2421,0.0473,4.0,1
+trigger,30,10.45,0.46,9.62,11.17,0.2477,0.0482,1.32,4
+hybrid,30,7.99,0.28,7.45,8.41,0.2311,0.0428,3.05,9
