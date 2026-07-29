@@ -2,36 +2,58 @@
 
 /* ---------------------------------------------------------------------------
    Design tokens for the Marketing OS dashboard.
-   Kept in one place so every chart, badge and card pulls from the same palette.
+   Kept in one place so every chart, badge, button and card pulls from the
+   same palette. Components must use these tokens  never raw hex values.
    --------------------------------------------------------------------------- */
 @theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
   --color-ink: #0f172a;
   --color-muted: #64748b;
   --color-line: #e2e8f0;
   --color-canvas: #f6f8fb;
 
   --color-brand: #3b5bdb;
+  --color-brand-strong: #3450c4;
   --color-brand-soft: #eef2ff;
 
   --color-ok: #16a34a;
-  --color-warn: #f59e0b;
+  --color-ok-soft: #dcfce7;
+  --color-warn: #b45309;
+  --color-warn-soft: #fef3c7;
   --color-bad: #dc2626;
+  --color-bad-soft: #fee2e2;
   --color-info: #0ea5e9;
+  --color-info-soft: #e0f2fe;
   --color-accent: #8b5cf6;
+  --color-accent-soft: #ede9fe;
+
+  /* Sidebar surface  a deep navy one step richer than plain slate. */
+  --color-sidebar: #101b33;
+  --color-sidebar-deep: #0b1224;
 }
 
 html,
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Accessible focus ring everywhere, replacing the old outline-none pattern. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
 }
 
 /* Card surface used across the dashboard. */
 .card {
   background: #fff;
+  border: 1px solid var(--color-line);
   border-radius: 16px;
-  box-shadow: 0 6px 20px rgb(15 23 42 / 0.06);
+  box-shadow: 0 4px 16px rgb(15 23 42 / 0.05);
   padding: 20px 22px;
 }
 
@@ -51,4 +73,17 @@ code.snippet {
   font-size: 0.8rem;
   overflow-x: auto;
   white-space: pre;
+}
+
+/* Thin, unobtrusive scrollbar for the sidebar nav. */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.18) transparent;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 0.18);
+  border-radius: 3px;
 }

@@ -1,3 +1,3 @@
 target,comparison,b01,b10,n_discordant,p_value,significant,note
-campaign_goal,tfidf + logistic vs sbert + xgboost,8,8,16,1.0,False,each model is right where the other is wrong exactly 8 times — the disagreements cancel entirely
+campaign_goal,tfidf + logistic vs sbert + xgboost,8,8,16,1.0,False,each model is right where the other is wrong exactly 8 times  the disagreements cancel entirely
 tone,tfidf + logistic vs sbert + xgboost,5,3,8,0.7265625,False,A is right where B is wrong more often than the reverse

@@ -8,15 +8,15 @@ AI-Driven Marketing Content Generation, Engagement Prediction, and Adaptive Opti
 
 ## 2. What This Project Does
 
-The project takes a product or website as input and produces platform-specific marketing assets for Instagram, LinkedIn, Shorts, and Email. It does not only generate captions. It also predicts campaign goal and tone, summarizes website context, generates platform-specific assets, predicts engagement, ranks outputs, optimizes weak outputs, tests whether optimization improved results, and compares AI outputs against a human baseline.
+The project takes a product or website as input and produces platform-specific marketing assets for Instagram, LinkedIn, Shorts, and Email. It does not only generate captions. It also predicts campaign goal and tone, summarizes website context, generates platform-specific assets, predicts engagement, ranks outputs, optimizes weak outputs, and tests whether optimization improved results.
 
 The main pipeline is controlled by:
 
 ```bash
-python main.py
+python modules/m4_content/main.py
 ```
 
-The stage order is defined in `main.py`:
+The stage order is defined in `modules/m4_content/main.py`:
 
 ```text
 crawl
@@ -31,7 +31,6 @@ engagement-score
 evaluate
 optimize
 significance
-human-baseline
 ```
 
 ## 3. External Requirements
@@ -79,7 +78,7 @@ sudo apt-get install ffmpeg
 Verify the CLI stages:
 
 ```bash
-python main.py --list
+python modules/m4_content/main.py --list
 ```
 
 ## 5. Manual Update 1: Product Input
@@ -108,7 +107,6 @@ The code expects these files inside `data/raw/datasets/`.
 |---|---|---|
 | `your_labeled_marketing_dataset.csv` | `text`, `campaign_goal`, `tone`, optional `summary` | Training goal and tone classifiers. |
 | `your_engagement_dataset.csv` | `platform`, `text`, `likes`, `shares`, `comments`, `impressions` | Training engagement prediction model. |
-| `human_content_dataset.csv` | `platform`, `caption` | Optional human-vs-AI comparison. |
 
 ### If Goal/Tone Labels Are Missing
 
@@ -159,34 +157,14 @@ The final engagement CSV header must be exactly:
 platform,text,likes,shares,comments,impressions
 ```
 
-## 7. Manual Update 3: Human Baseline
-
-Create this file only if you want to compare AI outputs against human-written marketing content:
-
-```text
-data/raw/datasets/human_content_dataset.csv
-```
-
-Required format:
-
-```csv
-platform,caption
-instagram,"Your human Instagram caption here"
-linkedin,"Your human LinkedIn caption here"
-shorts,"Your human Shorts caption here"
-email,"Subject: Your human email subject and body here"
-```
-
-Use the same product and same platforms as `input.json`. Otherwise the comparison is not fair.
-
-## 8. Exact Run Flow
+## 7. Exact Run Flow
 
 ### First Full Research Run
 
 Use this when datasets are ready:
 
 ```bash
-python main.py --force
+python modules/m4_content/main.py --force
 ```
 
 This rebuilds all artifacts from scratch.
@@ -196,34 +174,28 @@ This rebuilds all artifacts from scratch.
 Use this after changing only `input.json`:
 
 ```bash
-python main.py --step crawl kb goal-tone-predict summary generate engagement-score evaluate optimize significance
+python modules/m4_content/main.py --step crawl kb goal-tone-predict summary generate engagement-score evaluate optimize significance
 ```
 
 ### Train Only Goal/Tone Models
 
 ```bash
-python main.py --step goal-tone-train --force
+python modules/m4_content/main.py --step goal-tone-train --force
 ```
 
 ### Train Only Engagement Model
 
 ```bash
-python main.py --step engagement-train --force
+python modules/m4_content/main.py --step engagement-train --force
 ```
 
 ### Generate and Evaluate New Marketing Assets
 
 ```bash
-python main.py --step generate engagement-score evaluate optimize significance --force
+python modules/m4_content/main.py --step generate engagement-score evaluate optimize significance --force
 ```
 
-### Run Human Baseline Only
-
-```bash
-python main.py --step human-baseline
-```
-
-## 9. Output Files to Use in the Research Report
+## 8. Output Files to Use in the Research Report
 
 | Output file | What to report |
 |---|---|
@@ -235,9 +207,8 @@ python main.py --step human-baseline
 | `data/outputs/optimized_ranked_platform_assets.csv` | Optimized final outputs after adaptive re-prompting. |
 | `data/outputs/before_after_optimization_comparison.csv` | Before-vs-after score changes. |
 | `data/outputs/optimization_significance_test.csv` | Paired t-test result. |
-| `data/outputs/human_vs_ai_comparison.csv` | Human, initial AI, and optimized AI comparison. |
 
-## 10. Score Formula
+## 9. Score Formula
 
 The final score is:
 
@@ -255,7 +226,7 @@ Reason:
 | Platform suitability | 0.25 | Checks whether content fits each platform's communication style. |
 | Engagement prediction | 0.45 | Highest weight because it is learned from real social engagement metrics. |
 
-## 11. Accuracy and Validation Checklist
+## 10. Accuracy and Validation Checklist
 
 Before writing final results, check these items:
 
@@ -267,10 +238,9 @@ Before writing final results, check these items:
 6. Every generated row has `platform`, `caption`, `hashtags`, `cta`, `image_prompt`, and `shorts_prompt`.
 7. `before_after_optimization_comparison.csv` shows whether optimization improved final score.
 8. `optimization_significance_test.csv` reports p-value from the paired t-test.
-9. Human baseline captions are for the same product and platforms.
-10. Report limitations honestly if R2 is low, class balance is poor, or the sample size is small.
+9. Report limitations honestly if R2 is low, class balance is poor, or the sample size is small.
 
-## 12. Final Research Workflow
+## 11. Final Research Workflow
 
 Use this as the exact order for completing the full research project:
 
@@ -278,17 +248,15 @@ Use this as the exact order for completing the full research project:
 2. Prepare `input.json` with the selected product and audience.
 3. Normalize the engagement dataset into `your_engagement_dataset.csv`.
 4. Prepare or generate `your_labeled_marketing_dataset.csv`.
-5. Add `human_content_dataset.csv` if human comparison is required.
-6. Install dependencies and external tools.
-7. Run `python main.py --force`.
-8. Inspect all output CSVs.
-9. Record model metrics: weighted F1, MAE, RMSE, R2.
-10. Record ranking metrics: semantic score, platform suitability score, engagement score, final score.
-11. Record optimization improvement and paired t-test p-value.
-12. Compare optimized AI against human baseline.
-13. Write the final report with method, results, discussion, limitations, and future work.
+5. Install dependencies and external tools.
+6. Run `python modules/m4_content/main.py --force`.
+7. Inspect all output CSVs.
+8. Record model metrics: weighted F1, MAE, RMSE, R2.
+9. Record ranking metrics: semantic score, platform suitability score, engagement score, final score.
+10. Record optimization improvement and paired t-test p-value.
+11. Write the final report with method, results, discussion, limitations, and future work.
 
-## 13. Common Problems
+## 12. Common Problems
 
 | Problem | Cause | Fix |
 |---|---|---|
@@ -296,9 +264,8 @@ Use this as the exact order for completing the full research project:
 | Classifier fails with one-class error | All labels became the same class | Check `campaign_goal` and `tone` value counts before training. |
 | Phi-3 is very slow | CPU inference | Use GPU or run fewer platforms during testing. |
 | Cached output does not change | Existing artifact is reused | Add `--force` or delete only the specific output artifact. |
-| Human comparison is unfair | Human captions are for another product | Use same product, audience, and platforms as `input.json`. |
 
-## 14. Final Submission Artifacts
+## 13. Final Submission Artifacts
 
 For a clean research submission, include:
 
@@ -309,7 +276,7 @@ RESEARCH_EVIDENCE_README.md
 METHODOLOGY.md
 input.json
 requirements.txt
-main.py and source modules
+modules/m4_content/ (main.py and its source modules)
 data/outputs/*.csv
 models/* selection files or screenshots of metrics
 ```

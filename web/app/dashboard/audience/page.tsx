@@ -54,7 +54,7 @@ export default async function AudiencePage({
       `/research/modules/${MODULE}/results`,
     );
     return (
-      <>
+      <div className="mx-auto max-w-6xl">
         <PageHeader
           crumb="Dashboard"
           title="Audience"
@@ -62,7 +62,7 @@ export default async function AudiencePage({
         />
         <ViewTabs view={view} />
         <ModuleResearch data={research} module={MODULE} />
-      </>
+      </div>
     );
   }
 
@@ -110,14 +110,29 @@ export default async function AudiencePage({
       <ViewTabs view={view} />
 
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi label="VISITORS" value={totals?.visitors.toLocaleString() ?? "0"}
-             hint={`${totals?.new_7d ?? 0} new this week`} />
-        <Kpi label="KNOWN" value={totals?.known.toLocaleString() ?? "0"}
-             hint="gave us an email" tone="info" />
-        <Kpi label="CONTACTABLE" value={totals?.reachable.toLocaleString() ?? "0"}
-             hint="explicitly opted in" tone="ok" />
-        <Kpi label="COLD START" value={coldStart.toLocaleString()}
-             hint="too little history to cluster" tone="accent" />
+        <Kpi
+          label="VISITORS"
+          value={totals?.visitors.toLocaleString() ?? "0"}
+          hint={`${totals?.new_7d ?? 0} new this week`}
+        />
+        <Kpi
+          label="KNOWN"
+          value={totals?.known.toLocaleString() ?? "0"}
+          hint="gave us an email"
+          tone="info"
+        />
+        <Kpi
+          label="CONTACTABLE"
+          value={totals?.reachable.toLocaleString() ?? "0"}
+          hint="explicitly opted in"
+          tone="ok"
+        />
+        <Kpi
+          label="COLD START"
+          value={coldStart.toLocaleString()}
+          hint="too little history to cluster"
+          tone="accent"
+        />
       </section>
 
       {reach && (
@@ -125,22 +140,38 @@ export default async function AudiencePage({
           <SectionLabel>WHY MOST VISITORS CANNOT BE EMAILED</SectionLabel>
           <div className="mt-3 grid gap-6 md:grid-cols-2">
             <div>
-              <Bar label="Anonymous — never gave an address"
-                   value={reach.anonymous} max={reach.visitors} color="#94a3b8" />
-              <Bar label="Known, but did not opt in"
-                   value={reach.known_no_consent} max={reach.visitors} color="#f59e0b" />
-              <Bar label="Unsubscribed"
-                   value={reach.unsubscribed} max={reach.visitors} color="#dc2626" />
-              <Bar label="Contactable"
-                   value={reach.reachable} max={reach.visitors} color="#16a34a" />
+              <Bar
+                label="Anonymous — never gave an address"
+                value={reach.anonymous}
+                max={reach.visitors}
+                color="#94a3b8"
+              />
+              <Bar
+                label="Known, but did not opt in"
+                value={reach.known_no_consent}
+                max={reach.visitors}
+                color="#f59e0b"
+              />
+              <Bar
+                label="Unsubscribed"
+                value={reach.unsubscribed}
+                max={reach.visitors}
+                color="#dc2626"
+              />
+              <Bar
+                label="Contactable"
+                value={reach.reachable}
+                max={reach.visitors}
+                color="#16a34a"
+              />
             </div>
             <div className="text-sm leading-relaxed text-slate-500">
               <p>{reach.explanation}</p>
               <Caveat>
                 The gap between <b>{reach.visitors}</b> visitors and{" "}
-                <b>{reach.reachable}</b> contactable people is the honest size of
-                the addressable audience. Consent is opt-in only and is enforced
-                in the database, not just in the interface.
+                <b>{reach.reachable}</b> contactable people is the honest size
+                of the addressable audience. Consent is opt-in only and is
+                enforced in the database, not just in the interface.
               </Caveat>
             </div>
           </div>
@@ -180,8 +211,8 @@ export default async function AudiencePage({
           <Caveat>
             Confidence is the level of agreement between the rule, K-Means and
             hierarchical methods — not a probability. Cold-start visitors are
-            decided by rules alone, because clustering cannot express
-            &ldquo;not enough evidence yet&rdquo;.
+            decided by rules alone, because clustering cannot express &ldquo;not
+            enough evidence yet&rdquo;.
           </Caveat>
         </Card>
       </div>
@@ -218,7 +249,7 @@ export default async function AudiencePage({
             {segment ? `VISITORS — ${segment.toUpperCase()}` : "VISITORS"}
           </SectionLabel>
           <SearchBox
-            action="/audience"
+            action="/dashboard/audience"
             placeholder="Search email or visitor id"
             value={query}
             hidden={{ segment }}
@@ -274,10 +305,12 @@ export default async function AudiencePage({
               render: (v) => (v.email_consent ? "yes" : "—"),
             },
           ]}
-          empty={query ? `Nobody matches "${query}".` : "No visitors tracked yet."}
+          empty={
+            query ? `Nobody matches "${query}".` : "No visitors tracked yet."
+          }
         />
         <Pagination
-          action="/audience"
+          action="/dashboard/audience"
           total={visitorList?.total ?? 0}
           limit={PAGE_SIZE}
           offset={offset}

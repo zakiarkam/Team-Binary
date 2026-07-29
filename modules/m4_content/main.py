@@ -38,7 +38,6 @@ STAGES = [
     "evaluate",
     "optimize",
     "significance",
-    "human-baseline",
 ]
 
 # Opt-in stages for the adaptive engagement-learning subsystem (learning/).
@@ -197,7 +196,6 @@ def run_pipeline(stages: list[str], force: bool = False):
     marketing_summary = None
     generated_df = None
     ranked_df = None
-    optimized_ranked = None
     comparison = None
 
     if "crawl" in stages:
@@ -429,14 +427,14 @@ def run_pipeline(stages: list[str], force: bool = False):
         optimization_reran = False
 
         if force or not _exists(config.OPTIMIZED_RANKED_CSV):
-            optimized_ranked, comparison = optimization.run(
+            _, comparison = optimization.run(
                 ranked_df,
                 marketing_summary
             )
             optimization_reran = True
         else:
             print("[cache-hit] optimize")
-            optimized_ranked, comparison = optimization.load_cached()
+            _, comparison = optimization.load_cached()
 
         upstream_changed = upstream_changed or optimization_reran
 
@@ -445,22 +443,6 @@ def run_pipeline(stages: list[str], force: bool = False):
         if comparison is None:
             _, comparison = optimization.load_cached()
         significance.run(comparison)
-
-    if "human-baseline" in stages:
-        import summary, evaluation, optimization, human_baseline
-        if marketing_summary is None:
-            marketing_summary = summary.load_cached()
-        if ranked_df is None:
-            ranked_df = evaluation.load_cached()
-        if optimized_ranked is None:
-            optimized_ranked, _ = optimization.load_cached()
-        try:
-            human_baseline.run(marketing_summary, ranked_df, optimized_ranked)
-        except human_baseline.MissingHumanDataset as exc:
-            # This is the last stage and an optional benchmark. Aborting the run
-            # here would discard everything the expensive generation stages just
-            # produced, so report it and exit cleanly instead.
-            print(f"\n[skip] human-baseline — {exc}")
 
     # -----------------------------------------------------------------------
     # Opt-in engagement-learning stages (learning/). Never in the default run.

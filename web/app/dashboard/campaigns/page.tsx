@@ -1,4 +1,5 @@
 import { StrategyChart } from "@/components/charts";
+import { ViewTabs } from "@/components/research";
 import {
   BasisBadge,
   Card,
@@ -65,7 +66,13 @@ export default async function CampaignsPage({
       ? await safeGet<Module2ResearchResult>("/research/m2/results")
       : null;
 
-  const campaigns = list?.campaigns ?? [];
+  // Draft campaigns are Action Plan artefacts that have not sent anything
+  // yet. Their all-zero rows would pollute the strategy comparison (and give
+  // the charts two campaigns with the same strategy), so this page hides
+  // them until they begin sending.
+  const allCampaigns = list?.campaigns ?? [];
+  const campaigns = allCampaigns.filter((c) => c.status !== "draft");
+  const draftCount = allCampaigns.length - campaigns.length;
   const dryRun = (list?.email_delivery ?? health?.email_delivery) !== "live";
 
   const totals = campaigns.reduce(
@@ -86,28 +93,7 @@ export default async function CampaignsPage({
         subtitle="Module 2 — fixed, trigger and hybrid automation on one audience."
       />
 
-      <div className="mb-4 flex gap-2">
-        <a
-          href="?"
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-            view !== "research"
-              ? "bg-slate-800 text-white"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          Live view
-        </a>
-        <a
-          href="?view=research"
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
-            view === "research"
-              ? "bg-slate-800 text-white"
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          Research results
-        </a>
-      </div>
+      <ViewTabs view={view} />
 
       {view === "research" ? (
         <ResearchView data={research} />
@@ -119,8 +105,14 @@ export default async function CampaignsPage({
             </Pill>
             {reach && (
               <span className="text-sm text-slate-500">
-                <b className="text-slate-700">{reach.reachable}</b> contactable of{" "}
-                {reach.visitors} visitors
+                <b className="text-slate-700">{reach.reachable}</b> contactable
+                of {reach.visitors} visitors
+              </span>
+            )}
+            {draftCount > 0 && (
+              <span className="text-sm text-slate-400">
+                {draftCount} draft plan campaign{draftCount === 1 ? "" : "s"}{" "}
+                hidden until sending starts
               </span>
             )}
           </div>
@@ -134,10 +126,25 @@ export default async function CampaignsPage({
           ) : (
             <>
               <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                <Kpi label="MESSAGES SENT" value={totals.sent.toLocaleString()} />
-                <Kpi label="OPENS" value={totals.opens.toLocaleString()} tone="info" />
-                <Kpi label="CLICKS" value={totals.clicks.toLocaleString()} tone="warn" />
-                <Kpi label="CONVERSIONS" value={totals.conversions.toLocaleString()} tone="ok" />
+                <Kpi
+                  label="MESSAGES SENT"
+                  value={totals.sent.toLocaleString()}
+                />
+                <Kpi
+                  label="OPENS"
+                  value={totals.opens.toLocaleString()}
+                  tone="info"
+                />
+                <Kpi
+                  label="CLICKS"
+                  value={totals.clicks.toLocaleString()}
+                  tone="warn"
+                />
+                <Kpi
+                  label="CONVERSIONS"
+                  value={totals.conversions.toLocaleString()}
+                  tone="ok"
+                />
               </section>
 
               <Card className="mt-4">
@@ -176,26 +183,35 @@ export default async function CampaignsPage({
                   ]}
                 />
                 <Caveat>
-                  <b>Conversions per 1,000 sends</b> is the fair efficiency measure —
-                  a fixed workflow can win on raw conversions simply by sending five
-                  times as many messages. <b>Rules</b> is the operational-complexity
-                  metric: a policy that wins narrowly while needing eight decision
-                  rules instead of one is not obviously the better choice.
+                  <b>Conversions per 1,000 sends</b> is the fair efficiency
+                  measure — a fixed workflow can win on raw conversions simply by
+                  sending five times as many messages. <b>Rules</b> is the
+                  operational-complexity metric: a policy that wins narrowly
+                  while needing eight decision rules instead of one is not
+                  obviously the better choice.
                 </Caveat>
               </Card>
 
               <div className="mt-4 grid gap-4 lg:grid-cols-2">
                 <Card>
-                  <SectionLabel>EFFICIENCY — CONVERSIONS PER 1,000 SENDS</SectionLabel>
-                  <StrategyChart campaigns={campaigns}
-                                 metric="conversions_per_1000_sends"
-                                 label="Conversions / 1k" />
+                  <SectionLabel>
+                    EFFICIENCY — CONVERSIONS PER 1,000 SENDS
+                  </SectionLabel>
+                  <StrategyChart
+                    campaigns={campaigns}
+                    metric="conversions_per_1000_sends"
+                    label="Conversions / 1k"
+                  />
                 </Card>
                 <Card>
-                  <SectionLabel>OPERATIONAL COMPLEXITY — DECISION RULES</SectionLabel>
-                  <StrategyChart campaigns={campaigns}
-                                 metric="operational_complexity"
-                                 label="Rules" />
+                  <SectionLabel>
+                    OPERATIONAL COMPLEXITY — DECISION RULES
+                  </SectionLabel>
+                  <StrategyChart
+                    campaigns={campaigns}
+                    metric="operational_complexity"
+                    label="Rules"
+                  />
                 </Card>
               </div>
 
@@ -218,9 +234,15 @@ export default async function CampaignsPage({
                     </p>
                     <dl className="mt-3 space-y-1 text-sm">
                       <Row label="Open rate" value={pct(c.open_rate)} />
-                      <Row label="Click-through" value={pct(c.click_through_rate)} />
+                      <Row
+                        label="Click-through"
+                        value={pct(c.click_through_rate)}
+                      />
                       <Row label="Conversion" value={pct(c.conversion_rate)} />
-                      <Row label="Unsubscribes" value={String(c.unsubscribes)} />
+                      <Row
+                        label="Unsubscribes"
+                        value={String(c.unsubscribes)}
+                      />
                       <Row label="Still queued" value={String(c.pending)} />
                     </dl>
                   </Card>
@@ -251,12 +273,18 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const FIGURE_CAPTIONS: Record<string, string> = {
-  "strategy_comparison_bars.png": "Three-way comparison — engagement, conversion and complexity side by side.",
-  "funnel_by_strategy.png": "Sent → open → click → convert funnel, one line per strategy.",
-  "sparsity_sweep.png": "Efficiency as signal sparsity rises from 0.0 to 0.99 — the cold-start sweep.",
-  "complexity_vs_performance.png": "Operational complexity against conversions per 1,000 sends.",
-  "hybrid_routing_breakdown.png": "How the hybrid strategy splits users across its fallback, trigger and blended paths.",
-  "ml_model_diagnostics.png": "The ML routing model's ROC and precision-recall behaviour.",
+  "strategy_comparison_bars.png":
+    "Three-way comparison — engagement, conversion and complexity side by side.",
+  "funnel_by_strategy.png":
+    "Sent → open → click → convert funnel, one line per strategy.",
+  "sparsity_sweep.png":
+    "Efficiency as signal sparsity rises from 0.0 to 0.99 — the cold-start sweep.",
+  "complexity_vs_performance.png":
+    "Operational complexity against conversions per 1,000 sends.",
+  "hybrid_routing_breakdown.png":
+    "How the hybrid strategy splits users across its fallback, trigger and blended paths.",
+  "ml_model_diagnostics.png":
+    "The ML routing model's ROC and precision-recall behaviour.",
 };
 
 /**
@@ -278,7 +306,9 @@ function ResearchView({ data }: { data: Module2ResearchResult | null }) {
   return (
     <>
       <Card>
-        <SectionLabel>MODULE 2 — RESEARCH RESULTS (CONTROLLED SIMULATION)</SectionLabel>
+        <SectionLabel>
+          MODULE 2 — RESEARCH RESULTS (CONTROLLED SIMULATION)
+        </SectionLabel>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
           Calibrated simulator, 20 seeds, intent uplift 2.5x. This is the
           research measurement, distinct from the live operational view.
@@ -292,9 +322,17 @@ function ResearchView({ data }: { data: Module2ResearchResult | null }) {
           columns={[
             { key: "strategy", header: "Strategy" },
             { key: "sends", header: "Sends" },
-            { key: "open_rate", header: "Open rate", render: (r) => pct(r.open_rate) },
+            {
+              key: "open_rate",
+              header: "Open rate",
+              render: (r) => pct(r.open_rate),
+            },
             { key: "ctr", header: "CTR", render: (r) => pct(r.ctr) },
-            { key: "conv_rate", header: "Conv. rate", render: (r) => pct(r.conv_rate) },
+            {
+              key: "conv_rate",
+              header: "Conv. rate",
+              render: (r) => pct(r.conv_rate),
+            },
             {
               key: "conv_per_1000",
               header: "Conv / 1k sends",
@@ -331,9 +369,8 @@ function ResearchView({ data }: { data: Module2ResearchResult | null }) {
           ]}
         />
         <Caveat>
-          Means and standard deviations across 20 random seeds — the spread
-          that separates a real gap between strategies from noise in any one
-          run.
+          Means and standard deviations across — 20 random seeds the spread that
+          separates a real gap between strategies from noise in any one run.
         </Caveat>
       </Card>
 

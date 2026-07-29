@@ -42,7 +42,7 @@ setup:  ## Install Python and Node dependencies (one time)
 # Postgres runs either as a Homebrew service or in Docker. Homebrew is tried
 # first: it has one moving part instead of a virtual machine, and a corrupted
 # Docker image store once took the whole database down the day before a demo.
-# Docker remains supported for anyone who prefers it — `make db-docker`.
+# Docker remains supported for anyone who prefers it  `make db-docker`.
 db:  ## Start PostgreSQL (Homebrew if present, else Docker)
 	@if command -v pg_isready > /dev/null 2>&1 || \
 	    [ -x /opt/homebrew/opt/postgresql@16/bin/pg_isready ]; then \

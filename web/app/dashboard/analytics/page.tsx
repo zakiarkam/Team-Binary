@@ -53,7 +53,7 @@ export default async function AnalyticsPage({
       `/research/modules/${MODULE}/results`,
     );
     return (
-      <>
+      <div className="mx-auto max-w-6xl">
         <PageHeader
           crumb="Dashboard"
           title="Analytics"
@@ -61,7 +61,7 @@ export default async function AnalyticsPage({
         />
         <ViewTabs view={view} />
         <ModuleResearch data={research} module={MODULE} />
-      </>
+      </div>
     );
   }
 
@@ -71,8 +71,10 @@ export default async function AnalyticsPage({
     return (
       <>
         <PageHeader crumb="Dashboard" title="Analytics" />
-        <EmptyState title="No website registered yet"
-                    body="Register a site and run a campaign first." />
+        <EmptyState
+          title="No website registered yet"
+          body="Register a site and run a campaign first."
+        />
       </>
     );
   }
@@ -121,8 +123,16 @@ export default async function AnalyticsPage({
           <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <Kpi label="SENT" value={f!.sent.toLocaleString()} />
             <Kpi label="OPENED" value={f!.open.toLocaleString()} tone="info" />
-            <Kpi label="CLICKED" value={f!.click.toLocaleString()} tone="warn" />
-            <Kpi label="CONVERTED" value={f!.convert.toLocaleString()} tone="ok" />
+            <Kpi
+              label="CLICKED"
+              value={f!.click.toLocaleString()}
+              tone="warn"
+            />
+            <Kpi
+              label="CONVERTED"
+              value={f!.convert.toLocaleString()}
+              tone="ok"
+            />
           </section>
 
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -147,23 +157,27 @@ export default async function AnalyticsPage({
                       </span>
                     </div>
                     <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                      <div className="h-full rounded-full bg-red-400"
-                           style={{ width: `${Math.min(100, rate * 100)}%` }} />
+                      <div
+                        className="h-full rounded-full bg-red-400"
+                        style={{ width: `${Math.min(100, rate * 100)}%` }}
+                      />
                     </div>
                   </div>
                 ))}
               </div>
               <Caveat>
-                A high sent→open loss usually means blocked images rather than an
-                unread message. The click→convert step is the one that reflects
-                real intent.
+                A high sent→open loss usually means blocked images rather than
+                an unread message. The click→convert step is the one that
+                reflects real intent.
               </Caveat>
             </Card>
           </div>
 
           <Card className="mt-4">
             <div className="flex items-center justify-between">
-              <SectionLabel>ATTRIBUTION — FOUR MODELS, SAME JOURNEYS</SectionLabel>
+              <SectionLabel>
+                ATTRIBUTION — FOUR MODELS, SAME JOURNEYS
+              </SectionLabel>
               <BasisBadge basis={attribution?.data_basis ?? null} />
             </div>
             {attribution?.note ? (
@@ -174,9 +188,8 @@ export default async function AnalyticsPage({
                 <div className="mt-3 grid gap-4 text-sm text-slate-600 md:grid-cols-2">
                   <p>
                     <b>{attribution?.converters ?? 0}</b> converting journeys,
-                    averaging{" "}
-                    <b>{diag.mean_distinct_touchpoints ?? "—"}</b> distinct
-                    platforms each.
+                    averaging <b>{diag.mean_distinct_touchpoints ?? "—"}</b>{" "}
+                    distinct platforms each.
                   </p>
                   <p>
                     <b>{pct(diag.single_touch_share, 0)}</b> of journeys had a
@@ -219,7 +232,7 @@ export default async function AnalyticsPage({
                   : "NEXT-BEST ACTION PER CUSTOMER"}
               </SectionLabel>
               <SearchBox
-                action="/analytics"
+                action="/dashboard/analytics"
                 placeholder="Search email or visitor id"
                 value={query}
                 hidden={{ segment }}
@@ -278,7 +291,7 @@ export default async function AnalyticsPage({
               }
             />
             <Pagination
-              action="/analytics"
+              action="/dashboard/analytics"
               total={recs?.total ?? 0}
               limit={PAGE_SIZE}
               offset={offset}

@@ -321,11 +321,6 @@ BLOCKS = [
                     "Reduced from an originally intended 0.45 after the model "
                     "was shown to have no demonstrable skill (§7.3.7)"],
                ]}),
-    ("p", "A human-baseline harness scores manually written marketing copy "
-          "through the identical pipeline, so that AI-generated assets are "
-          "compared with human assets on the same scale rather than against an "
-          "assertion."),
-
     ("h3", "4.5.3 Output"),
     ("p", "Ranked, platform-ready marketing assets written to "
           "**content_assets**, ordered by platform according to Module 3's "
@@ -805,9 +800,8 @@ BLOCKS = [
           "`knowledge_base.py` builds the business summary; `goal_tone.py` "
           "trains and selects the classifiers; `generator.py` produces "
           "platform-specific assets; `evaluation.py` computes semantic "
-          "similarity and platform suitability; `engagement.py` provides the "
-          "engagement regressor; and `human_baseline.py` scores human-written "
-          "copy through the same pipeline."),
+          "similarity and platform suitability; and `engagement.py` provides "
+          "the engagement regressor."),
     ("figure", {"path": f"{S}/shot_code_goal_tone.png",
                 "caption": "Figure 18 — Model selection in goal_tone.py. Both "
                            "representations are trained on the same split and "

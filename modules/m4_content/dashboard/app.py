@@ -102,7 +102,6 @@ PAGES = [
     "Models & accuracy",
     "Generated assets",
     "Optimization",
-    "Human benchmark",
 ]
 
 with st.sidebar:
@@ -191,7 +190,7 @@ def page_overview() -> None:
 | **Input** | `input.json` — product name, website URL, target audience, customer segment, preferred platforms |
 | **Learned from** | RafaM97 marketing corpus (goal/tone supervision) and a 12,000-row engagement corpus |
 | **Output** | `ranked_platform_assets.csv` and `optimized_ranked_platform_assets.csv` — one row per platform with caption, hashtags, CTA, creative prompt, three component scores and a composite score |
-| **Evidence** | `before_after_optimization_comparison.csv`, `optimization_significance_test.csv`, `human_vs_ai_comparison.csv` |
+| **Evidence** | `before_after_optimization_comparison.csv`, `optimization_significance_test.csv` |
 
 `campaign_goal` and `tone` are **never supplied by the user** — they are
 predicted from the crawled site by classifiers trained on the labeled corpus.
@@ -290,8 +289,8 @@ training runs are separate sub-flows that converge on the generation path:
 2. **Engagement supervision flow** — `engagement-train`. Runs against the
    12,000-row engagement corpus. Produces one regressor. Also product-independent.
 3. **Per-product inference flow** — `crawl → kb → goal-tone-predict → summary →
-   generate → engagement-score → evaluate → optimize → significance →
-   human-baseline`. This is the flow that runs for each new product.
+   generate → engagement-score → evaluate → optimize → significance`.
+   This is the flow that runs for each new product.
 
 Flows 1 and 2 are trained once and reused. Only flow 3 runs per product, which is
 why `--step` exists: after the first full run you rerun flow 3 alone.
@@ -834,52 +833,6 @@ def page_optimization() -> None:
                          width="stretch", hide_index=True)
 
 
-# ---------------------------------------------------------------------------
-# Human benchmark
-# ---------------------------------------------------------------------------
-
-def page_human() -> None:
-    st.title("Human benchmark")
-    data = artifacts.read_csv(config.HUMAN_AI_CSV)
-    if data is None:
-        missing("The human vs AI comparison", "human-baseline")
-        return
-
-    st.caption(
-        "Human-written captions scored through the identical pipeline — same "
-        "engagement model, same embedding, same platform rules, same weights."
-    )
-
-    domain = ["human", "phi3_initial", "phi3_optimized"]
-    order = sorted(data["platform"].unique())
-    st.altair_chart(
-        alt.Chart(data).mark_bar(cornerRadiusEnd=4, stroke=theme.SURFACE,
-                                 strokeWidth=2).encode(
-            x=alt.X("final_score:Q", title="Mean final score"),
-            y=alt.Y("platform:N", title=None, sort=order, axis=alt.Axis(grid=False)),
-            yOffset=alt.YOffset("source:N", sort=domain),
-            color=alt.Color("source:N", title=None, sort=domain,
-                            scale=theme.color_scale(domain)),
-            tooltip=["platform", "source",
-                     alt.Tooltip("final_score", format=".3f")],
-        ).properties(height=max(200, 74 * len(order))),
-        width="stretch",
-    )
-
-    pivot = data.pivot(index="platform", columns="source", values="final_score")
-    st.dataframe(pivot.style.format("{:.3f}"), width="stretch")
-
-    st.markdown(
-        "<span class='caption-note'>⚠ The comparison is scored by the same "
-        "composite the AI branch is optimized against. Human captions were "
-        "never written to satisfy the platform-fit checklist, and they are "
-        "scored with empty CTA and creative-prompt fields, which costs them "
-        "checklist points automatically. Read this as \"how the human captions "
-        "score under our metric\", not \"AI beats humans\".</span>",
-        unsafe_allow_html=True,
-    )
-
-
 PAGE_FUNCTIONS = {
     "Overview": page_overview,
     "Pipeline": page_pipeline,
@@ -887,7 +840,6 @@ PAGE_FUNCTIONS = {
     "Models & accuracy": page_models,
     "Generated assets": page_assets,
     "Optimization": page_optimization,
-    "Human benchmark": page_human,
 }
 
 PAGE_FUNCTIONS[page]()

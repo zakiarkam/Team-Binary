@@ -60,8 +60,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  get: <T,>(path: string) => request<T>(path),
-  post: <T,>(path: string, body?: unknown) =>
+  get: <T>(path: string) => request<T>(path),
+  post: <T>(path: string, body?: unknown) =>
     request<T>(path, {
       method: "POST",
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -239,7 +239,12 @@ export interface Module2ResearchResult {
 // ── The E1–E11 experiment layer, grouped per module ──────────────────────────
 // Mirrors api/services/research_experiments.py. A metric value is whatever the
 // experiment recorded: a number, a flag, a label, or a [low, high] interval.
-export type MetricValue = number | string | boolean | null | (number | string)[];
+export type MetricValue =
+  | number
+  | string
+  | boolean
+  | null
+  | (number | string)[];
 
 export type ResearchRow = Record<string, number | string | boolean | null>;
 

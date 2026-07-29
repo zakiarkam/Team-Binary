@@ -26,13 +26,13 @@ The user provides only:
 
 ## 3. Model selection rationale
 
-| Role | Model | Why |
-|---|---|---|
-| Long-form summarization | `facebook/bart-large-cnn` | State-of-the-art abstractive summarizer; small enough to run locally; trained on CNN/DailyMail which matches marketing-paragraph length distribution. |
-| Generative reasoning | `microsoft/Phi-3-mini-4k-instruct` | Strong instruction-following for a 3.8B-param model; fits on consumer GPU; 4k context handles full marketing summary + per-platform constraints. |
-| Semantic similarity | `sentence-transformers/all-MiniLM-L6-v2` | Fast, well-calibrated cosine-similarity; established baseline for content-preservation evaluation. |
-| Classification (goal/tone) | TF-IDF + LogReg **and** SentenceBERT + XGBoost | Two complementary methods — sparse lexical vs dense semantic. Best of the two by weighted F1 is selected. |
-| Engagement regression | RandomForest **and** XGBoost | Two non-linear regressors compared by R²; selected best handles feature interactions without explicit engineering. |
+| Role                       | Model                                          | Why                                                                                                                                                   |
+| -------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Long-form summarization    | `facebook/bart-large-cnn`                      | State-of-the-art abstractive summarizer; small enough to run locally; trained on CNN/DailyMail which matches marketing-paragraph length distribution. |
+| Generative reasoning       | `microsoft/Phi-3-mini-4k-instruct`             | Strong instruction-following for a 3.8B-param model; fits on consumer GPU; 4k context handles full marketing summary + per-platform constraints.      |
+| Semantic similarity        | `sentence-transformers/all-MiniLM-L6-v2`       | Fast, well-calibrated cosine-similarity; established baseline for content-preservation evaluation.                                                    |
+| Classification (goal/tone) | TF-IDF + LogReg **and** SentenceBERT + XGBoost | — Two complementary methods sparse lexical vs dense semantic. Best of the two by weighted F1 is selected.                                               |
+| Engagement regression      | RandomForest **and** XGBoost                   | Two non-linear regressors compared by R²; selected best handles feature interactions without explicit engineering.                                    |
 
 ## 4. Data preparation
 
@@ -42,11 +42,11 @@ Source: `RafaM97/marketing_social_media` (HuggingFace).
 
 The raw dataset has `instruction`, `input`, `response`. The transformation:
 
-| Raw column | Pipeline use |
-|---|---|
-| `instruction` | Used by Phi-3 to infer `campaign_goal` |
-| `input` | BART-summarized into a `summary` field |
-| `response` | Used as `text` and to infer `tone` via Phi-3 |
+| Raw column    | Pipeline use                                 |
+| ------------- | -------------------------------------------- |
+| `instruction` | Used by Phi-3 to infer `campaign_goal`       |
+| `input`       | BART-summarized into a `summary` field       |
+| `response`    | Used as `text` and to infer `tone` via Phi-3 |
 
 Output schema: `text, campaign_goal, tone, summary`.
 
@@ -57,10 +57,6 @@ Output schema: `text, campaign_goal, tone, summary`.
 Schema: `platform, text, likes, comments, shares, impressions`.
 
 Target variable: `engagement_rate = (likes + comments + shares) / impressions`.
-
-### 4.3 Human baseline dataset
-
-Schema: `platform, caption`. Used only for evaluation — never for training.
 
 ## 5. Pipeline architecture
 
@@ -112,9 +108,6 @@ input.json
     │
     ▼
 [significance]            →  paired t-test on before vs after final_score
-    │
-    ▼
-[human-baseline]          →  scores human-written captions through the same pipeline
 ```
 
 ## 6. Scoring formula
@@ -143,11 +136,11 @@ Min-max normalized prediction from the best regressor across the asset set, scal
 
 After initial scoring, each asset is examined against three thresholds:
 
-| Trigger | Rule emitted to Phi-3 |
-|---|---|
-| `semantic_score < 0.65` | "Keep content closer to original product meaning." |
-| `platform_suitability_score < 0.75` | Platform-specific rule (Instagram brevity, LinkedIn formality, etc.) |
-| `engagement_score < 0.50` | "Use clearer benefits, stronger emotional wording, more action-oriented CTA." |
+| Trigger                             | Rule emitted to Phi-3                                                         |
+| ----------------------------------- | ----------------------------------------------------------------------------- |
+| `semantic_score < 0.65`             | "Keep content closer to original product meaning."                            |
+| `platform_suitability_score < 0.75` | Platform-specific rule (Instagram brevity, LinkedIn formality, etc.)          |
+| `engagement_score < 0.50`           | "Use clearer benefits, stronger emotional wording, more action-oriented CTA." |
 
 The asset is regenerated with the rule appended to the prompt and re-scored.
 
@@ -155,28 +148,24 @@ The asset is regenerated with the rule appended to the prompt and re-scored.
 
 A paired t-test compares `before_final_score` vs `after_final_score` across all platforms. p < 0.05 indicates the optimization round produced a statistically significant uplift.
 
-## 9. Human baseline
-
-Human-written captions for the same platforms are scored through the exact same pipeline (engagement model, semantic similarity, platform rules, final score). Mean final score per platform is compared against `phi3_initial` and `phi3_optimized` to characterise where AI under- or over-performs humans.
-
-## 10. Engineering decisions
+## 9. Engineering decisions
 
 - **Lazy model loading** — BART, Phi-3, and MiniLM load only when first used. Importing a module that doesn't need them stays cheap. Critical for unit tests, which avoid model downloads entirely.
-- **Disk-mediated stage handoff** — each stage writes a CSV/JSON; the next stage reads it. Stages are individually re-runnable via `python main.py --step <name>`.
+- — **Disk-mediated stage handoff** each stage writes a CSV/JSON; the next stage reads it. Stages are individually re-runnable via `python modules/m4_content/main.py --step <name>`.
 - **Output existence caching** — by default a stage is skipped if its output already exists; `--force` overrides. Saves expensive Phi-3 calls during iteration.
 - **No `manual_input` for campaign_goal/tone** — these are inferred outputs of the pipeline, not user-provided. Manual override would defeat the research contribution.
 
-## 11. Limitations
+## 10. Limitations
 
 - **Cold-start sensitivity**: engagement model accuracy depends heavily on training-set size and platform balance. Reported R² on a held-out 20% split.
 - **Phi-3 hallucination**: generation is constrained by JSON-only prompt rules; the parser falls back to wrapping the raw text as a caption if JSON extraction fails.
 - **Platform suitability is heuristic, not learned**: rules encode common-sense norms; a learned suitability classifier would be a natural future-work extension.
 - **No DistilBERT fine-tuning in current implementation**: the original design considered DistilBERT as a third classifier method. The two-method comparison (TF-IDF+LR vs SentenceBERT+XGB) is sufficient for selecting a goal/tone model under the available compute; DistilBERT is a stretch goal.
 
-## 12. Contribution
+## 11. Contribution
 
 A reproducible, modular framework that:
 
 1. Removes manual specification of campaign strategy by learning `campaign_goal` and `tone` from a public marketing dataset.
 2. Combines abstractive summarization, instruction-tuned generation, dense semantic evaluation, supervised classification, and supervised regression into a single auditable pipeline.
-3. Closes the loop with rule-triggered, data-grounded adaptive optimization, validated by a paired statistical test against a human baseline.
+3. Closes the loop with rule-triggered, data-grounded adaptive optimization, validated by a paired statistical test on pre- vs post-optimization scores.

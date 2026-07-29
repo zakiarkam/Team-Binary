@@ -17,9 +17,9 @@ import { Card, Caveat, EmptyState, Pill, SectionLabel } from "@/components/ui";
  */
 export function ViewTabs({ view }: { view: "live" | "research" }) {
   const style = (active: boolean) =>
-    `rounded-lg px-3 py-1.5 text-sm font-medium ${
+    `rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
       active
-        ? "bg-slate-800 text-white"
+        ? "bg-brand text-white shadow-sm"
         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
     }`;
   return (
@@ -39,7 +39,10 @@ const humanize = (key: string) => key.replace(/_/g, " ");
 
 /** "e6_model_summary" -> "MODEL SUMMARY" — the E-number is already on the card. */
 const tableLabel = (name: string) =>
-  name.replace(/^e\d+_/, "").replace(/_/g, " ").toUpperCase();
+  name
+    .replace(/^e\d+_/, "")
+    .replace(/_/g, " ")
+    .toUpperCase();
 
 /**
  * Four significant figures, never at the cost of the number's meaning.

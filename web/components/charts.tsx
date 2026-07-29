@@ -32,7 +32,9 @@ const TOOLTIP = {
  * formatter assignable without casting.
  */
 const asPercent = (value: unknown) =>
-  typeof value === "number" ? `${(value * 100).toFixed(1)}%` : String(value ?? "");
+  typeof value === "number"
+    ? `${(value * 100).toFixed(1)}%`
+    : String(value ?? "");
 
 function Empty({ message }: { message: string }) {
   return (
@@ -56,7 +58,10 @@ export function AudienceChart({ data }: { data: DailyPoint[] }) {
         <Empty message="No visitor activity yet — browse the demo site to populate this." />
       ) : (
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
+          <AreaChart
+            data={data}
+            margin={{ top: 8, right: 8, bottom: 0, left: -18 }}
+          >
             <defs>
               <linearGradient id="visitorsFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#3b5bdb" stopOpacity={0.32} />
@@ -67,7 +72,11 @@ export function AudienceChart({ data }: { data: DailyPoint[] }) {
                 <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#eef2f7"
+              vertical={false}
+            />
             <XAxis
               dataKey="day"
               tickFormatter={(d: string) => d.slice(5)}
@@ -75,12 +84,29 @@ export function AudienceChart({ data }: { data: DailyPoint[] }) {
               axisLine={{ stroke: "#e2e8f0" }}
               tickLine={false}
             />
-            <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
+            <YAxis
+              allowDecimals={false}
+              tick={AXIS}
+              axisLine={false}
+              tickLine={false}
+            />
             <Tooltip contentStyle={TOOLTIP} />
-            <Area type="monotone" dataKey="events" stroke="#0ea5e9" strokeWidth={2}
-                  fill="url(#eventsFill)" name="Events" />
-            <Area type="monotone" dataKey="visitors" stroke="#3b5bdb" strokeWidth={2.5}
-                  fill="url(#visitorsFill)" name="Visitors" />
+            <Area
+              type="monotone"
+              dataKey="events"
+              stroke="#0ea5e9"
+              strokeWidth={2}
+              fill="url(#eventsFill)"
+              name="Events"
+            />
+            <Area
+              type="monotone"
+              dataKey="visitors"
+              stroke="#3b5bdb"
+              strokeWidth={2.5}
+              fill="url(#visitorsFill)"
+              name="Visitors"
+            />
           </AreaChart>
         </ResponsiveContainer>
       )}
@@ -99,17 +125,43 @@ export function SegmentChart({
         <Empty message="Not segmented yet — run segmentation to populate this." />
       ) : (
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical"
-                    margin={{ top: 4, right: 16, bottom: 4, left: 24 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" horizontal={false} />
-            <XAxis type="number" allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
-            <YAxis type="category" dataKey="segment_name" width={110}
-                   tick={AXIS} axisLine={false} tickLine={false} />
+          <BarChart
+            data={data}
+            layout="vertical"
+            margin={{ top: 4, right: 16, bottom: 4, left: 24 }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#eef2f7"
+              horizontal={false}
+            />
+            <XAxis
+              type="number"
+              allowDecimals={false}
+              tick={AXIS}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="segment_name"
+              width={110}
+              tick={AXIS}
+              axisLine={false}
+              tickLine={false}
+            />
             <Tooltip contentStyle={TOOLTIP} />
-            <Bar dataKey="visitors" name="Visitors" radius={[0, 6, 6, 0]} barSize={22}>
+            <Bar
+              dataKey="visitors"
+              name="Visitors"
+              radius={[0, 6, 6, 0]}
+              barSize={22}
+            >
               {data.map((d) => (
-                <Cell key={d.segment_name}
-                      fill={SEGMENT_COLOR[d.segment_name] ?? "#3b5bdb"} />
+                <Cell
+                  key={d.segment_name}
+                  fill={SEGMENT_COLOR[d.segment_name] ?? "#3b5bdb"}
+                />
               ))}
             </Bar>
           </BarChart>
@@ -136,13 +188,37 @@ export function FunnelChart({
         <Empty message="No campaign sent yet." />
       ) : (
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-            <XAxis dataKey="stage" tick={AXIS} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
-            <YAxis allowDecimals={false} tick={AXIS} axisLine={false} tickLine={false} />
+          <BarChart
+            data={data}
+            margin={{ top: 8, right: 8, bottom: 0, left: -20 }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#eef2f7"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="stage"
+              tick={AXIS}
+              axisLine={{ stroke: "#e2e8f0" }}
+              tickLine={false}
+            />
+            <YAxis
+              allowDecimals={false}
+              tick={AXIS}
+              axisLine={false}
+              tickLine={false}
+            />
             <Tooltip contentStyle={TOOLTIP} />
-            <Bar dataKey="users" name="Unique visitors" radius={[6, 6, 0, 0]} barSize={54}>
-              {data.map((d) => <Cell key={d.stage} fill={d.fill} />)}
+            <Bar
+              dataKey="users"
+              name="Unique visitors"
+              radius={[6, 6, 0, 0]}
+              barSize={54}
+            >
+              {data.map((d) => (
+                <Cell key={d.stage} fill={d.fill} />
+              ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -163,7 +239,8 @@ export function AttributionChart({
   models: Record<string, { platform: string; credit: number }[]>;
 }) {
   const names = Object.keys(models ?? {});
-  if (!names.length) return <Empty message="Not enough converting journeys yet." />;
+  if (!names.length)
+    return <Empty message="Not enough converting journeys yet." />;
 
   const platforms = Array.from(
     new Set(names.flatMap((m) => (models[m] ?? []).map((r) => r.platform))),
@@ -172,7 +249,8 @@ export function AttributionChart({
   const data = platforms.map((platform) => {
     const row: Record<string, string | number> = { platform };
     for (const model of names) {
-      row[model] = (models[model] ?? []).find((r) => r.platform === platform)?.credit ?? 0;
+      row[model] =
+        (models[model] ?? []).find((r) => r.platform === platform)?.credit ?? 0;
     }
     return row;
   });
@@ -187,17 +265,37 @@ export function AttributionChart({
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-          <XAxis dataKey="platform" tick={AXIS} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
-          <YAxis tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
-                 tick={AXIS} axisLine={false} tickLine={false} />
-          <Tooltip contentStyle={TOOLTIP}
-                   formatter={asPercent} />
+        <BarChart
+          data={data}
+          margin={{ top: 8, right: 8, bottom: 0, left: -20 }}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="#eef2f7"
+            vertical={false}
+          />
+          <XAxis
+            dataKey="platform"
+            tick={AXIS}
+            axisLine={{ stroke: "#e2e8f0" }}
+            tickLine={false}
+          />
+          <YAxis
+            tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
+            tick={AXIS}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip contentStyle={TOOLTIP} formatter={asPercent} />
           <Legend wrapperStyle={{ fontSize: 12 }} />
           {names.map((model) => (
-            <Bar key={model} dataKey={model} name={model.replace("_", " ")}
-                 fill={colors[model] ?? "#64748b"} radius={[4, 4, 0, 0]} />
+            <Bar
+              key={model}
+              dataKey={model}
+              name={model.replace("_", " ")}
+              fill={colors[model] ?? "#64748b"}
+              radius={[4, 4, 0, 0]}
+            />
           ))}
         </BarChart>
       </ResponsiveContainer>
@@ -237,13 +335,31 @@ export function StrategyChart<
   return (
     <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -20 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-          <XAxis dataKey="strategy" tick={AXIS} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
+        <BarChart
+          data={data}
+          margin={{ top: 8, right: 8, bottom: 0, left: -20 }}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="#eef2f7"
+            vertical={false}
+          />
+          <XAxis
+            dataKey="strategy"
+            tick={AXIS}
+            axisLine={{ stroke: "#e2e8f0" }}
+            tickLine={false}
+          />
           <YAxis tick={AXIS} axisLine={false} tickLine={false} />
           <Tooltip contentStyle={TOOLTIP} />
           <Bar dataKey="value" name={label} radius={[6, 6, 0, 0]} barSize={48}>
-            {data.map((d) => <Cell key={d.strategy} fill={colors[d.strategy] ?? "#64748b"} />)}
+            {/* Two campaigns can share a strategy, so the key needs the index. */}
+            {data.map((d, i) => (
+              <Cell
+                key={`${d.strategy}-${i}`}
+                fill={colors[d.strategy] ?? "#64748b"}
+              />
+            ))}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -264,18 +380,43 @@ export function PlatformCreditChart({
   return (
     <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} layout="vertical"
-                  margin={{ top: 4, right: 16, bottom: 4, left: 16 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" horizontal={false} />
-          <XAxis type="number" tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
-                 tick={AXIS} axisLine={false} tickLine={false} />
-          <YAxis type="category" dataKey="platform" width={88}
-                 tick={AXIS} axisLine={false} tickLine={false} />
-          <Tooltip contentStyle={TOOLTIP}
-                   formatter={asPercent} />
-          <Bar dataKey="credit" name="Conversion credit" radius={[0, 6, 6, 0]} barSize={20}>
+        <BarChart
+          data={data}
+          layout="vertical"
+          margin={{ top: 4, right: 16, bottom: 4, left: 16 }}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="#eef2f7"
+            horizontal={false}
+          />
+          <XAxis
+            type="number"
+            tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
+            tick={AXIS}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            type="category"
+            dataKey="platform"
+            width={88}
+            tick={AXIS}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip contentStyle={TOOLTIP} formatter={asPercent} />
+          <Bar
+            dataKey="credit"
+            name="Conversion credit"
+            radius={[0, 6, 6, 0]}
+            barSize={20}
+          >
             {data.map((d) => (
-              <Cell key={d.platform} fill={PLATFORM_COLOR[d.platform] ?? "#3b5bdb"} />
+              <Cell
+                key={d.platform}
+                fill={PLATFORM_COLOR[d.platform] ?? "#3b5bdb"}
+              />
             ))}
           </Bar>
         </BarChart>

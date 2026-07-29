@@ -50,6 +50,12 @@ def get_plan(site_id: int, include_done: bool = False) -> dict:
     return svc.current_plan(site_id, include_done=include_done)
 
 
+@router.get("/actions/emails/{campaign_id}/{step}/recipients")
+def get_email_recipients(campaign_id: int, step: int, limit: int = 500) -> dict:
+    """Exactly who this email action goes to — name, email and segment."""
+    return svc.email_recipients(campaign_id, step, min(max(limit, 1), 2000))
+
+
 @router.post("/actions/posts/{action_id}/executed")
 def post_executed(action_id: int, payload: ExecutedRequest) -> dict:
     """The company published this post (or decided to skip it)."""

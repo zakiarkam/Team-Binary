@@ -20,13 +20,13 @@ website/product brief
 
 ## 2. Scope: what belongs to M4 and what does not
 
-| Belongs to my M4 contribution | Input from other modules |
-|---|---|
-| Website/product-context processing | M1 audience segment is optional contextual input. |
-| Goal/tone weak labelling and classifiers | M2/M3 may provide campaign/platform priority, but they do not generate copy. |
-| BART summary, Phi-3/fast generation, platform rules | M3 priority only reorders requested platforms. |
-| Engagement prediction, historical content fit, candidate selection | M4 owns the caption-level score and final selected assets. |
-| Optimization, significance testing, human comparison, feedback learning | M1–M3 own segmentation, automation and funnel analytics. |
+| Belongs to my M4 contribution                                      | Input from other modules                                                     |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| Website/product-context processing                                 | M1 audience segment is optional contextual input.                            |
+| Goal/tone weak labelling and classifiers                           | M2/M3 may provide campaign/platform priority, but they do not generate copy. |
+| BART summary, Phi-3/fast generation, platform rules                | M3 priority only reorders requested platforms.                               |
+| Engagement prediction, historical content fit, candidate selection | M4 owns the caption-level score and final selected assets.                   |
+| Optimization, significance testing, feedback learning              | M1–M3 own segmentation, automation and funnel analytics.                     |
 
 ## 3. M4 final pipeline
 
@@ -67,37 +67,36 @@ caption, hashtags, CTA, image/video prompt, goal, tone, component scores
 
 ## 4. Files, functions, inputs, and outputs
 
-| File | Main functions | Role in my module | Output/artifact |
-|---|---|---|---|
-| `config.py` | `platform_spec()`, `select_visual()` | Single source of platform length, hashtag, visual and score rules. | Shared constants and paths. |
-| `crawler.py` | `run()` | Retrieves website text when a URL is supplied. | Crawl JSON. |
-| `knowledge_base.py` | `build()`, `run()` | Cleans and deduplicates website/product text. | `marketing_knowledge_base.json`. |
-| `dataset/preprocess_marketing.py` | preprocessing functions | Converts RafaM97 source records into clean marketing text. | `marketing_preprocessed.csv`. |
-| `dataset/label_campaign_goal.py` | `run()` | Weak-labels goal using rules, zero-shot and Phi-3 signals. | `campaign_goal_labeled.csv`. |
-| `dataset/label_tone.py` | `run()` | Weak-labels tone using rules, BART-MNLI and Phi-3 arbitration. | `tone_labeled.csv`. |
-| `dataset/build_final_dataset.py` | `build()`, `extract_platforms()` | Confidence-gates labels; retains source-explicit platforms. | Goal/tone training and research CSVs. |
-| `goal_tone.py` | `train()`, `predict_one()`, `predict()` | Trains/selects goal and tone classifiers; predicts separately per platform. | `best_goal_model.pkl`, `best_tone_model.pkl`, metrics JSON. |
-| `summary.py` | `build()`, `run()` | Uses BART to make a concise generation brief. | `marketing_summary.json`. |
-| `generator.py` | `build_prompt()`, `standardize()`, `run()` | Phi-3 platform-specific generation and JSON standardization. | Generated asset CSV. |
-| `content_service.py` | `generate()`, `_platform_strategy()`, `score_assets()` | Final app-facing M4 service: creates candidates and selects the best per platform. | Asset records for app/export. |
-| `engagement.py` | `train()`, `score()`, `platform_content_fit()` | Engagement-rate regressor and high-engagement platform-content profiles. | Engagement model + historical profiles. |
-| `evaluation.py` | `semantic_score()`, `platform_suitability()` | Relevance and platform-format scoring. | Component scores/ranked CSV. |
-| `optimization.py` | `run()` | Re-prompts legacy weak assets and re-scores them. | Optimized assets/comparison. |
-| `significance.py` | `run()` | Paired before/after statistical test. | Significance CSV. |
-| `human_baseline.py` | `run()` | Sends human and AI text through the same scorer. | Human-vs-AI CSV. |
-| `learning/` | importer, targets, personalize, candidates | Future account-specific adaptation from analytics exports. | SQLite feedback store + personalized model. |
+| File                              | Main functions                                         | Role in my module                                                                  | Output/artifact                                             |
+| --------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `config.py`                       | `platform_spec()`, `select_visual()`                   | Single source of platform length, hashtag, visual and score rules.                 | Shared constants and paths.                                 |
+| `crawler.py`                      | `run()`                                                | Retrieves website text when a URL is supplied.                                     | Crawl JSON.                                                 |
+| `knowledge_base.py`               | `build()`, `run()`                                     | Cleans and deduplicates website/product text.                                      | `marketing_knowledge_base.json`.                            |
+| `dataset/preprocess_marketing.py` | preprocessing functions                                | Converts RafaM97 source records into clean marketing text.                         | `marketing_preprocessed.csv`.                               |
+| `dataset/label_campaign_goal.py`  | `run()`                                                | Weak-labels goal using rules, zero-shot and Phi-3 signals.                         | `campaign_goal_labeled.csv`.                                |
+| `dataset/label_tone.py`           | `run()`                                                | Weak-labels tone using rules, BART-MNLI and Phi-3 arbitration.                     | `tone_labeled.csv`.                                         |
+| `dataset/build_final_dataset.py`  | `build()`, `extract_platforms()`                       | Confidence-gates labels; retains source-explicit platforms.                        | Goal/tone training and research CSVs.                       |
+| `goal_tone.py`                    | `train()`, `predict_one()`, `predict()`                | Trains/selects goal and tone classifiers; predicts separately per platform.        | `best_goal_model.pkl`, `best_tone_model.pkl`, metrics JSON. |
+| `summary.py`                      | `build()`, `run()`                                     | Uses BART to make a concise generation brief.                                      | `marketing_summary.json`.                                   |
+| `generator.py`                    | `build_prompt()`, `standardize()`, `run()`             | Phi-3 platform-specific generation and JSON standardization.                       | Generated asset CSV.                                        |
+| `content_service.py`              | `generate()`, `_platform_strategy()`, `score_assets()` | Final app-facing M4 service: creates candidates and selects the best per platform. | Asset records for app/export.                               |
+| `engagement.py`                   | `train()`, `score()`, `platform_content_fit()`         | Engagement-rate regressor and high-engagement platform-content profiles.           | Engagement model + historical profiles.                     |
+| `evaluation.py`                   | `semantic_score()`, `platform_suitability()`           | Relevance and platform-format scoring.                                             | Component scores/ranked CSV.                                |
+| `optimization.py`                 | `run()`                                                | Re-prompts legacy weak assets and re-scores them.                                  | Optimized assets/comparison.                                |
+| `significance.py`                 | `run()`                                                | Paired before/after statistical test.                                              | Significance CSV.                                           |
+| `learning/`                       | importer, targets, personalize, candidates             | Future account-specific adaptation from analytics exports.                         | SQLite feedback store + personalized model.                 |
 
 ## 5. Models and algorithms: comparison and choice reason
 
-| Task | Alternatives considered | Chosen implementation | Why it is reasonable | Honest limitation |
-|---|---|---|---|---|
-| Summarization | Extractive, T5/Pegasus, BART | `facebook/bart-large-cnn` | BART is an established seq2seq denoising model for generation/summarization. | CNN/DailyMail is news-domain, not marketing-domain; summary may hallucinate. |
-| Content generation | Templates, smaller local LLM, larger/API LLM | Phi-3-mini-4k-instruct; fast templates for responsive UI | Phi-3 is local, reproducible and instruction tuned; fast path permits immediate demo results. | Phi-3 is not fine-tuned on verified marketing examples. |
-| Goal/tone labels | Manual labels, rules only, direct LLM, weak supervision | Rules + zero-shot NLI + Phi-3 -> confidence-gated training set | Allows transparent labels where no public exact labels exist. | Labels are weak supervision, not ground truth. |
-| Goal/tone prediction | Rules only, TF-IDF+LR, SBERT+XGBoost, direct LLM | TF-IDF+LR vs SBERT+XGBoost; weighted-F1 selection | Compares sparse lexical and dense semantic features; weighted F1 handles imbalance. | Only 113 usable platform rows; goal accuracy is not yet 85%+. |
-| Engagement ranking | Likes, linear model, neural regressor, RF, XGBoost | RF vs XGBoost on engagement rate | Tree models are effective tabular baselines and capture non-linear interactions. | Very high R² on public/synthetic data is optimistic; use as a ranker. |
-| Platform relevance | Hard-coded rules only, nearest-post copying, TF-IDF profile | TF-IDF centroid from top engagement quartile | Uses historical platform evidence without copying a post. | It is similarity, not a causal performance measurement. |
-| Candidate choice | One output, best-of-N by engagement only, best-of-N composite | Best-of-3 composite selection | Gives generation variation while limiting proxy over-optimization. | Must later validate against human ratings/real analytics. |
+| Task                 | Alternatives considered                                       | Chosen implementation                                          | Why it is reasonable                                                                          | Honest limitation                                                            |
+| -------------------- | ------------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Summarization        | Extractive, T5/Pegasus, BART                                  | `facebook/bart-large-cnn`                                      | BART is an established seq2seq denoising model for generation/summarization.                  | CNN/DailyMail is news-domain, not marketing-domain; summary may hallucinate. |
+| Content generation   | Templates, smaller local LLM, larger/API LLM                  | Phi-3-mini-4k-instruct; fast templates for responsive UI       | Phi-3 is local, reproducible and instruction tuned; fast path permits immediate demo results. | Phi-3 is not fine-tuned on verified marketing examples.                      |
+| Goal/tone labels     | Manual labels, rules only, direct LLM, weak supervision       | Rules + zero-shot NLI + Phi-3 -> confidence-gated training set | Allows transparent labels where no public exact labels exist.                                 | Labels are weak supervision, not ground truth.                               |
+| Goal/tone prediction | Rules only, TF-IDF+LR, SBERT+XGBoost, direct LLM              | TF-IDF+LR vs SBERT+XGBoost; weighted-F1 selection              | Compares sparse lexical and dense semantic features; weighted F1 handles imbalance.           | Only 113 usable platform rows; goal accuracy is not yet 85%+.                |
+| Engagement ranking   | Likes, linear model, neural regressor, RF, XGBoost            | RF vs XGBoost on engagement rate                               | Tree models are effective tabular baselines and capture non-linear interactions.              | Very high R² on public/synthetic data is optimistic; use as a ranker.        |
+| Platform relevance   | Hard-coded rules only, nearest-post copying, TF-IDF profile   | TF-IDF centroid from top engagement quartile                   | Uses historical platform evidence without copying a post.                                     | It is similarity, not a causal performance measurement.                      |
+| Candidate choice     | One output, best-of-N by engagement only, best-of-N composite | Best-of-3 composite selection                                  | Gives generation variation while limiting proxy over-optimization.                            | Must later validate against human ratings/real analytics.                    |
 
 ### Research support for the choices
 
@@ -110,13 +109,13 @@ caption, hashtags, CTA, image/video prompt, goal, tone, component scores
 
 ## 6. Exact datasets and correct claims
 
-| Dataset | My use | Correct claim | Do not claim |
-|---|---|---|---|
-| RafaM97 raw, 689 rows | Source text for weak goal/tone labelling. | “We derive a transparent weakly supervised strategy dataset.” | “RafaM97 contains original human goal/tone labels.” |
-| Final goal/tone training rows, 113 | Classifier training with platform-conditioned input. | “We evaluate two classifier families on a small weakly labelled corpus.” | “It proves high per-platform accuracy.” |
-| Engagement datasets, 12,000 rows | Engagement-rate prediction and historical platform profiles. | “We use platform and text features to rank candidates.” | “It directly labels goal, tone, or generated-caption quality.” |
-| Comment datasets | Not used for copy training. | “They can be future audience-response data.” | “They are marketing captions.” |
-| Future platform analytics CSVs | Personalized engagement learning. | “They activate account-normalized, real-data adaptation.” | “They are already in the current evaluation.” |
+| Dataset                            | My use                                                       | Correct claim                                                            | Do not claim                                                   |
+| ---------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| RafaM97 raw, 689 rows              | Source text for weak goal/tone labelling.                    | “We derive a transparent weakly supervised strategy dataset.”            | “RafaM97 contains original human goal/tone labels.”            |
+| Final goal/tone training rows, 113 | Classifier training with platform-conditioned input.         | “We evaluate two classifier families on a small weakly labelled corpus.” | “It proves high per-platform accuracy.”                        |
+| Engagement datasets, 12,000 rows   | Engagement-rate prediction and historical platform profiles. | “We use platform and text features to rank candidates.”                  | “It directly labels goal, tone, or generated-caption quality.” |
+| Comment datasets                   | Not used for copy training.                                  | “They can be future audience-response data.”                             | “They are marketing captions.”                                 |
+| Future platform analytics CSVs     | Personalized engagement learning.                            | “They activate account-normalized, real-data adaptation.”                | “They are already in the current evaluation.”                  |
 
 ## 7. My scoring and selection logic
 
@@ -156,13 +155,13 @@ This is an **integration and inference-time decision contribution**. Do not clai
 
 ## 9. Current results and what to say honestly
 
-| Result | Presentation wording |
-|---|---|
-| Tone held-out accuracy is around 91% in the current artifact. | “Tone is the stronger classifier, but the test set is small and weakly labelled.” |
-| Goal held-out accuracy is around 65–70%. | “Goal prediction is the current bottleneck; we do not claim an 85% goal accuracy.” |
-| Engagement R² is around 0.99. | “The public corpus result is used as a ranking proxy; it is likely optimistic and requires real-export validation.” |
-| Historical content fit has no accuracy. | “It is an evidence feature for ranking, not a classifier.” |
-| Generated captions/prompts have no class accuracy. | “We evaluate them using platform rules, blind human ratings and future real analytics.” |
+| Result                                                        | Presentation wording                                                                                                |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Tone held-out accuracy is around 91% in the current artifact. | “Tone is the stronger classifier, but the test set is small and weakly labelled.”                                   |
+| Goal held-out accuracy is around 65–70%.                      | “Goal prediction is the current bottleneck; we do not claim an 85% goal accuracy.”                                  |
+| Engagement R² is around 0.99.                                 | “The public corpus result is used as a ranking proxy; it is likely optimistic and requires real-export validation.” |
+| Historical content fit has no accuracy.                       | “It is an evidence feature for ranking, not a classifier.”                                                          |
+| Generated captions/prompts have no class accuracy.            | “We evaluate them using platform rules, blind human ratings and future real analytics.”                             |
 
 ## 10. Evaluation and future work
 
@@ -171,8 +170,7 @@ This is an **integration and inference-time decision contribution**. Do not clai
 1. Goal/tone classifier accuracy, weighted F1 and macro F1.
 2. Platform-format compliance rate.
 3. Before/after optimization score comparison and paired test.
-4. Human-versus-AI comparison using the same scoring pipeline.
-5. Candidate-selection comparison: best candidate versus a random candidate.
+4. Candidate-selection comparison: best candidate versus a random candidate.
 
 ### What makes the project stronger after presentation
 

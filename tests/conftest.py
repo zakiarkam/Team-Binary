@@ -23,5 +23,11 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# Module 4 lives in its own folder but keeps flat internal imports
+# (`import config`, `import engagement`, …), so its directory joins the path.
+M4_DIR = ROOT / "modules" / "m4_content"
+if str(M4_DIR) not in sys.path:
+    sys.path.insert(1, str(M4_DIR))
+
 # Must happen before numpy / torch / xgboost are imported anywhere.
 import openmp_guard  # noqa: E402, F401  (import order matters)

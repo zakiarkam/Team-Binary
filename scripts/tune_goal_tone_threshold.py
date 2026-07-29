@@ -34,6 +34,7 @@ import pandas as pd  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(1, str(ROOT / "modules" / "m4_content"))
 
 RESEARCH_CSV = ROOT / "data" / "processed" / "goal_tone_dataset_research.csv"
 TARGETS = ("campaign_goal", "tone")

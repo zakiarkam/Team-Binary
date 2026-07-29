@@ -22,21 +22,27 @@ CI while still producing whatever it could.
 
 from __future__ import annotations
 
-# Loaded before anything numeric: this process touches XGBoost and, through
-# Sentence-BERT, torch. See openmp_guard.py.
-import openmp_guard  # noqa: F401  (import order matters)
-
-import argparse
-import importlib
-import json
 import sys
-import time
-import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+# Module 4 keeps flat internal imports from its own folder.
+M4_DIR = ROOT / "modules" / "m4_content"
+if str(M4_DIR) not in sys.path:
+    sys.path.insert(1, str(M4_DIR))
+
+# Loaded before anything numeric: this process touches XGBoost and, through
+# Sentence-BERT, torch. See openmp_guard.py.
+import openmp_guard  # noqa: E402, F401  (import order matters)
+
+import argparse  # noqa: E402
+import importlib  # noqa: E402
+import json  # noqa: E402
+import time  # noqa: E402
+import traceback  # noqa: E402
 
 import pandas as pd  # noqa: E402
 

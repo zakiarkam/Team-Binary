@@ -23,7 +23,6 @@ Most AI copywriting tools generate text from a prompt, but they usually do not p
 5. Scores semantic relevance, platform suitability, and predicted engagement together.
 6. Optimizes weak outputs using score-triggered feedback.
 7. Performs statistical before-vs-after validation.
-8. Compares AI content against a human baseline.
 
 This project addresses that gap with a reproducible local pipeline.
 
@@ -45,7 +44,6 @@ The novelty is not simply "using AI to write captions." The novelty is the compl
 | Evaluation | Human subjective judgment only | Semantic score, platform suitability score, predicted engagement score. |
 | Optimization | Manual rewriting | Rule-triggered adaptive re-prompting based on weak scores. |
 | Validation | No statistical test | Paired t-test compares before and after optimization. |
-| Benchmark | Tool output only | Human baseline can be compared under the same scoring pipeline. |
 
 ## 6. Research Questions
 
@@ -58,8 +56,7 @@ Sub-questions:
 1. How accurately can the system infer campaign goal and marketing tone from marketing text?
 2. Can historical social media engagement data predict likely engagement for generated marketing captions?
 3. Does adaptive optimization improve final content scores compared with the first generated version?
-4. How do optimized AI-generated assets compare with human-written captions under the same evaluation framework?
-5. Which platforms benefit most from adaptive optimization?
+4. Which platforms benefit most from adaptive optimization?
 
 ## 7. Hypotheses
 
@@ -68,7 +65,6 @@ Sub-questions:
 | H1: Adaptive optimization improves generated content quality. | Mean `after_final_score` is higher than `before_final_score`. |
 | H2: The improvement is statistically meaningful. | Paired t-test p-value is below 0.05. |
 | H3: Engagement-aware scoring improves selection quality. | Top-ranked outputs have stronger predicted engagement than lower-ranked outputs. |
-| H4: Optimized AI content can approach or exceed human baseline scores. | `human_vs_ai_comparison.csv` shows optimized AI mean score close to or higher than human mean score. |
 
 ## 8. Existing Research Evidence
 
@@ -125,12 +121,6 @@ platform,text,likes,shares,comments,impressions
 
 Reason: engagement prediction must be trained from observed audience interaction data, not only from subjective rules.
 
-### Human Baseline Dataset
-
-The human baseline dataset is selected to compare generated content against human-written content using the same scoring function.
-
-Reason: without a human baseline, the project can show before-vs-after improvement but cannot discuss AI-vs-human performance.
-
 ## 12. What Was Done for Accuracy
 
 The project uses several accuracy and validity controls:
@@ -146,7 +136,6 @@ The project uses several accuracy and validity controls:
 | Platform suitability score | Ensures generated content follows platform-specific format expectations. |
 | Engagement score | Adds data-driven ranking based on historical interactions. |
 | Paired t-test | Tests whether optimization improvement is statistically meaningful. |
-| Human baseline | Gives an external comparison point beyond AI self-improvement. |
 | Stage caching and saved CSV/JSON artifacts | Makes outputs auditable and reproducible. |
 
 ## 13. Why the Selected Scoring Formula Is Reasonable
@@ -175,7 +164,6 @@ Commercial AI marketing tools are strong in usability but weak for academic repr
 3. Whether engagement prediction is trained on historical metrics.
 4. How content is scored.
 5. Whether optimization is statistically validated.
-6. Whether AI content is compared against human content under the same scoring rules.
 
 This project is designed as a research pipeline, not only a productivity tool.
 
@@ -190,7 +178,6 @@ The expected contribution is a transparent and reproducible framework for AI mar
 5. Ranks generated assets using a combined quality score.
 6. Optimizes weak outputs using score-triggered rules.
 7. Validates improvement with a paired t-test.
-8. Benchmarks AI output against human-written content.
 
 ## 16. Limitations to Report Honestly
 
@@ -201,7 +188,6 @@ Include these limitations in the final research report:
 3. Platform suitability rules are heuristic and may not capture all platform algorithm changes.
 4. Phi-3 generation can still hallucinate or produce generic marketing language.
 5. The system predicts likely engagement; it does not replace live A/B testing.
-6. If the human baseline sample is small, human-vs-AI conclusions must be reported cautiously.
 
 ## 17. Suggested Final Report Structure
 
@@ -220,12 +206,11 @@ Use this structure for the thesis/report:
 11. Evaluation metrics
 12. Results
 13. Statistical analysis
-14. Human baseline comparison
-15. Discussion
-16. Limitations
-17. Future work
-18. Conclusion
-19. References
+14. Discussion
+15. Limitations
+16. Future work
+17. Conclusion
+18. References
 
 ## 18. Suggested Future Work
 

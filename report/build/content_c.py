@@ -412,8 +412,8 @@ def _build(fig0, tab0):
               "category is what let the detector be right where the label was "
               "wrong. I also insisted the report state plainly that this "
               "sample is a development set and its figure is therefore fitted."),
-        ("p", "Finally, I built the three-component scoring framework and the "
-              "human-baseline harness. The most consequential piece of this "
+        ("p", "Finally, I built the three-component scoring framework. "
+              "The most consequential piece of this "
               "work was negative: I discovered the engagement regressor had "
               "been trained with the outcome components from which its target "
               "was derived still among its features (D4). Adding a leakage "

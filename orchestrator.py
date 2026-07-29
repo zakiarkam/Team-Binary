@@ -8,7 +8,7 @@ Runs the four modules as one pipeline and assembles a single result bundle:
                                                                      ▼
                                                           M4 Content Refinery
 
-Design (see INTEGRATION_PLAN.md §5, option C):
+Design:
   - M1 → M2 run LIVE on the real 8,000-user dataset (fast).
   - M3 funnel/conversion analytics on the REAL M2 campaign (single-platform email).
   - M3 multi-platform attribution study consumed from its own validated artifacts.
@@ -19,6 +19,14 @@ Streamlit app imports (`from orchestrator import run_full`).
 """
 
 from __future__ import annotations
+
+import sys as _sys
+from pathlib import Path as _Path
+
+# Module 4 keeps flat internal imports from its own folder.
+_M4_DIR = _Path(__file__).resolve().parent / "modules" / "m4_content"
+if str(_M4_DIR) not in _sys.path:
+    _sys.path.insert(0, str(_M4_DIR))
 
 # Loaded first, on purpose: torch must initialise before xgboost or fitting
 # an XGBoost model later in this process segfaults on macOS.

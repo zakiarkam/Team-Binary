@@ -1,35 +1,40 @@
 # Project Architecture
 
-This is the exact architecture for the current Team-Binary code path. It reflects the real repository layout, the stage order in `main.py`, and the artifacts each module reads or writes.
+This is the exact architecture for the current Team-Binary code path. It reflects the real repository layout, the stage order in `modules/m4_content/main.py`, and the artifacts each module reads or writes. Module 4's pipeline code lives in `modules/m4_content/`, alongside the other three modules.
 
 ## 1. Repository Structure
 
 ```text
-Team-Binary/
+Research/
 │
 ├── input.json
-├── config.py
-├── main.py
-├── models.py
-├── crawler.py
-├── knowledge_base.py
-├── dataset/
-│   ├── preprocess_marketing.py
-│   ├── label_campaign_goal.py
-│   ├── label_tone.py
-│   └── build_final_dataset.py
-├── dashboard/
-│   ├── app.py
-│   ├── artifacts.py
-│   └── theme.py
-├── goal_tone.py
-├── summary.py
-├── generator.py
-├── engagement.py
-├── evaluation.py
-├── optimization.py
-├── significance.py
-├── human_baseline.py
+├── orchestrator.py
+├── modules/
+│   ├── m1_segmentation/
+│   ├── m2_automation/
+│   ├── m3_analytics/
+│   └── m4_content/
+│       ├── config.py
+│       ├── main.py
+│       ├── models.py
+│       ├── crawler.py
+│       ├── knowledge_base.py
+│       ├── dataset/
+│       │   ├── preprocess_marketing.py
+│       │   ├── label_campaign_goal.py
+│       │   ├── label_tone.py
+│       │   └── build_final_dataset.py
+│       ├── dashboard/
+│       │   ├── app.py
+│       │   ├── artifacts.py
+│       │   └── theme.py
+│       ├── goal_tone.py
+│       ├── summary.py
+│       ├── generator.py
+│       ├── engagement.py
+│       ├── evaluation.py
+│       ├── optimization.py
+│       └── significance.py
 ├── tests/
 │   └── test_pipeline.py
 ├── data/
@@ -51,8 +56,7 @@ Team-Binary/
 │   │   ├── ranked_platform_assets.csv
 │   │   ├── optimized_ranked_platform_assets.csv
 │   │   ├── before_after_optimization_comparison.csv
-│   │   ├── optimization_significance_test.csv
-│   │   └── human_vs_ai_comparison.csv
+│   │   └── optimization_significance_test.csv
 │   └── raw/websites/
 ├── models/
 │   ├── best_goal_model.pkl
@@ -63,10 +67,11 @@ Team-Binary/
 │   ├── best_engagement_model.pkl
 │   └── engagement_feature_columns.pkl
 ├── README.md
-├── RESEARCH_PROJECT_README.md
-├── RESEARCH_EVIDENCE_README.md
-├── GOAL_TONE_REASONING_README.md
-└── GOAL_TONE_DATASET_FLOW_README.md
+└── docs/
+    ├── RESEARCH_PROJECT_README.md
+    ├── RESEARCH_EVIDENCE_README.md
+    ├── GOAL_TONE_REASONING_README.md
+    └── GOAL_TONE_DATASET_FLOW_README.md
 ```
 
 ## 2. Logical Layers
@@ -83,12 +88,12 @@ Modeling layer
 Generation layer
     -> content creation and scoring
 Validation layer
-    -> ranking, optimization, significance testing, human baseline
+    -> ranking, optimization, significance testing
 ```
 
 ## 3. Exact Pipeline Flow
 
-The execution order is controlled by `main.py`:
+The execution order is controlled by `modules/m4_content/main.py`:
 
 ```text
 crawl
@@ -106,7 +111,6 @@ engagement-score
 evaluate
 optimize
 significance
-human-baseline
 ```
 
 ### Flow Diagram
@@ -167,12 +171,6 @@ optimized_ranked_platform_assets.csv
    |
    v
 optimization_significance_test.csv
-   |
-   v
-[human_baseline.py]
-   |
-   v
-human_vs_ai_comparison.csv
 ```
 
 ## 4. Module Responsibilities
@@ -187,7 +185,7 @@ human_vs_ai_comparison.csv
 | `dataset/label_campaign_goal.py` | Weak-labels `campaign_goal` (rule + zero-shot + Phi-3) | preprocessed corpus | `data/intermediate/campaign_goal_labeled.csv` |
 | `dataset/label_tone.py` | Weak-labels `tone` (rule + BART-MNLI + Phi-3, checkpointed) | goal-labeled corpus | `data/intermediate/tone_labeled.csv` |
 | `dataset/build_final_dataset.py` | Applies the confidence gate and writes the splits | tone-labeled corpus | `goal_tone_dataset_training.csv`, `goal_tone_dataset_research.csv` |
-| `dashboard/app.py` | Streamlit research dashboard over the written artifacts | all artifacts | nothing (read-only view) |
+| `modules/m4_content/dashboard/app.py` | Streamlit research dashboard over the written artifacts | all artifacts | nothing (read-only view) |
 | `goal_tone.py` | Trains and predicts campaign goal/tone | Labeled dataset + KB | Saved classifiers + updated KB input |
 | `summary.py` | Creates concise summary of KB | `marketing_knowledge_base.json` | `marketing_summary.json` |
 | `generator.py` | Generates platform-specific marketing assets | `marketing_summary.json` | `generated_platform_assets.csv` |
@@ -195,7 +193,6 @@ human_vs_ai_comparison.csv
 | `evaluation.py` | Computes semantic, platform, and final score | Generated assets + summary | `ranked_platform_assets.csv` |
 | `optimization.py` | Re-prompts weak assets and re-scores | Ranked assets + summary | Optimized outputs + comparison CSV |
 | `significance.py` | Statistical validation | Optimization comparison | `optimization_significance_test.csv` |
-| `human_baseline.py` | Human-vs-AI comparison | Human baseline + ranked outputs | `human_vs_ai_comparison.csv` |
 
 ## 5. Data Flow by Stage
 
@@ -302,10 +299,6 @@ final_score
 
 `significance.py` compares before-vs-after optimization using a paired t-test.
 
-### Stage 12: Human Baseline
-
-`human_baseline.py` compares human-written content against the AI-generated and optimized outputs.
-
 ## 6. Artifact Flow
 
 | Artifact | Produced by | Purpose |
@@ -317,7 +310,6 @@ final_score
 | `optimized_ranked_platform_assets.csv` | `optimization.py` | Improved ranking |
 | `before_after_optimization_comparison.csv` | `optimization.py` | Improvement analysis |
 | `optimization_significance_test.csv` | `significance.py` | Statistical validation |
-| `human_vs_ai_comparison.csv` | `human_baseline.py` | Benchmark comparison |
 
 ## 7. Why This Architecture Fits the Code
 
@@ -337,8 +329,6 @@ input.json -> crawler.py -> knowledge_base.py -> summary.py -> generator.py -> e
 data/raw/datasets/your_labeled_marketing_dataset.csv -> goal_tone.py
 
 data/raw/datasets/your_engagement_dataset.csv -> engagement.py
-
-data/raw/datasets/human_content_dataset.csv -> human_baseline.py
 ```
 
 ## 9. Recommended Report Figure
@@ -349,6 +339,6 @@ For a thesis or paper, this is the best short architecture caption:
 The system follows a modular pipeline in which website content is crawled,
 converted into a knowledge base, used to infer campaign goal and tone,
 summarized, transformed into platform-specific assets, scored by engagement
-and semantic relevance, optimized through feedback, and validated against
-statistical and human baselines.
+and semantic relevance, optimized through feedback, and validated through
+statistical significance testing.
 ```

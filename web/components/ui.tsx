@@ -33,6 +33,99 @@ export function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="label">{children}</p>;
 }
 
+/* ---------------------------------------------------------------------------
+   Form + action primitives. Every button, input and select in the app comes
+   from here so sizing, radius and focus treatment stay identical everywhere.
+   --------------------------------------------------------------------------- */
+
+const BUTTON_VARIANTS = {
+  primary: "bg-brand text-white hover:bg-brand-strong",
+  dark: "bg-slate-800 text-white hover:bg-slate-700",
+  outline: "border border-line bg-white text-slate-700 hover:bg-slate-50",
+  ghost: "text-slate-600 hover:bg-slate-100",
+  danger: "bg-bad text-white hover:bg-red-700",
+} as const;
+
+const BUTTON_SIZES = {
+  sm: "px-3 py-1.5 text-xs",
+  md: "px-4 py-2 text-sm",
+  lg: "px-4 py-2.5 text-sm",
+} as const;
+
+export function Button({
+  variant = "primary",
+  size = "md",
+  className = "",
+  ...props
+}: {
+  variant?: keyof typeof BUTTON_VARIANTS;
+  size?: keyof typeof BUTTON_SIZES;
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      {...props}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg
+                  font-semibold transition disabled:cursor-not-allowed
+                  disabled:opacity-60 ${BUTTON_VARIANTS[variant]}
+                  ${BUTTON_SIZES[size]} ${className}`}
+    />
+  );
+}
+
+export const INPUT_CLASS =
+  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm " +
+  "text-slate-800 placeholder:text-slate-400 transition focus:border-brand";
+
+export function Input({
+  className = "",
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...props} className={`${INPUT_CLASS} ${className}`} />;
+}
+
+export function Textarea({
+  className = "",
+  ...props
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea {...props} className={`${INPUT_CLASS} ${className}`} />;
+}
+
+export function Select({
+  className = "",
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select {...props} className={`${INPUT_CLASS} ${className}`} />;
+}
+
+/** A labelled input  the one form field pattern used across the app. */
+export function Field({
+  label,
+  hint,
+  as = "input",
+  ...props
+}: {
+  label: string;
+  hint?: string;
+  as?: "input" | "textarea";
+} & React.InputHTMLAttributes<HTMLInputElement> &
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <label className="block">
+      <span className="text-xs font-bold uppercase tracking-wide text-slate-500">
+        {label}
+      </span>
+      {as === "textarea" ? (
+        <Textarea className="mt-1" {...props} />
+      ) : (
+        <Input className="mt-1" {...props} />
+      )}
+      {hint && (
+        <span className="mt-1 block text-xs text-slate-400">{hint}</span>
+      )}
+    </label>
+  );
+}
+
 // Semantic tokens declared in globals.css @theme, so a palette change happens
 // in one place rather than across every component.
 const TONES = {
@@ -74,18 +167,22 @@ export function Pill({
   tone?: "ok" | "warn" | "bad" | "muted" | "brand" | "accent";
   children: React.ReactNode;
 }) {
+  // Tones map onto the soft/strong token pairs in globals.css @theme, so a
+  // pill, a KPI and a chart series showing the same state share one colour.
   const styles = {
-    ok: "bg-green-100 text-green-700",
-    warn: "bg-amber-100 text-amber-700",
-    bad: "bg-red-100 text-red-700",
+    ok: "bg-ok-soft text-green-700",
+    warn: "bg-warn-soft text-warn",
+    bad: "bg-bad-soft text-bad",
     muted: "bg-slate-100 text-slate-600",
     // Neutral-but-distinct: used to tell one channel from another on the
     // Action Plan, where the tone carries no judgement about quality.
-    brand: "bg-indigo-100 text-indigo-700",
-    accent: "bg-violet-100 text-violet-700",
+    brand: "bg-brand-soft text-brand",
+    accent: "bg-accent-soft text-accent",
   } as const;
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-bold ${styles[tone]}`}>
+    <span
+      className={`rounded-full px-3 py-1 text-xs font-bold ${styles[tone]}`}
+    >
       {children}
     </span>
   );
@@ -261,16 +358,12 @@ export function SearchBox({
         defaultValue={value ?? ""}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="w-56 rounded-lg border border-slate-200 px-3 py-1.5 text-sm
-                   outline-none focus:border-slate-400"
+        className="w-56 rounded-lg border border-slate-300 bg-white px-3 py-1.5
+                   text-sm placeholder:text-slate-400 transition focus:border-brand"
       />
-      <button
-        type="submit"
-        className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-medium
-                   text-white hover:bg-slate-700"
-      >
+      <Button type="submit" size="sm" variant="primary">
         Search
-      </button>
+      </Button>
       {value ? (
         <a
           href={action}
@@ -323,14 +416,22 @@ export function Pagination({
       </span>
       <span className="flex gap-3">
         {hasPrevious ? (
-          <a className="font-medium text-slate-700 hover:underline"
-             href={query(Math.max(0, offset - limit))}>← Previous</a>
+          <a
+            className="font-medium text-slate-700 hover:underline"
+            href={query(Math.max(0, offset - limit))}
+          >
+            ← Previous
+          </a>
         ) : (
           <span className="text-slate-300">← Previous</span>
         )}
         {hasNext ? (
-          <a className="font-medium text-slate-700 hover:underline"
-             href={query(offset + limit)}>Next →</a>
+          <a
+            className="font-medium text-slate-700 hover:underline"
+            href={query(offset + limit)}
+          >
+            Next →
+          </a>
         ) : (
           <span className="text-slate-300">Next →</span>
         )}

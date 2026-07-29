@@ -32,16 +32,16 @@ Run this workflow after placing files there:
 
 ```bash
 # Record the M4 predictions for generated content.
-python3 main.py --step feedback-log
+python3 modules/m4_content/main.py --step feedback-log
 
 # Import actual platform outcomes from the CSV files.
-python3 main.py --step feedback-import
+python3 modules/m4_content/main.py --step feedback-import
 
 # Retrain the account-aware engagement ranker when enough actuals exist.
-python3 main.py --step engagement-retrain --force
+python3 modules/m4_content/main.py --step engagement-retrain --force
 
 # Generate and select future Phi-3 candidates using the updated ranker.
-python3 main.py --step generate-candidates
+python3 modules/m4_content/main.py --step generate-candidates
 ```
 
 ## 3. Minimum CSV schema

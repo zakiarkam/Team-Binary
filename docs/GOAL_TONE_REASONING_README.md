@@ -347,7 +347,7 @@ luxury           31
 Run:
 
 ```bash
-python3 main.py --step goal-tone-train --force
+python3 modules/m4_content/main.py --step goal-tone-train --force
 ```
 
 This trains:
@@ -370,7 +370,7 @@ models/goal_tone_model_selection.json
 Run:
 
 ```bash
-python3 main.py --step crawl kb goal-tone-predict summary --force
+python3 modules/m4_content/main.py --step crawl kb goal-tone-predict summary --force
 ```
 
 This reads `input.json`, crawls the product website, builds the knowledge base, and predicts:
@@ -387,7 +387,7 @@ These values are written into the processed marketing summary.
 Run:
 
 ```bash
-python3 main.py --step generate engagement-score evaluate optimize significance --force
+python3 modules/m4_content/main.py --step generate engagement-score evaluate optimize significance --force
 ```
 
 The generated output includes:

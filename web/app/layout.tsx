@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import { cookies } from "next/headers";
 
 import { AppShell } from "@/components/AppShell";
 import { safeGet, type Site, type User } from "@/lib/api";
 import { SITE_COOKIE } from "@/lib/session";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Marketing OS — AI Marketing Orchestration",
@@ -28,8 +35,8 @@ export default async function RootLayout({
     siteList.find((s) => s.id === selected)?.id ?? siteList[0]?.id ?? null;
 
   return (
-    <html lang="en">
-      <body className="min-h-screen">
+    <html lang="en" className={inter.variable}>
+      <body className="min-h-screen font-sans">
         <AppShell
           user={me?.user ?? null}
           sites={siteList}

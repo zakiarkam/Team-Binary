@@ -46,72 +46,74 @@ User product brief + selected platforms
         -> highest-scoring candidate returned for that platform
 ```
 
-`orchestrator.py` is the final integrated entry point. `main.py` remains the detailed M4 research/CLI pipeline and its optional learning stages.
+`orchestrator.py` (repository root) is the final integrated entry point. `modules/m4_content/main.py` remains the detailed M4 research/CLI pipeline and its optional learning stages.
 
 ## 4. Models, algorithms, datasets, and why each is used
 
-| Layer | Implemented method | Dataset/artifact | Why this choice | What it is **not** |
-|---|---|---|---|---|
-| M1 segmentation | Hybrid rules + RandomForest | `modules/m1_segmentation/ecommerce_user_segmentation.csv` | Combines interpretable business rules with non-linear segmentation. | A live customer-data model. |
-| M2 automation | Fixed, trigger, hybrid campaign simulators; conversion model | `modules/m2_automation/data/raw/digital_marketing_conversion.csv` | Gives controlled strategy comparisons and event logs. | Evidence that a live campaign will perform identically. |
-| M3 analytics | Funnel, attribution, conversion/drop-off predictors, recommender | M2 events + validated M3 artifacts | Turns events into targeting and platform-priority signals. | A causal claim from the simulated multi-platform data. |
-| Product summary | BART-large-CNN | Crawled website/brief | Converts long product context into compact generation context. BART is a seq2seq denoising model effective for generation tasks. | Guaranteed factual summarization; website claims must still be checked. |
-| Content generation | Phi-3-mini-4k-instruct, or fast deterministic candidates | Product summary + platform strategy | Phi-3 is a compact instruction model suitable for local, reproducible generation. The fast path keeps the demo responsive. | Fine-tuned marketing copy; it is not trained on this project's 113 labels. |
-| Goal classifier | TF-IDF + Logistic Regression and SentenceBERT + XGBoost; selected by weighted F1 | 113 weakly labelled RafaM97-derived platform rows | Compares an interpretable sparse baseline with dense semantic embeddings. | A human-ground-truth 85%+ classifier. |
-| Tone classifier | Same two candidate classifiers | Same | Tone labels are a separate target, so it is trained/evaluated separately. | A measure of caption quality. |
-| Engagement ranker | RandomForest and XGBoost; selected by held-out R² | `your_engagement_dataset.csv`, 12,000 posts | Tree ensembles are strong tabular baselines and handle feature interactions. | A causal estimate of content effect or a raw-like predictor. |
-| Historical content fit | TF-IDF centroid of the highest-engagement quartile per platform | Same 12,000 posts | Adds direct evidence of what successful text on the *same* platform looks like; it never copies a historical post. | A supervised quality label. |
-| Candidate selection | Best-of-3, full composite score | Generated candidates + all scores | Reduces dependence on one generated wording. Small N limits proxy over-optimization. | Proof that the top candidate will win live engagement. |
-| Future personalization | Relative engagement target, RF/XGBoost, best-of-N | Account analytics CSVs in `data/feedback/` | Corrects follower/exposure confounding by comparing a post with the account's own baseline. | Automatic posting or language-model fine-tuning. |
+| Layer                  | Implemented method                                                               | Dataset/artifact                                                  | Why this choice                                                                                                                  | What it is **not**                                                         |
+| ---------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| M1 segmentation        | Hybrid rules + RandomForest                                                      | `modules/m1_segmentation/ecommerce_user_segmentation.csv`         | Combines interpretable business rules with non-linear segmentation.                                                              | A live customer-data model.                                                |
+| M2 automation          | Fixed, trigger, hybrid campaign simulators; conversion model                     | `modules/m2_automation/data/raw/digital_marketing_conversion.csv` | Gives controlled strategy comparisons and event logs.                                                                            | Evidence that a live campaign will perform identically.                    |
+| M3 analytics           | Funnel, attribution, conversion/drop-off predictors, recommender                 | M2 events + validated M3 artifacts                                | Turns events into targeting and platform-priority signals.                                                                       | A causal claim from the simulated multi-platform data.                     |
+| Product summary        | BART-large-CNN                                                                   | Crawled website/brief                                             | Converts long product context into compact generation context. BART is a seq2seq denoising model effective for generation tasks. | Guaranteed factual summarization; website claims must still be checked.    |
+| Content generation     | Phi-3-mini-4k-instruct, or fast deterministic candidates                         | Product summary + platform strategy                               | Phi-3 is a compact instruction model suitable for local, reproducible generation. The fast path keeps the demo responsive.       | Fine-tuned marketing copy; it is not trained on this project's 113 labels. |
+| Goal classifier        | TF-IDF + Logistic Regression and SentenceBERT + XGBoost; selected by weighted F1 | 113 weakly labelled RafaM97-derived platform rows                 | Compares an interpretable sparse baseline with dense semantic embeddings.                                                        | A human-ground-truth 85%+ classifier.                                      |
+| Tone classifier        | Same two candidate classifiers                                                   | Same                                                              | Tone labels are a separate target, so it is trained/evaluated separately.                                                        | A measure of caption quality.                                              |
+| Engagement ranker      | RandomForest and XGBoost; selected by held-out R²                                | `your_engagement_dataset.csv`, 12,000 posts                       | Tree ensembles are strong tabular baselines and handle feature interactions.                                                     | A causal estimate of content effect or a raw-like predictor.               |
+| Historical content fit | TF-IDF centroid of the highest-engagement quartile per platform                  | Same 12,000 posts                                                 | Adds direct evidence of what successful text on the _same_ platform looks like; it never copies a historical post.               | A supervised quality label.                                                |
+| Candidate selection    | Best-of-3, full composite score                                                  | Generated candidates + all scores                                 | Reduces dependence on one generated wording. Small N limits proxy over-optimization.                                             | Proof that the top candidate will win live engagement.                     |
+| Future personalization | Relative engagement target, RF/XGBoost, best-of-N                                | Account analytics CSVs in `data/feedback/`                        | Corrects follower/exposure confounding by comparing a post with the account's own baseline.                                      | Automatic posting or language-model fine-tuning.                           |
 
 Key sources: BART is a general seq2seq denoising architecture [Lewis et al.](https://aclanthology.org/2020.acl-main.703/); Phi-3-mini is a 3.8B instruction model intended for compact local deployment [Abdin et al.](https://arxiv.org/abs/2404.14219); Sentence-BERT supports efficient sentence similarity/embeddings [Reimers & Gurevych](https://aclanthology.org/D19-1410/); weak supervision is an established remedy for missing labels [Bach et al.](https://proceedings.mlr.press/v70/bach17a.html).
 
 ## 5. Dataset inventory and correct use
 
-| Local dataset | Rows | Useful columns | Correct use | Do not use it for |
-|---|---:|---|---|---|
-| `RafaM97_marketing_social_media_raw.csv` | 689 | marketing instruction, context, text | Source corpus for weakly supervised goal/tone training. | Claiming it originally has goal/tone labels. |
-| `your_labeled_marketing_dataset.csv` | 689 | `text, campaign_goal, tone, ...` | Audit artifact after weak labelling. | Independent extra training data—it derives from RafaM97. |
-| `goal_tone_dataset_training.csv` | 114 before duplicate filtering / 113 training rows | `text, platform, campaign_goal, tone` | Actual goal/tone classifier training. Platform exists only when explicitly mentioned in source text. | Strong per-platform ground truth. |
-| `Social Media Engagement Dataset.csv` | 12,000 | platform, text content, interactions, impressions, account fields | Engagement-rate model and historical platform-content profiles. | Direct goal/tone training; it has no such labels. |
-| `your_engagement_dataset.csv` | 12,000 | `platform, text, likes, shares, comments, impressions` | Simplified engagement model input. | Follower-normalized personalized learning; it lacks account history. |
-| `Instagram-datasets.csv`, `Facebook-datasets.csv`, `TikTok-datasets.csv` | 1,000 each | comments/replies | Optional audience-response analysis. | Caption generation training: they are comments, not brand posts. |
-| Facebook Insights export | 9 | reach, impressions, engagements | Demo of real analytics schema. | Training a robust model: too few records. |
-| `socialmedia.csv` | 39 | platform, post text, interactions | Smoke test only. | Reliable training/evaluation. |
+| Local dataset                                                            |                                               Rows | Useful columns                                                    | Correct use                                                                                          | Do not use it for                                                    |
+| ------------------------------------------------------------------------ | -------------------------------------------------: | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `RafaM97_marketing_social_media_raw.csv`                                 |                                                689 | marketing instruction, context, text                              | Source corpus for weakly supervised goal/tone training.                                              | Claiming it originally has goal/tone labels.                         |
+| `your_labeled_marketing_dataset.csv`                                     |                                                689 | `text, campaign_goal, tone, ...`                                  | Audit artifact after weak labelling.                                                                 | Independent extra training data—it derives from RafaM97.              |
+| `goal_tone_dataset_training.csv`                                         | 114 before duplicate filtering / 113 training rows | `text, platform, campaign_goal, tone`                             | Actual goal/tone classifier training. Platform exists only when explicitly mentioned in source text. | Strong per-platform ground truth.                                    |
+| `Social Media Engagement Dataset.csv`                                    |                                             12,000 | platform, text content, interactions, impressions, account fields | Engagement-rate model and historical platform-content profiles.                                      | Direct goal/tone training; it has no such labels.                    |
+| `your_engagement_dataset.csv`                                            |                                             12,000 | `platform, text, likes, shares, comments, impressions`            | Simplified engagement model input.                                                                   | Follower-normalized personalized learning; it lacks account history. |
+| `Instagram-datasets.csv`, `Facebook-datasets.csv`, `TikTok-datasets.csv` |                                         1,000 each | comments/replies                                                  | Optional audience-response analysis.                                                                 | Caption generation training: they are comments, not brand posts.     |
+| Facebook Insights export                                                 |                                                  9 | reach, impressions, engagements                                   | Demo of real analytics schema.                                                                       | Training a robust model: too few records.                            |
+| `socialmedia.csv`                                                        |                                                 39 | platform, post text, interactions                                 | Smoke test only.                                                                                     | Reliable training/evaluation.                                        |
 
 The historical corpus covers Instagram, Facebook, YouTube, Twitter and Reddit. Shorts use YouTube evidence; LinkedIn, TikTok and Email receive a neutral historical-fit score until real matching data arrives. This is an explicit coverage limitation, not an error.
 
 ## 6. File-by-file responsibility
 
-### Top-level operational files
+### Operational files
 
-| File | Main function/responsibility | Input -> output |
-|---|---|---|
-| `config.py` | Paths, platform specifications, model names, weights, safety switches. | Shared configuration. |
-| `orchestrator.py` | `run_full()` executes M1 -> M2 -> M3 -> M4. | Product brief -> `data/integrated/run_bundle.json`. |
-| `content_service.py` | `generate()`, `_platform_strategy()`, `score_assets()`; app-facing M4 path. | Brief -> selected asset per platform. |
-| `goal_tone.py` | `train()`, `predict_one()`, `predict()`; platform-conditioned classification. | Labelled data/context -> goal/tone model or predictions. |
-| `engagement.py` | `train()`, `score()`, `platform_content_fit()` and `platform_content_guidance()`. | Historical posts -> engagement model/profile -> candidate scores. |
-| `generator.py` | `build_prompt()`, `run()`, `standardize()`. | Summary/strategy -> Phi-3 JSON assets. |
-| `evaluation.py` | semantic similarity and platform format checks. | Assets -> component scores. |
-| `optimization.py` | Re-prompts weak legacy-M4 assets. | Ranked assets -> optimized assets. |
-| `summary.py` | BART summary creation. | KB -> marketing summary. |
-| `crawler.py`, `knowledge_base.py` | Extract and clean website context. | URL/brief -> KB. |
-| `model_health.py` | Produces honest warnings/metrics for dashboard/report. | Artifacts -> health JSON. |
+`orchestrator.py` sits at the repository root; the remaining files below are Module 4's and live in `modules/m4_content/`.
+
+| File                              | Main function/responsibility                                                      | Input -> output                                                   |
+| --------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `config.py`                       | Paths, platform specifications, model names, weights, safety switches.            | Shared configuration.                                             |
+| `orchestrator.py`                 | `run_full()` executes M1 -> M2 -> M3 -> M4.                                       | Product brief -> `data/integrated/run_bundle.json`.               |
+| `content_service.py`              | `generate()`, `_platform_strategy()`, `score_assets()`; app-facing M4 path.       | Brief -> selected asset per platform.                             |
+| `goal_tone.py`                    | `train()`, `predict_one()`, `predict()`; platform-conditioned classification.     | Labelled data/context -> goal/tone model or predictions.          |
+| `engagement.py`                   | `train()`, `score()`, `platform_content_fit()` and `platform_content_guidance()`. | Historical posts -> engagement model/profile -> candidate scores. |
+| `generator.py`                    | `build_prompt()`, `run()`, `standardize()`.                                       | Summary/strategy -> Phi-3 JSON assets.                            |
+| `evaluation.py`                   | semantic similarity and platform format checks.                                   | Assets -> component scores.                                       |
+| `optimization.py`                 | Re-prompts weak legacy-M4 assets.                                                 | Ranked assets -> optimized assets.                                |
+| `summary.py`                      | BART summary creation.                                                            | KB -> marketing summary.                                          |
+| `crawler.py`, `knowledge_base.py` | Extract and clean website context.                                                | URL/brief -> KB.                                                  |
+| `model_health.py`                 | Produces honest warnings/metrics for dashboard/report.                            | Artifacts -> health JSON.                                         |
 
 ### Dataset and learning files
 
-| File | Function | Reason |
-|---|---|---|
-| `dataset/preprocess_marketing.py` | Cleans RafaM97 data and extracts context. | Reproducible source transformation. |
-| `dataset/label_campaign_goal.py` | Rules + zero-shot + Phi-3 weak labels. | No native goal labels exist. |
-| `dataset/label_tone.py` | Rules + BART-MNLI + Phi-3 weak labels. | No native tone labels exist. |
-| `dataset/build_final_dataset.py` | Confidence gate and explicit-platform extraction. | Keeps uncertain labels separate from training. |
-| `learning/targets.py` | Relative/within-account target. | Avoids follower-count bias. |
-| `learning/feedback_store.py` | SQLite predictions plus later actuals. | Links generated content to real analytics. |
-| `learning/importer.py` | Normalizes future platform export CSVs. | Platform-specific data can enter without changing the pipeline. |
-| `learning/personalize.py` | Retrains account-aware engagement predictor. | Cold-start -> personalized adaptation. |
-| `learning/candidates.py` | Phi-3 best-of-N candidate selection. | Optional higher-quality, slower selection flow. |
+| File                              | Function                                          | Reason                                                          |
+| --------------------------------- | ------------------------------------------------- | --------------------------------------------------------------- |
+| `dataset/preprocess_marketing.py` | Cleans RafaM97 data and extracts context.         | Reproducible source transformation.                             |
+| `dataset/label_campaign_goal.py`  | Rules + zero-shot + Phi-3 weak labels.            | No native goal labels exist.                                    |
+| `dataset/label_tone.py`           | Rules + BART-MNLI + Phi-3 weak labels.            | No native tone labels exist.                                    |
+| `dataset/build_final_dataset.py`  | Confidence gate and explicit-platform extraction. | Keeps uncertain labels separate from training.                  |
+| `learning/targets.py`             | Relative/within-account target.                   | Avoids follower-count bias.                                     |
+| `learning/feedback_store.py`      | SQLite predictions plus later actuals.            | Links generated content to real analytics.                      |
+| `learning/importer.py`            | Normalizes future platform export CSVs.           | Platform-specific data can enter without changing the pipeline. |
+| `learning/personalize.py`         | Retrains account-aware engagement predictor.      | Cold-start -> personalized adaptation.                          |
+| `learning/candidates.py`          | Phi-3 best-of-N candidate selection.              | Optional higher-quality, slower selection flow.                 |
 
 ## 7. Choice comparisons and justification
 
@@ -119,12 +121,12 @@ The historical corpus covers Instagram, Facebook, YouTube, Twitter and Reddit. S
 
 There is no local dataset with human-labelled marketing `goal` and `tone`. The alternatives were:
 
-| Option | Decision | Reason |
-|---|---|---|
-| Ask the user to select every goal/tone | Not the core research path | Removes automatic strategy inference. Can be a future override, but not the primary study. |
-| Direct Phi-3 label at inference | Not primary | Harder to reproduce/evaluate and can vary across prompts/runs. |
-| Rules only | Not primary | Transparent but brittle to paraphrase. |
-| Ensemble weak labels -> supervised classifier | Chosen | Retains reproducibility and gives measurable classifier metrics. |
+| Option                                        | Decision                   | Reason                                                                                     |
+| --------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------ |
+| Ask the user to select every goal/tone        | Not the core research path | Removes automatic strategy inference. Can be a future override, but not the primary study. |
+| Direct Phi-3 label at inference               | Not primary                | Harder to reproduce/evaluate and can vary across prompts/runs.                             |
+| Rules only                                    | Not primary                | Transparent but brittle to paraphrase.                                                     |
+| Ensemble weak labels -> supervised classifier | Chosen                     | Retains reproducibility and gives measurable classifier metrics.                           |
 
 The rules, zero-shot NLI and LLM are separate noisy label sources. Zero-shot classification can formulate labels as textual entailment, including non-topic aspects such as emotion [Yin, Hay & Roth](https://aclanthology.org/D19-1404/). The limitation is fundamental: labels remain weak until a human-reviewed hold-out set is collected.
 
@@ -170,13 +172,13 @@ The weights are design choices, not learned truths. State that a sensitivity ana
 
 Current stored classifier results should be read from `models/goal_tone_training_metrics.json` at presentation time. The latest local run reports approximately:
 
-| Measure | Current value | Correct interpretation |
-|---|---:|---|
-| Goal classifier | about 65–70% held-out accuracy | Insufficient for an 85% goal-accuracy claim. |
-| Tone classifier | about 91% held-out accuracy | Promising, but still only a small weakly labelled test split. |
-| Engagement R² | about 0.99 on local data | Use as a ranking proxy; the dataset is synthetic/semi-simulated and likely optimistic. |
-| Platform-content fit | no accuracy | It is an unsupervised ranking feature. |
-| Generated caption/prompt | no “accuracy” | Needs human quality evaluation and/or real analytics. |
+| Measure                  |                  Current value | Correct interpretation                                                                 |
+| ------------------------ | -----------------------------: | -------------------------------------------------------------------------------------- |
+| Goal classifier          | about 65–70% held-out accuracy | Insufficient for an 85% goal-accuracy claim.                                           |
+| Tone classifier          |    about 91% held-out accuracy | Promising, but still only a small weakly labelled test split.                          |
+| Engagement R²            |       about 0.99 on local data | Use as a ranking proxy; the dataset is synthetic/semi-simulated and likely optimistic. |
+| Platform-content fit     |                    no accuracy | It is an unsupervised ranking feature.                                                 |
+| Generated caption/prompt |                  no “accuracy” | Needs human quality evaluation and/or real analytics.                                  |
 
 Essential limitations to say proactively:
 
@@ -190,12 +192,12 @@ Essential limitations to say proactively:
 
 Use four separate evaluations, never one misleading “overall accuracy.”
 
-| Research question | Metric | Required evidence |
-|---|---|---|
-| Does goal/tone inference work? | Accuracy, weighted F1, macro F1; confusion matrix | Human-reviewed stratified hold-out set. |
-| Is generated copy platform appropriate? | Blind human rubric: goal alignment, tone, platform fit, clarity, prompt usability | 2–3 raters; report agreement and mean score. |
-| Does candidate selection help? | Compare selected candidate vs random candidate on the same rubric/real engagement | Paired comparison, not unpaired averages. |
-| Does personalization help later? | Within-account engagement percentile / rate uplift | Historical exports with account id and impressions. |
+| Research question                       | Metric                                                                            | Required evidence                                   |
+| --------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Does goal/tone inference work?          | Accuracy, weighted F1, macro F1; confusion matrix                                 | Human-reviewed stratified hold-out set.             |
+| Is generated copy platform appropriate? | Blind human rubric: goal alignment, tone, platform fit, clarity, prompt usability | 2–3 raters; report agreement and mean score.        |
+| Does candidate selection help?          | Compare selected candidate vs random candidate on the same rubric/real engagement | Paired comparison, not unpaired averages.           |
+| Does personalization help later?        | Within-account engagement percentile / rate uplift                                | Historical exports with account id and impressions. |
 
 To make an honest >85% claim for goal prediction, collect a balanced, manually verified test set. A reasonable near-term target is 300–500 reviewed examples with all goal classes represented; reserve 20% before model selection. Do not repeatedly tune on that test set.
 
@@ -223,10 +225,10 @@ To make an honest >85% claim for goal prediction, collect a balanced, manually v
 
 ```bash
 # Rebuild the goal/tone training data and classifiers.
-python3 main.py --step build-dataset goal-tone-train --force
+python3 modules/m4_content/main.py --step build-dataset goal-tone-train --force
 
 # Train/rebuild base engagement model and historical platform profiles.
-python3 main.py --step engagement-train --force
+python3 modules/m4_content/main.py --step engagement-train --force
 
 # Run the final integrated pipeline.
 python3 orchestrator.py --full --engine fast

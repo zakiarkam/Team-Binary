@@ -33,6 +33,7 @@ import time  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(1, str(Path(__file__).resolve().parents[1] / "modules" / "m4_content"))
 
 import config  # noqa: E402
 

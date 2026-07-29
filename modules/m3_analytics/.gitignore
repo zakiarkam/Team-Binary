@@ -10,10 +10,10 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 
-# Large raw datasets — never commit (download with scripts instead)
+# Large raw datasets  never commit (download with scripts instead)
 data/raw/
 
-# Trained model artefacts — regeneratable, don't commit
+# Trained model artefacts  regeneratable, don't commit
 outputs/models/
 
 # OS / IDE

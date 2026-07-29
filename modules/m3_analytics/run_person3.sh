@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
-# run_person3.sh — Run ONLY Module 3 (Marketing Analytics & Decision Support)
+# run_person3.sh  Run ONLY Module 3 (Marketing Analytics & Decision Support)
 # end-to-end, in isolation from the other modules.
 #
 # What it does:

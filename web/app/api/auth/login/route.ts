@@ -13,7 +13,10 @@ import { SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/session";
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   if (!body?.email || !body?.password) {
-    return NextResponse.json({ detail: "Email and password required" }, { status: 400 });
+    return NextResponse.json(
+      { detail: "Email and password required" },
+      { status: 400 },
+    );
   }
 
   const res = await fetch(`${API_URL}/auth/login`, {

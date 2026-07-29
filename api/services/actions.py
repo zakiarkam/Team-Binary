@@ -373,3 +373,38 @@ def mark_email_executed(campaign_id: int, step: int,
 
     return {"campaign_id": campaign_id, "step": step,
             "status": status, "messages": len(rows)}
+
+
+def email_recipients(campaign_id: int, step: int, limit: int = 500) -> dict:
+    """Exactly who a queued email action goes to — name, email, segment.
+
+    The Action Plan summarises an email action as "send to N contacts"; this
+    is the N spelled out, so the marketer can see and verify the actual list
+    before sending. Ordered by segment so the grouping is visible at a glance.
+    """
+    total = db.fetch_one(
+        """
+        SELECT count(*) AS n FROM campaign_sends
+        WHERE campaign_id = :c AND step = :st
+        """,
+        c=campaign_id, st=step)
+    rows = db.fetch_all(
+        """
+        SELECT v.name, v.email, us.segment_name, cs.status
+        FROM campaign_sends cs
+        JOIN visitors v            ON v.id = cs.visitor_id
+        LEFT JOIN user_segments us ON us.visitor_id = v.id
+        WHERE cs.campaign_id = :c AND cs.step = :st
+        ORDER BY us.segment_name NULLS LAST, v.email NULLS LAST
+        LIMIT :lim
+        """,
+        c=campaign_id, st=step, lim=limit)
+    return {
+        "total": (total or {}).get("n", 0),
+        "recipients": [{
+            "name": r["name"],
+            "email": r["email"],
+            "segment": r["segment_name"],
+            "status": r["status"],
+        } for r in rows],
+    }

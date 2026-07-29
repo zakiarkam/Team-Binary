@@ -83,9 +83,6 @@ STAGES: list[Stage] = [
     Stage("significance", "Paired t-test", "Validation",
           "before/after comparison", "optimization_significance_test.csv",
           config.SIGNIFICANCE_CSV),
-    Stage("human-baseline", "Human vs AI benchmark", "Validation",
-          "human captions + rankings", "human_vs_ai_comparison.csv",
-          config.HUMAN_AI_CSV),
 ]
 
 

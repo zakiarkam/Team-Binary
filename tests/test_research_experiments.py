@@ -116,8 +116,11 @@ def test_experiment_feature_order_survives_hash_randomisation() -> None:
     check that cannot be made inside a single process, because set order is
     stable within one.
     """
+    import os
     import subprocess
     import sys
+
+    from research import config as research_config
 
     script = (
         "import engagement;"
@@ -126,14 +129,20 @@ def test_experiment_feature_order_survives_hash_randomisation() -> None:
         "print(','.join(cols))"
     )
 
+    # engagement.py lives in Module 4's folder; the child interpreter needs
+    # both the repo root and that folder on its path.
+    pythonpath = os.pathsep.join([
+        str(research_config.ROOT),
+        str(research_config.ROOT / "modules" / "m4_content"),
+    ])
+
     outputs = []
     for seed in ("0", "1", "12345"):
         result = subprocess.run(
             [sys.executable, "-c", script],
             capture_output=True, text=True,
             env={"PYTHONHASHSEED": seed, "PATH": "/usr/bin:/bin",
-                 "PYTHONPATH": str(__import__("research.config",
-                                              fromlist=["config"]).ROOT)},
+                 "PYTHONPATH": pythonpath},
         )
         assert result.returncode == 0, result.stderr[-500:]
         outputs.append(result.stdout.strip())

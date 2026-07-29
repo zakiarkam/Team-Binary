@@ -11,6 +11,15 @@ Run:
 
 from __future__ import annotations
 
+import sys as _sys
+from pathlib import Path as _Path
+
+# Module 4 keeps flat internal imports (`import config`, `import crawler`, …)
+# from its own folder under modules/, so that folder joins the path first.
+_M4_DIR = _Path(__file__).resolve().parents[1] / "modules" / "m4_content"
+if str(_M4_DIR) not in _sys.path:
+    _sys.path.insert(0, str(_M4_DIR))
+
 # Loaded before anything numeric, on purpose. This process serves both Module 3
 # (XGBoost) and Module 4 (PyTorch); on macOS their bundled OpenMP runtimes clash
 # and the worker dies with a bare segfault mid-request — no traceback, no 500,

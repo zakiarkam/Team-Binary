@@ -287,7 +287,10 @@ def select_visual(platform, marketing_summary):
     )
 
 # Paths
-ROOT = Path(__file__).resolve().parent
+# This file lives in modules/m4_content/; shared artifact directories (data/,
+# models/, input.json) stay at the repository root, so ROOT points there.
+ROOT = Path(__file__).resolve().parents[2]
+M4_DIR = Path(__file__).resolve().parent
 DATA = ROOT / "data"
 RAW_WEBSITES = DATA / "raw" / "websites"
 RAW_DATASETS = DATA / "raw" / "datasets"
@@ -425,8 +428,6 @@ ENGAGEMENT_DATASET_CSV = (
     / "your_engagement_dataset.csv"
 )
 
-HUMAN_DATASET_CSV = RAW_DATASETS / "human_content_dataset.csv"
-
 # Pipeline output artifacts
 CRAWL_JSON = RAW_WEBSITES / "crawled_website_data.json"
 KB_JSON = PROCESSED / "marketing_knowledge_base.json"
@@ -437,7 +438,6 @@ OPTIMIZED_CSV = OUTPUTS / "optimized_platform_assets.csv"
 OPTIMIZED_RANKED_CSV = OUTPUTS / "optimized_ranked_platform_assets.csv"
 COMPARISON_CSV = OUTPUTS / "before_after_optimization_comparison.csv"
 SIGNIFICANCE_CSV = OUTPUTS / "optimization_significance_test.csv"
-HUMAN_AI_CSV = OUTPUTS / "human_vs_ai_comparison.csv"
 ENGAGEMENT_MODEL_PKL = MODELS / "best_engagement_model.pkl"
 ENGAGEMENT_FEATURES_PKL = MODELS / "engagement_feature_columns.pkl"
 GOAL_MODEL_PKL = MODELS / "best_goal_model.pkl"

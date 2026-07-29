@@ -1,166 +1,267 @@
-import { AudienceChart, FunnelChart, SegmentChart } from "@/components/charts";
+import type { Metadata } from "next";
+import Link from "next/link";
 import {
-  BasisBadge,
-  Card,
-  Caveat,
-  EmptyState,
-  ErrorState,
-  Kpi,
-  PageHeader,
-  Pill,
-  SectionLabel,
-  pct,
-} from "@/components/ui";
-import type {
-  AudienceSummary,
-  CampaignMetrics,
-  ContentAsset,
-  FunnelResult,
-  ReachableAudience,
-} from "@/lib/api";
-import { currentSite, safeGet } from "@/lib/site";
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  FlaskConical,
+  Megaphone,
+  PenSquare,
+  RefreshCcw,
+  Users,
+} from "lucide-react";
 
-export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Marketing OS  AI-Powered Digital Marketing Orchestration",
+  description:
+    "Audience intelligence, campaign automation, predictive analytics and AI content — one closed loop for launch-stage products.",
+};
 
-export default async function OverviewPage() {
-  const { site, health, error } = await currentSite();
-  if (error) return <ErrorState error={error} />;
+const MODULES = [
+  {
+    icon: Users,
+    title: "Audience Targeting",
+    body: "Hybrid rule + machine-learning segmentation groups your visitors by behaviour — built to stay stable even with launch-stage data.",
+  },
+  {
+    icon: Megaphone,
+    title: "Campaign Automation",
+    body: "Fixed, trigger-based and hybrid automation policies compared head-to-head on the same audience, so strategy is measured, not assumed.",
+  },
+  {
+    icon: BarChart3,
+    title: "Analytics & Decisions",
+    body: "Funnel analysis, multi-touch attribution and drop-off prediction turned into concrete next-best actions per customer.",
+  },
+  {
+    icon: PenSquare,
+    title: "AI Content Refinery",
+    body: "A 15-stage pipeline turns your website into platform-ready copy, scored for meaning, platform fit and predicted engagement.",
+  },
+];
 
-  if (!site) {
-    return (
-      <div className="mx-auto max-w-5xl">
-        <PageHeader crumb="Dashboard" title="Overview"
-                    subtitle="Audience → automation → analytics → content, in one closed loop." />
-        <EmptyState
-          title="No website registered yet"
-          body="Register a website and install its snippet — its visitors become your marketing audience."
-          hint="venv/bin/python scripts/setup_demo_site.py"
-        />
-      </div>
-    );
-  }
+const LOOP = [
+  {
+    step: "01",
+    title: "Understand",
+    body: "Visitors are tracked and segmented into behavioural groups.",
+  },
+  {
+    step: "02",
+    title: "Act",
+    body: "Campaigns run per segment under an automation policy.",
+  },
+  {
+    step: "03",
+    title: "Measure",
+    body: "Every send, open, click and conversion feeds the funnel and attribution models.",
+  },
+  {
+    step: "04",
+    title: "Improve",
+    body: "Analytics feedback re-prioritises the next campaign and the next piece of content.",
+  },
+];
 
-  const [summary, reach, funnel, campaignList, content] = await Promise.all([
-    safeGet<AudienceSummary>(`/sites/${site.id}/audience/summary`),
-    safeGet<ReachableAudience>(`/sites/${site.id}/audience/reachable`),
-    safeGet<FunnelResult>(`/sites/${site.id}/analytics/funnel`),
-    safeGet<{ campaigns: CampaignMetrics[] }>(`/sites/${site.id}/campaigns`),
-    safeGet<{ assets: ContentAsset[]; count: number }>(
-      `/sites/${site.id}/content?limit=3`,
-    ),
-  ]);
+const STATS = [
+  { value: "4", label: "AI modules, one loop" },
+  { value: "8,000", label: "users in the research audience" },
+  { value: "11", label: "controlled experiments" },
+  { value: "15", label: "content pipeline stages" },
+];
 
-  const totals = summary?.totals;
-  const campaigns = campaignList?.campaigns ?? [];
-  const best = campaigns.length
-    ? campaigns.reduce((a, b) =>
-        b.conversions_per_1000_sends > a.conversions_per_1000_sends ? b : a,
-      )
-    : null;
-
+export default function WelcomePage() {
   return (
-    <div className="mx-auto max-w-6xl">
-      <PageHeader
-        crumb="Dashboard"
-        title="Overview"
-        subtitle="Audience → automation → analytics → content, in one closed loop."
-      />
+    <div className="min-h-screen bg-white text-ink">
+      {/* Top navigation */}
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand font-bold text-white shadow-md">
+            M
+          </span>
+          <span className="text-sm font-extrabold tracking-widest">
+            MARKETING OS
+          </span>
+        </div>
+        <nav className="flex items-center gap-3">
+          <Link
+            href="/login"
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-600
+                       transition hover:bg-slate-100 hover:text-slate-900"
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/signup"
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold
+                       text-white transition hover:bg-brand-strong"
+          >
+            Get started
+          </Link>
+        </nav>
+      </header>
 
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <Pill tone={health?.database === "up" ? "ok" : "bad"}>
-          database {health?.database ?? "unknown"}
-        </Pill>
-        <Pill tone={health?.email_delivery === "live" ? "ok" : "warn"}>
-          email {health?.email_delivery === "live" ? "live" : "dry run"}
-        </Pill>
-        <span className="text-sm text-slate-500">
-          tracking <b className="text-slate-700">{site.name}</b> · {site.url}
-        </span>
-      </div>
-
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi label="VISITORS" value={totals?.visitors.toLocaleString() ?? "0"}
-             hint={`${totals?.new_7d ?? 0} new this week`} />
-        <Kpi label="CONTACTABLE" value={reach?.reachable.toLocaleString() ?? "0"}
-             hint="explicitly opted in" tone="ok" />
-        <Kpi label="CONVERSIONS"
-             value={(funnel?.funnel.convert ?? 0).toLocaleString()}
-             hint="from tracked campaigns" tone="accent" />
-        <Kpi label="CONTENT ASSETS" value={content?.count ?? 0}
-             hint="scored and stored" tone="warn" />
-      </section>
-
-      <Card className="mt-4">
-        <SectionLabel>AUDIENCE — LAST 14 DAYS</SectionLabel>
-        <AudienceChart data={summary?.daily ?? []} />
-      </Card>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Card>
-          <SectionLabel>SEGMENTS</SectionLabel>
-          <SegmentChart data={summary?.segments ?? []} />
-        </Card>
-        <Card>
-          <div className="flex items-center justify-between">
-            <SectionLabel>CAMPAIGN FUNNEL</SectionLabel>
-            <BasisBadge basis={funnel?.data_basis ?? null} />
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-linear-to-b from-brand-soft/70 via-white to-white"
+        />
+        <div className="relative mx-auto max-w-6xl px-6 pb-20 pt-16 text-center">
+          <p
+            className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full
+                        border border-line bg-white px-4 py-1.5 text-xs
+                        font-semibold text-slate-600 shadow-sm"
+          >
+            <FlaskConical size={13} className="text-brand" />A research-first
+            marketing platform · Team Binary · University of Moratuwa
+          </p>
+          <h1
+            className="mx-auto max-w-3xl text-4xl font-extrabold tracking-tight
+                         sm:text-5xl"
+          >
+            Launch-stage marketing,{" "}
+            <span className="text-brand">orchestrated by AI</span>
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-slate-600">
+            Marketing OS joins audience intelligence, campaign automation,
+            predictive analytics and AI content generation into one closed
+            loop — built for new products that start with almost no data.
+          </p>
+          <div className="mt-8 flex items-center justify-center gap-3">
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 rounded-xl bg-brand px-6
+                         py-3 text-sm font-bold text-white shadow-lg shadow-brand/25
+                         transition hover:bg-brand-strong"
+            >
+              Create your account
+              <ArrowRight size={16} />
+            </Link>
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-xl border
+                         border-line bg-white px-6 py-3 text-sm font-bold
+                         text-slate-700 transition hover:bg-slate-50"
+            >
+              Sign in
+            </Link>
           </div>
-          <FunnelChart
-            funnel={funnel?.funnel ?? { sent: 0, open: 0, click: 0, convert: 0 }}
-          />
-        </Card>
-      </div>
 
-      {best && (
-        <Card className="mt-4">
-          <SectionLabel>BEST-PERFORMING AUTOMATION STRATEGY</SectionLabel>
-          <div className="mt-2 flex flex-wrap items-baseline gap-x-6 gap-y-2">
-            <span className="text-2xl font-extrabold capitalize text-ok">
-              {best.strategy}
-            </span>
-            <span className="text-sm text-slate-600">
-              {best.conversions_per_1000_sends.toFixed(1)} conversions per 1,000
-              sends
-            </span>
-            <span className="text-sm text-slate-600">
-              CTR {pct(best.click_through_rate)}
-            </span>
-            <span className="text-sm text-slate-600">
-              {best.operational_complexity} decision rules
-            </span>
-          </div>
-          <Caveat>
-            Ranked by conversions per 1,000 sends rather than raw conversions: a
-            fixed workflow can win on volume simply by sending far more mail.
-            Operational complexity is shown beside it, because a policy that wins
-            narrowly while needing eight rules instead of one is not obviously
-            better.
-          </Caveat>
-        </Card>
-      )}
-
-      {content?.assets?.length ? (
-        <Card className="mt-4">
-          <SectionLabel>LATEST GENERATED CONTENT</SectionLabel>
-          <div className="mt-3 space-y-3">
-            {content.assets.map((a) => (
-              <div key={a.id} className="rounded-xl border border-slate-200 p-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold uppercase tracking-wide text-slate-500">
-                    {a.platform}
-                  </span>
-                  <span className="text-slate-400">
-                    score {a.final_score?.toFixed(2) ?? "—"}
-                  </span>
-                </div>
-                <p className="mt-1 line-clamp-2 text-sm text-slate-700">
-                  {a.caption}
+          {/* Stat strip */}
+          <dl className="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
+            {STATS.map((s) => (
+              <div key={s.label}>
+                <dt className="sr-only">{s.label}</dt>
+                <dd className="text-3xl font-extrabold text-brand">
+                  {s.value}
+                </dd>
+                <p className="mt-1 text-xs font-medium text-slate-500">
+                  {s.label}
                 </p>
               </div>
             ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* Modules */}
+      <section className="mx-auto max-w-6xl px-6 py-16">
+        <p className="label text-center">WHAT IS INSIDE</p>
+        <h2 className="mt-2 text-center text-2xl font-extrabold tracking-tight">
+          Four modules, one closed loop
+        </h2>
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {MODULES.map((m) => (
+            <div
+              key={m.title}
+              className="card transition hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-soft">
+                <m.icon size={19} className="text-brand" />
+              </span>
+              <h3 className="mt-4 font-bold">{m.title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-500">
+                {m.body}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* The loop */}
+      <section className="border-y border-line bg-canvas">
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <div className="flex items-center justify-center gap-2">
+            <RefreshCcw size={16} className="text-brand" />
+            <p className="label">HOW IT WORKS</p>
           </div>
-        </Card>
-      ) : null}
+          <h2 className="mt-2 text-center text-2xl font-extrabold tracking-tight">
+            Every campaign teaches the next one
+          </h2>
+          <ol className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {LOOP.map((item) => (
+              <li key={item.step} className="card">
+                <span className="text-xs font-extrabold tracking-widest text-brand">
+                  {item.step}
+                </span>
+                <h3 className="mt-2 font-bold">{item.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-500">
+                  {item.body}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* Honesty band */}
+      <section className="mx-auto max-w-6xl px-6 py-16">
+        <div className="card sm:flex sm:items-center sm:justify-between sm:gap-8">
+          <div>
+            <h2 className="text-xl font-extrabold tracking-tight">
+              Numbers you can defend
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">
+              Every figure on the dashboard carries its data basis — research
+              dataset, live traffic, or both — and every model ships with its
+              honestly measured accuracy, including the negative results. What
+              you present is what was measured.
+            </p>
+            <ul className="mt-4 space-y-1.5 text-sm text-slate-600">
+              {[
+                "Segmentation, automation and attribution compared under controlled conditions",
+                "Multi-touch attribution across every campaign touchpoint",
+                "Statistical significance testing on optimisation gains",
+              ].map((t) => (
+                <li key={t} className="flex items-start gap-2">
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-ok" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <Link
+            href="/signup"
+            className="mt-6 inline-flex shrink-0 items-center gap-2 rounded-xl
+                       bg-brand px-6 py-3 text-sm font-bold text-white
+                       transition hover:bg-brand-strong sm:mt-0"
+          >
+            Start orchestrating
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+      </section>
+
+      <footer className="border-t border-line">
+        <div
+          className="mx-auto flex max-w-6xl flex-col items-center justify-between
+                        gap-3 px-6 py-8 text-xs text-slate-400 sm:flex-row"
+        >
+          <p>AI-Powered Digital Marketing Orchestration</p>
+          <p>Team Binary · Faculty of IT · University of Moratuwa · 2026</p>
+        </div>
+      </footer>
     </div>
   );
 }

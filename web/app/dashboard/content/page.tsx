@@ -58,8 +58,10 @@ export default async function ContentPage({
     return (
       <>
         <PageHeader crumb="Dashboard" title="Content" />
-        <EmptyState title="No website registered yet"
-                    body="Register a site so its copy can be read." />
+        <EmptyState
+          title="No website registered yet"
+          body="Register a site so its copy can be read."
+        />
       </>
     );
   }
@@ -109,8 +111,9 @@ export default async function ContentPage({
                 Acquisition channels only
               </p>
               <p>
-                {Object.keys(priorities?.unactionable_channels ?? {}).join(", ") ||
-                  "none"}
+                {Object.keys(priorities?.unactionable_channels ?? {}).join(
+                  ", ",
+                ) || "none"}
               </p>
               {priorities?.note && <Caveat>{priorities.note}</Caveat>}
             </div>
@@ -140,7 +143,7 @@ function AssetCard({ asset }: { asset: ContentAsset }) {
   const tags = Array.isArray(asset.hashtags) ? asset.hashtags : [];
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-[0_6px_20px_rgb(15_23_42/0.06)]">
+    <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
       <div
         className="flex items-center justify-between px-5 py-3 text-sm font-bold text-white"
         style={{ background: color }}
@@ -161,7 +164,7 @@ function AssetCard({ asset }: { asset: ContentAsset }) {
           {asset.caption}
         </p>
         {tags.length > 0 && (
-          <p className="mt-3 text-sm font-medium text-[#3b5bdb]">
+          <p className="mt-3 text-sm font-medium text-brand">
             {tags.join(" ")}
           </p>
         )}
