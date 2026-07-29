@@ -12,6 +12,14 @@ import content_a
 import content_b
 import content_c
 
+# Generated from the measured results by `python -m research.chapters`.
+# Optional: the report still builds without it, so a checkout that has not run
+# `make research` yet is not blocked — it simply omits the research chapters.
+try:
+    import content_research
+except ImportError:                                    # not generated yet
+    content_research = None
+
 OUT = "/Users/arkamzakir/Documents/Research/Research/report/Final_Report_TeamBinary_AI_Powered_Digital_Marketing_Orchestration.docx"
 
 BODY_FONT = "Times New Roman"
@@ -447,6 +455,11 @@ def main():
     render(doc, content_a.BODY_BLOCKS)
     render(doc, content_b.BLOCKS)
     render(doc, content_c.BLOCKS)
+    if content_research is not None:
+        render(doc, content_research.BLOCKS)
+    else:
+        print("note: research chapters omitted — run `make research` then "
+              "`python -m research.chapters` to include them.")
 
     doc.save(OUT)
     print("saved:", OUT)

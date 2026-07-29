@@ -125,18 +125,32 @@ def main() -> int:
                 failures += 1
         print()
 
+    out = config.RESULTS / "results.json"
+
+    # A partial run must not delete the results it did not rerun. `--only E1`
+    # once wiped six experiments out of results.json, and the chapters silently
+    # regenerated without them — so previous results are merged, and only the
+    # experiments that actually ran are replaced.
+    merged = dict(results)
+    if args.only and out.exists():
+        try:
+            previous = json.loads(out.read_text(encoding="utf-8"))
+            merged = {**previous.get("experiments", {}), **results}
+        except (OSError, json.JSONDecodeError):
+            print(f"{AMBER}   (could not read previous results — writing only "
+                  f"this run){RESET}")
+
     summary = {
         "generated_by": "research/run_all.py",
         "seed": config.SEED,
         "n_bootstrap": config.N_BOOTSTRAP,
         "n_seeds": config.N_SEEDS,
-        "experiments": results,
+        "experiments": merged,
         "status_counts": {
-            s: sum(1 for r in results.values() if r["status"] == s)
+            s: sum(1 for r in merged.values() if r["status"] == s)
             for s in ("ok", "skipped", "failed")
         },
     }
-    out = config.RESULTS / "results.json"
     out.write_text(json.dumps(summary, indent=2, default=str), encoding="utf-8")
     print(f"{BOLD}Wrote{RESET} {out.relative_to(ROOT)}")
 

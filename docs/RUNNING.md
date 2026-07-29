@@ -74,7 +74,7 @@ Change them in `.env` if they clash.
 
 ```bash
 curl http://localhost:8000/health
-# {"status":"ok","database":"up","email_delivery":"dry_run","version":"0.1.0"}
+# {"status":"ok","database":"up","email_delivery":"dry_run","version":"0.2.0"}
 
 venv/bin/pytest tests/test_api_foundation.py -v   # backend + schema tests
 venv/bin/pytest tests/ -q                          # full M4 + integration suite
@@ -86,10 +86,39 @@ research suite still passes on a machine without Docker.
 
 ---
 
-## Registering a website
+## The audience
 
-The audience is built from real visitors to the client's website, so the first
-step is always to register that website and install its snippet.
+The study audience is the **Digital Marketing Campaign** dataset — 8,000
+customers — imported as the customer base of the demo store. `make demo` does
+the whole thing; the steps below are what it runs.
+
+**What is measured and what is reconstructed** is set out in
+[research/methodology.md](research/methodology.md) and in the importer's own
+docstring. In short: every per-customer total in the dataset is preserved
+exactly; the timing, page paths and ordering of events are reconstructed,
+because the dataset contains no event log.
+
+```bash
+# Register the store and inject its site key into every page
+venv/bin/python scripts/setup_demo_site.py
+
+# Import the 8,000 customers (deterministic, idempotent)
+venv/bin/python scripts/import_research_audience.py --site-id 1
+
+# A quicker subset while developing
+venv/bin/python scripts/import_research_audience.py --site-id 1 --limit 500
+
+# Remove them again, leaving live visitors untouched
+venv/bin/python scripts/import_research_audience.py --site-id 1 --clear
+```
+
+Imported customers get an address in the reserved `.invalid` TLD, so even with
+SMTP configured they are unreachable by construction.
+
+### Registering a different website
+
+The system is not tied to the demo store — any site can be registered and its
+visitors become the audience.
 
 ```bash
 curl -X POST http://localhost:8000/sites \
@@ -109,10 +138,12 @@ The response contains the snippet to paste into the site's `<head>`:
 - `site_key` (in the snippet) is **public** — it only permits writing events.
 - `ingest_secret` is **private**, returned once, and is for server-to-server use.
 
-### The demo website (for the viva)
+### The demo store (for the viva)
 
-`demo-site/` is a small, realistic client website with the snippet installed.
-One command registers it and injects the right site key into every page:
+`demo-site/` is a small e-commerce store with the snippet installed — an
+online shop, because the dataset's customers have purchases and loyalty points
+and a subscription product could not honestly own that behaviour. One command
+registers it and injects the right site key into every page:
 
 ```bash
 venv/bin/python scripts/setup_demo_site.py
@@ -128,7 +159,8 @@ Then open <http://localhost:4000> and behave like a visitor:
 | Click any link or button | `click` with its label |
 | Submit the form | `form_submit` + `identify` |
 | Tick the consent box first | the visitor also becomes **contactable** |
-| Choose a plan on `/pricing.html` | `purchase` — the conversion goal |
+| Add a device to the basket | `add_to_cart` with SKU and value |
+| Complete the order on `/cart.html` | `purchase` — the conversion goal |
 | Leave the page | `page_exit` with seconds on page |
 
 The footer badge shows the live tracking state. Turn on **Do Not Track** in your
@@ -166,7 +198,7 @@ curl -s http://localhost:8000/sites/1/audience/reachable | python3 -m json.tool
 
 # 3. Compare all three automation policies on that audience (Module 2)
 venv/bin/python scripts/run_strategy_comparison.py --site-id 1 --reset \
-    --simulate-engagement
+    --respond --limit 400
 ```
 
 Typical output — note how few visitors are actually contactable:
@@ -185,19 +217,25 @@ hybrid        15    15    11      4     1   26.7%     66.7      8  simulated
 each policy needs. `basis` says whether the numbers came from real people or
 from simulated traffic.
 
-### `--simulate-engagement` and what it means
+### `--respond` and what it means
 
-Real recipients cannot be made to open an email on cue, so for a demo the script
-can simulate opens, clicks and purchases. Those events travel through the *real*
-tracking endpoints, but they belong to synthetic visitors, so:
+Imported customers are records, not people, and cannot be made to open an email
+on cue. With `--respond` each recipient's reaction is drawn from **their own
+recorded behaviour** — the EmailOpens, EmailClicks and ConversionRate the
+dataset holds for that specific person — rather than one rate applied to
+everybody. Those events travel through the *real* tracking endpoints, so:
 
-- `interactions.is_real` is **derived** from `visitors.is_synthetic`, never
+- `interactions.source` is **derived** from the visitor it belongs to, never
   asserted by the caller;
-- every report labels such a campaign `basis: simulated`;
-- a test (`test_simulated_visitors_never_produce_real_funnel_events`) fails the
-  build if a synthetic visitor ever produces a row marked real.
+- every report labels such a campaign `basis: dataset`;
+- a test (`test_dataset_visitors_never_produce_live_funnel_events`) fails the
+  build if a dataset-derived customer ever produces a row marked live.
 
-Without the flag, the funnel only ever fills from genuine human interaction.
+This makes the comparison *between* policies meaningful, because the same
+audience with the same per-person propensities goes through all three. It does
+not make the absolute open and click rates measurements — the base levels are
+parameters of the response model. Without the flag, the funnel only ever fills
+from genuine interaction with the live store.
 
 ---
 
@@ -217,11 +255,12 @@ Chapter 3 of the report.
 
 ### Two things the UI does on purpose
 
-**Every figure carries a data-basis badge** — `real data`, `simulated data` or
-`real + simulated`. Demo traffic goes through the same public endpoints as a
-real visitor, so a screenshot would otherwise be indistinguishable from a real
-result. The badge is driven by `interactions.is_real`, which is derived from
-`visitors.is_synthetic` at write time rather than asserted by the caller.
+**Every figure carries a data-basis badge** — `research dataset`,
+`live traffic` or `dataset + live`. Imported customers go through the same write
+paths as a live browser, so a screenshot would otherwise be indistinguishable
+from one taken over live traffic. The badge is driven by `interactions.source`,
+which is derived from the visitor the event belongs to at write time rather than
+asserted by the caller.
 
 **Numbers that need a caveat carry one, next to the number.** Open rate is shown
 beside the note that mail clients block tracking pixels; strategy comparison is
@@ -377,6 +416,25 @@ click is left unattributed — it is real, but it is not the campaign's to claim
 **Open rates under-report.** Most mail clients block remote images by default,
 so a missing `open` does not mean the message went unread. Click-through is the
 reliable engagement signal, and every metrics response carries that caveat.
+
+---
+
+## Reproducing the research
+
+```bash
+make research                          # all seven experiments, ~3.5 minutes
+venv/bin/python -m research.run_all --only E1,E4
+venv/bin/python -m research.run_all --no-figures
+venv/bin/python -m research.chapters   # regenerate docs/research/*.md
+```
+
+Results land in `research/results/` (one CSV per table plus `results.json`) and
+figures in `research/figures/`. The figures are drawn from those tables rather
+than plotted by hand, and the chapters interpolate their numbers from the same
+JSON — so a chart, a chapter and the experiment behind them cannot disagree.
+
+A partial run (`--only`) merges into the existing `results.json` rather than
+replacing it, so it cannot silently delete the experiments it did not rerun.
 
 ---
 

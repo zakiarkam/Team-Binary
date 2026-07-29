@@ -164,12 +164,18 @@ def mcnemar(correct_a: Sequence[bool], correct_b: Sequence[bool]) -> dict:
 
     from scipy.stats import binomtest
     p = float(binomtest(b01, n_discordant, 0.5).pvalue)
+
+    if b01 == b10:
+        note = (f"each model is right where the other is wrong exactly {b01} "
+                "times — the disagreements cancel entirely")
+    elif b01 > b10:
+        note = "A is right where B is wrong more often than the reverse"
+    else:
+        note = "B is right where A is wrong more often than the reverse"
+
     return {
         "b01": b01, "b10": b10, "n_discordant": n_discordant,
-        "p_value": p, "significant": bool(p < 0.05),
-        "note": ("A is right where B is wrong more often than the reverse"
-                 if b01 > b10 else
-                 "B is right where A is wrong more often than the reverse"),
+        "p_value": p, "significant": bool(p < 0.05), "note": note,
     }
 
 

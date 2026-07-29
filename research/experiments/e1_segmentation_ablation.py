@@ -179,7 +179,11 @@ def run() -> dict:
             "unanimous_share": round(unanimous / len(frame), 4),
             "all_disagree_share": round(all_disagree / len(frame), 4),
             "mean_confidence": diagnostics.get("mean_confidence"),
-            "cold_start_users": diagnostics.get("cold_start_users"),
+            # Users the clustering could not speak for because their history was
+            # too thin. NOT the size of the New Cold User segment, which the
+            # rules assign on different grounds — E2 reports that separately,
+            # and conflating the two would misstate both.
+            "thin_evidence_users": diagnostics.get("cold_start_users"),
             "hybrid_separation": next(
                 s["separation"] for s in summary if s["method"] == "hybrid (vote)"),
             "best_single_method": best_single["method"],

@@ -9,232 +9,237 @@ survive.
 
 ## Before the room
 
-Four terminals, then one command.
+Four terminals, then two commands.
 
 ```bash
 make db                                    # terminal 1 — PostgreSQL
 venv/bin/uvicorn api.main:app --port 8000  # terminal 2 — API
 cd web && npm run dev                      # terminal 3 — dashboard
-make site                                  # terminal 4 — the demo client website
+make site                                  # terminal 4 — the demo store
 
-make demo                                  # populates everything (~60s)
+make demo                                  # import 8,000 customers, run every module
 make status                                # confirm all four are up
 ```
 
+Run **`make research`** once before the viva as well (~3.5 minutes). It
+regenerates every table and figure in `docs/research/`, so if anyone asks
+"where does that number come from?" the answer is one command away.
+
 Open **<http://localhost:3000>** (dashboard) and **<http://localhost:4000>**
-(the client's website) in two tabs.
+(the store) in two tabs.
 
-`make demo` prints the demo login:
-**demo@innov8smart.example / demo1234**
+`make demo` prints the login: **demo@innov8smart.example / demo1234**
 
-> **The platform never sends or publishes.** It writes the content and tells
-> the company what to do with it. Sending exists only as an opt-in extra
-> (`SMTP_HOST`), and stays off for the viva.
+> **The system never sends or publishes.** It writes the content and says what
+> to do with it.
 
 ---
 
 ## The walkthrough
 
-### 0 · Sign in — it's a product, not a script (1 minute)
+### 0 · What you are looking at (1 minute)
 
-The dashboard opens at a **sign-in page**. Sign in as the demo company.
+> "This is a research build. The audience is the Digital Marketing Campaign
+> dataset — 8,000 real customers with recorded behaviour — imported as the
+> customer base of this demo store, so that all four modules operate on one
+> audience the way they would in production."
 
-> "This is a multi-tenant platform. A company — any company — creates an
-> account, registers its website, and the system markets to that website's
-> visitors. What you'll see is one company's view; another account sees none
-> of this data. Isolation is enforced in the API, not the UI, and there's a
-> test that proves one company's probes into another's site return 404."
+Say the honesty point **before** anyone asks, because it is the strongest card
+in the demonstration:
 
-If time allows, the strongest 60 seconds of the demo: click **Sign out →
-Create your company account**, register as a made-up company (e.g. "Aymex"),
-and show the onboarding — **Add your website → here's your snippet → check
-installation**. Then sign back in as the demo account.
-
-> "That snippet is the entire integration. Paste one line into their site and
-> its visitors become the audience for everything you're about to see."
+> "The dataset is real, but it records per-customer *totals* — 25 visits, 5.5
+> pages per visit, 9 email opens — not an event log. So the importer keeps every
+> total exactly and reconstructs only what the data never contained: when each
+> visit happened and which page it was. Segment membership and conversion rates
+> rest on measurements. Attribution path statistics depend partly on my
+> reconstruction, and I report them that way."
 
 ### 1 · The problem (30 seconds)
 
 > "Marketing tools are fragmented: one for segmentation, one for email, one for
 > analytics, one for content. Nothing connects them, and a newly launched
-> product has almost no data to work with. This system is the four joined into
-> one loop, built for exactly that low-data case."
+> product has almost no data to work with. This is the four joined into one
+> loop, built for exactly that low-data case."
 
-### 2 · A real visitor becomes an audience member (2 minutes)
+### 2 · A live visitor joins the audience (2 minutes)
 
-Open the demo site at :4000. Point at the footer badge: `tracking: on · a1b2c3d4`.
+Open the store at :4000. Point at the footer badge: `tracking: on · a1b2c3d4`.
 
 Do this while narrating:
 
 | Action | What is recorded |
 |---|---|
 | Scroll to the bottom | `scroll` at 25 / 50 / 75 / 100% |
-| Click **Book a demo** | `click` with the element's label |
-| Enter an email, **tick the consent box**, submit | `form_submit` + `identify` — now a *contactable* visitor |
-| Go to Pricing, choose **Growth** | `purchase` — the conversion |
+| Open a product page | `page_view` with the path |
+| **Add to basket** | `add_to_cart` with the SKU and value |
+| Enter an email, **tick the consent box**, submit | `form_submit` + `identify` — now a *contactable* customer |
+| Basket → **Complete order** | `purchase` — the conversion |
 
-Now refresh the dashboard's **Audience** page. The visitor count has gone up,
-and the badge on the funnel has flipped from `simulated data` to
-`real + simulated`.
+Refresh the dashboard's **Audience** page. The count has gone up by one, and the
+badge on the funnel has flipped from `research dataset` to `dataset + live`.
 
-> "That is one line of JavaScript on their website. Nothing was uploaded."
+> "That badge is not decoration. Provenance is a column on every visitor and
+> every funnel event, and it is derived at write time from the visitor the
+> event belongs to — a caller cannot assert it. There is a test that fails the
+> build if a dataset-derived customer ever produces a row claiming to be live
+> observation."
 
-**Then turn on Do Not Track in the browser and reload the demo site.** The badge
-reads `tracking: off (Do Not Track)` and nothing is collected.
-
-> "It honours Do Not Track by default. Consent for email is separate again — a
-> visitor can be tracked and still not be contactable."
+**Then turn on Do Not Track and reload.** The badge reads
+`tracking: off (Do Not Track)` and nothing is collected.
 
 ### 3 · The audience is segmented (1 minute)
 
-**Audience** page. Point at the consent breakdown:
+**Audience** page.
 
-> "150 visitors, but only about 15 can lawfully be emailed. That gap is the
-> honest size of the addressable audience, and most dashboards hide it."
+> "8,000 customers, segmented by the hybrid engine — rules, K-Means and
+> hierarchical clustering combined by an agreement vote. The confidence column
+> is the *agreement level*, not a probability: all three agreeing gives 0.95;
+> only the rules deciding gives 0.60."
 
-Point at **New Cold User** — usually the second-largest segment:
+Point at **New Cold User**:
 
-> "That is the cold-start group: visitors we do not know enough about yet.
-> Clustering cannot express *'insufficient evidence'* — it has to put everyone
-> somewhere — so the rules decide for them and they are flagged."
+> "That is the cold-start group. Clustering cannot express 'insufficient
+> evidence' — it has to put everyone somewhere — so the rules decide for them
+> and they are flagged. That segment converts at 53% against 88% for everyone
+> else, so it is the most distinctive group in the data."
 
-### 3b · The Action Plan — the product itself (2 minutes)
+### 4 · The Action Plan — what the system produces (2 minutes)
 
-**Action Plan** page. This is the screen that answers "so what do I actually
-do?"
+**Action Plan** page.
 
-> "This is what the system produces. Not a report — a list of jobs. 'Send this
-> email to these 13 contacts.' The subject and body are written. 'Post this on
-> Instagram' — caption, hashtags and a visual brief, ready to paste."
+> "Not a report — a list of jobs. 'Send this email to these 168 High Intent
+> contacts.' Subject and body already written. 'Post this on LinkedIn' —
+> caption, hashtags and a visual brief, ready to paste."
 
-Point at the reason line under each action:
-
-> "Every action says *why*. Instagram is first because it carries 20% of the
-> attributed credit among the channels you can actually publish to. That
-> sentence comes from the attribution model on the Analytics page."
-
-Then the crucial point — pick up the **Link to use**:
+Point at the reason line under each action, then pick up the **Link to use**:
 
 > "We never send this email and never publish this post. So how is it still
-> measured? The tracked link is in the *content*, not the delivery. Whoever
-> puts it in the envelope — Mailchimp, Gmail, your own Instagram account — the
-> link is ours. Clicking it records the click and forwards the visitor tagged
+> measured? The tracked link is in the *content*, not the delivery. Whoever puts
+> it in the envelope — Mailchimp, Gmail, your own Instagram account — the link
+> is ours. Clicking it records the click and forwards the visitor tagged
 > `utm_source=instagram`, which the attribution model already understands."
 
-> "What we give up is guaranteed open tracking. Opens were the weakest number
-> we had anyway — Apple pre-fetches every pixel. We kept the metric that works
-> and dropped the liability of being an email sender."
+### 5 · Three automation policies, measured (2 minutes)
 
-### 4 · Three automation policies, measured (2 minutes)
+**Campaigns** page. Point at **conversions per 1,000 sends**, not raw
+conversions:
 
-**Campaigns** page.
+> "Fixed wins on raw conversions because it sends five times as many messages.
+> Per-send efficiency is the fair comparison, and the rules column is the
+> operational cost — hybrid needs eight decision rules, fixed needs one."
 
-> "Same audience, same content, three policies. Fixed sends the whole sequence
-> to everyone. Trigger sends one message and waits to see what they do. Hybrid
-> uses the segment to pick the opener."
+Then the honest part, which is worth volunteering:
 
-Point at **conversions per 1,000 sends**, not raw conversions:
+> "In the running system hybrid wins at 87.5 conversions per thousand. But in
+> the thirty-seed simulation study, *trigger* wins. The two disagree, and the
+> reason is that response is modelled differently in each. Neither is an
+> observation of people reacting. The ranking is not robust to how you model
+> response, and that instability is a result in itself — it is in the report."
 
-> "Fixed often wins on raw conversions — because it sends five times as many
-> messages. Per-send efficiency is the fair comparison, and the rules column is
-> the operational cost: hybrid needs eight decision rules, fixed needs one."
-
-### 5 · Attribution disagreeing is the finding (2 minutes)
+### 6 · Attribution disagreeing is the finding (2 minutes)
 
 **Analytics** page, attribution chart.
 
-> "Four models over the same journeys. First-touch credits the channel that
-> brought them in — LinkedIn, a newsletter. Last-touch credits the email that
-> closed. They point at opposite ends of the same journey. A company using only
-> last-touch would conclude email is everything and cut the spend that created
-> the audience."
+> "Four models over the same 7,811 converting journeys. First-touch spreads
+> credit almost evenly across the acquisition channels — around 20% each.
+> Last-touch gives email 89%. The widest pair disagrees over 68% of all
+> attributed credit. A company using only last-touch would conclude email is
+> everything and cut the spend that created the audience."
 
-Then point at the diagnostic underneath:
+Then the diagnostic underneath:
 
-> "It also tells you that around 40% of these journeys had a single touchpoint.
-> On those, all four models agree by arithmetic, not because they found
-> anything. Reporting the agreement without that caveat would be misleading."
+> "It also says 20% of these journeys had a single touchpoint. On those, all
+> four models agree by arithmetic, not because they found anything. Reporting
+> agreement without that caveat would be misleading."
 
-### 6 · Content written from their own website (1 minute)
+### 7 · Content written from the store's own pages (1 minute)
 
 **Content** page.
 
-> "The hashtags are lifted from their site's own headings; the copy comes from
+> "The hashtags are lifted from the store's own headings; the copy comes from
 > its meta description. We crawled the URL — nothing here was typed by hand."
 
 Point at the platform priority panel:
 
 > "The order comes from the attribution we just looked at. And it says plainly
-> that 55% of the attributed credit sits with channels we cannot publish to —
-> Google, direct traffic. Only the rest can influence what gets written."
+> that 44% of the attributed credit sits with channels we cannot publish to —
+> referral, PPC, SEO. Only the rest can influence what gets written."
 
-### 7 · The Research page (2 minutes) — spend real time here
+### 8 · The Research page and `make research` (2 minutes) — spend real time here
 
-> "This page is generated from the repository and the database as it loads. Row
-> counts are read from disk, so it cannot drift away from what is actually
-> there."
+> "This page is generated from the repository and the database as it loads, so
+> it cannot drift away from what is actually there."
 
-Walk the dataset table:
+Then show the terminal:
 
-> "Four datasets are real. Four are simulated or synthetic. Three real ones are
-> shipped and **nothing reads them** — they turned out to be comment-level
-> scrapes, so they cannot train a post-engagement model. That is listed rather
-> than quietly dropped."
+```bash
+make research
+```
 
-Then the **headline vs. what it actually means** column:
-
-> "Every model shows both. The conversion model reads AUC 0.98 — on *simulated*
-> data. Using it on a live audience is a transfer across distributions, so the
-> ranking holds but the thresholds do not, and the system raises a calibration
-> warning when they collapse."
+> "Seven experiments, every headline number with a confidence interval, and the
+> figures are redrawn from the results the run just wrote — so a chart cannot
+> disagree with the number it plots. The chapters in `docs/research/` are
+> generated from the same file. There is one copy of every number in this
+> project."
 
 ---
 
 ## Questions this is built to answer
 
-**"Is any of this real, or is it all simulated?"**
-Both, and the system says which. `visitors.is_synthetic` and
-`interactions.is_real` are set when the row is written — derived, never
-asserted — and every figure carries a basis badge. A test fails the build if a
-synthetic visitor ever produces a row marked real. Browse the demo site during
-the viva and watch the badge change.
+**"Is this real data or simulated?"**
+The customers are real people from a published dataset; their per-customer
+totals are real measurements. The *timing and ordering* of their events is a
+reconstruction, because the dataset has no event log. Campaign response is
+modelled — nobody in this study opened a real email. Every figure carries a
+provenance badge, and `source` is derived at write time, never asserted.
+
+**"Does the hybrid segmentation actually beat just using rules?"**
+**No — and that is in the report as the headline, not a footnote.** Rules alone
+separate conversion by 0.3837; the full hybrid by 0.3838. Clustering alone
+reaches 0.069. The hybrid earns its place on different grounds — it produces a
+calibrated confidence from three-way agreement, and the vote is what makes cold
+start explicit — but it does not separate conversion better than a handful of
+interpretable rules. Experiment E1 measures exactly that.
 
 **"Your segmentation confidence is 0.71. What does that mean?"**
 Agreement between the three methods, not a probability. All three agreeing gives
-0.95; only the rules deciding gives 0.60. About 41% of users sit at 0.60 — the
-methods disagree more often than they agree, and the engine says so.
+0.95; only the rules deciding gives 0.60. All three disagree for 35% of
+customers — they disagree more often than they fully agree, and the engine says
+so.
 
-**"Why is the silhouette score only 0.087?"**
-Because the clusters genuinely overlap. The segments are commercially
-meaningful — conversion differs by 38 points across them — without being
-geometrically tidy. Both facts are in the report.
+**"Why is the silhouette only 0.087?"**
+Because the clusters genuinely overlap. The segments are commercially meaningful
+— conversion differs by 38 points across them — without being geometrically
+tidy. Both facts are reported.
 
 **"Your engagement model has a negative R². Why ship it?"**
-It previously reported R² 0.99, which came entirely from label leakage: the
-target's own components were left in the feature set. With the leak removed the
-honest figure is −0.30, and no text feature correlates with engagement in that
-dataset at all (every p > 0.16). So its weight in the content score was cut from
-0.45 to 0.20, and the pathway stays wired for a dataset that has real signal.
-Finding it is the contribution; hiding it would have been the failure.
+It previously reported 0.99, which came entirely from leakage: the target's own
+components were left in the feature set. Removed, the honest figure is −0.168
+[−0.408, −0.072] and Spearman 0.012 with an interval spanning zero. Then I
+tested every text feature against the target — **none** survives Holm–Bonferroni
+correction. That is a property of the dataset, not a modelling failure, so the
+score's weight was cut from 0.45 to 0.20 and the pathway stays wired for a
+dataset that has signal. Finding it is the contribution; hiding it would have
+been the failure.
 
-**"How do you keep one company's data away from another?"**
-Ownership is checked in one middleware that covers every site-scoped route —
-a new endpoint cannot forget the check. Denials are 404, not 403, so a rejected
-probe doesn't even confirm the site exists. Sessions are database rows (logout
-deletes the row, killing the token instantly), passwords are salted scrypt, and
-the browser never sees the token — it lives in an HttpOnly cookie.
+**"You found bugs in your own research. Doesn't that undermine it?"**
+The opposite. Both defects made the results look *better*, which is why they
+survived review — no test failed, nothing went red. The leak barely moved
+accuracy (0.9213 → 0.9200) but inflated certainty 150-fold. The vote-order bug
+deleted the cold-start segment, which is Novel Contribution 1, from its own
+output. Each fix now has a regression test, and E2 reproduces both with numbers
+rather than asserting they were fixed.
 
-**"Could you email real customers with this?"**
-Technically yes — set `SMTP_HOST` and it sends. Consent is enforced in SQL
-rather than in the UI, re-checked at the moment of sending, every message
-carries one-click unsubscribe, and unsubscribing cancels anything still queued.
-For the viva it stays in dry-run.
+**"Why FastAPI when Chapter 3.6 says NestJS?"**
+Figure 5.1 specifies FastAPI and every model in the project is Python. The
+Ch. 3.6 sentence is an error and should be corrected. The same applies to
+MongoDB — all five figures show PostgreSQL, and PostgreSQL is what is used.
 
 **"What would you do next?"**
-Three things, in order: run it on a real launch to replace the simulated funnel;
-find or collect an engagement dataset that actually has text signal; and grow
-the goal/tone corpus, where `humorous` still has a single example and cannot be
-learned.
+Three things, in order: run it on a real launch so the funnel measures people
+rather than a model; find an engagement dataset that actually has text signal;
+and grow the goal/tone corpus, where `humorous` still has one example and cannot
+be learned.
 
 ---
 
@@ -244,6 +249,7 @@ learned.
 |---|---|
 | Dashboard shows "Cannot reach the API" | `make api` in terminal 2 |
 | API exits with no traceback | An OpenMP segfault — check `import openmp_guard` is first in the entry point |
-| Content generation fails | Is the demo site served? `make site` |
+| Content generation fails | Is the store served? `make site` |
 | Everything looks empty | `make demo` |
+| `/sites` returns `[]` from curl | Correct — the site is owned; sign in, or query the database directly |
 | Total reset | `make reset && make db && make demo` |

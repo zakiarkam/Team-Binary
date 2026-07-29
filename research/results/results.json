@@ -14,7 +14,7 @@
         "unanimous_share": 0.0575,
         "all_disagree_share": 0.353,
         "mean_confidence": 0.712,
-        "cold_start_users": 1,
+        "thin_evidence_users": 1,
         "hybrid_separation": 0.3838,
         "best_single_method": "rules only",
         "best_single_separation": 0.3837,
@@ -221,7 +221,7 @@
         "Clustering alone barely separates conversion at all. It groups users by behavioural similarity, which is not the same thing as grouping them by commercial value \u2014 and this is the measurement that shows the difference rather than assuming it.",
         "Silhouette is 0.087: the clusters overlap heavily in feature space. The segments are commercially useful without being geometrically clean, and reporting only the separation would hide that."
       ],
-      "seconds": 107.9
+      "seconds": 108.7
     },
     "E2": {
       "id": "E2",
@@ -280,7 +280,7 @@
         "Even the corrected accuracy should not be quoted as generalisation to a new audience. The rule component of the target is a deterministic function of these same features, so this measures internal consistency; the engine reports that caveat in its own diagnostics.",
         "Under the notebook's vote order the cold-start segment loses 36 of 163 users on this dataset. On the live audience it went to zero \u2014 a contribution deleted by its own pipeline."
       ],
-      "seconds": 7.1
+      "seconds": 7.3
     },
     "E3": {
       "id": "E3",
@@ -1484,7 +1484,7 @@
         "The simulation and the live build disagree: trigger wins in simulation, hybrid wins on the imported audience. Both are volume-controlled, so the difference is in the response model \u2014 the simulator's segment propensities against per-customer rates drawn from the dataset's own email history. Neither is an observation of real people reacting, and the ranking is evidently not robust to how their reactions are modelled. That instability is the finding, and it belongs in the report rather than a single number picked from whichever run supports the preferred conclusion.",
         "Messages per user differ sharply (fixed 4.00, trigger 1.32, hybrid 3.05). A policy that stops early is rewarded by a per-send metric and penalised by a per-user one; both are reported so the choice of metric is visible rather than decisive."
       ],
-      "seconds": 53.3
+      "seconds": 56.0
     },
     "E4": {
       "id": "E4",
@@ -2084,7 +2084,7 @@
             "n_discordant": 16,
             "p_value": 1.0,
             "significant": false,
-            "note": "B is right where A is wrong more often than the reverse"
+            "note": "each model is right where the other is wrong exactly 8 times \u2014 the disagreements cancel entirely"
           },
           {
             "target": "tone",
@@ -2102,10 +2102,10 @@
         "`campaign_goal`: the two approaches are statistically indistinguishable on this corpus (McNemar p=1.000, 16 disagreements). Choosing TF-IDF is then a decision about cost and interpretability, not about accuracy \u2014 which is a stronger argument than claiming it is more accurate.",
         "`tone`: humorous has fewer than 2 examples \u2014 cannot be split, cannot be learned, and cannot be evaluated. Reported, not hidden.",
         "`tone`: the two approaches are statistically indistinguishable on this corpus (McNemar p=0.727, 8 disagreements). Choosing TF-IDF is then a decision about cost and interpretability, not about accuracy \u2014 which is a stronger argument than claiming it is more accurate.",
-        "`tone`: best macro-F1 0.732 (tfidf + logistic) against a majority baseline of 0.112; accuracy 0.818 against 0.386. The accuracy gap flatters the model far more than the macro-F1 gap does.",
-        "`campaign_goal`: best macro-F1 0.500 (tfidf + logistic) against a majority baseline of 0.148; accuracy 0.772 against 0.588. The accuracy gap flatters the model far more than the macro-F1 gap does."
+        "`campaign_goal`: best macro-F1 0.500 (tfidf + logistic) against a majority baseline of 0.148; accuracy 0.772 against 0.588. The accuracy gap flatters the model far more than the macro-F1 gap does.",
+        "`tone`: best macro-F1 0.732 (tfidf + logistic) against a majority baseline of 0.112; accuracy 0.818 against 0.386. The accuracy gap flatters the model far more than the macro-F1 gap does."
       ],
-      "seconds": 7.4
+      "seconds": 66.8
     },
     "E7": {
       "id": "E7",
