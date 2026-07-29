@@ -241,6 +241,15 @@ def crawl_website(url: str) -> dict:
                 f"Expected HTML but got {content_type}"
             )
 
+        # requests falls back to ISO-8859-1 for text/html when the HTTP header
+        # carries no charset (RFC 2616), ignoring the page's own
+        # <meta charset>. That silently turns every em-dash and accented
+        # character into mojibake — and this text becomes marketing copy, so
+        # the damage would be visible to the customer. Prefer the encoding the
+        # bytes actually indicate.
+        if "charset=" not in content_type:
+            response.encoding = response.apparent_encoding or "utf-8"
+
         html = response.text
 
         if len(html.strip()) < 500:

@@ -1,204 +1,216 @@
 {
-  "dataset_path": "/Users/aadhil/Documents/Sem/research/Marketing/ai_marketing_research/Team-Binary/data/processed/goal_tone_dataset_training.csv",
-  "dataset_rows": 113,
+  "dataset_path": "/Users/arkamzakir/Documents/Research/Research/data/processed/goal_tone_dataset_training.csv",
+  "dataset_rows": 527,
   "selection": {
-    "best_goal_model_type": "sentencebert_xgboost",
+    "best_goal_model_type": "tfidf_logistic",
     "best_tone_model_type": "tfidf_logistic"
   },
   "results": [
     {
       "target": "campaign_goal",
       "model": "tfidf_logistic",
-      "accuracy": 0.695652,
-      "weighted_f1": 0.638127,
-      "macro_f1": 0.387692,
+      "accuracy": 0.802198,
+      "weighted_f1": 0.800131,
+      "macro_f1": 0.539085,
       "classification_report": {
         "awareness": {
-          "precision": 0.6666666666666666,
-          "recall": 0.9090909090909091,
-          "f1-score": 0.7692307692307693,
-          "support": 11.0
+          "precision": 0.94,
+          "recall": 0.8703703703703703,
+          "f1-score": 0.9038461538461539,
+          "support": 54.0
         },
         "conversion": {
-          "precision": 0.7142857142857143,
-          "recall": 0.8333333333333334,
-          "f1-score": 0.7692307692307693,
-          "support": 6.0
+          "precision": 0.6785714285714286,
+          "recall": 0.8636363636363636,
+          "f1-score": 0.76,
+          "support": 22.0
         },
         "engagement": {
           "precision": 0.0,
           "recall": 0.0,
           "f1-score": 0.0,
-          "support": 1.0
+          "support": 2.0
         },
         "lead_generation": {
+          "precision": 0.6,
+          "recall": 0.6666666666666666,
+          "f1-score": 0.631578947368421,
+          "support": 9.0
+        },
+        "retention": {
           "precision": 1.0,
           "recall": 0.25,
           "f1-score": 0.4,
           "support": 4.0
         },
-        "retention": {
-          "precision": 0.0,
-          "recall": 0.0,
-          "f1-score": 0.0,
-          "support": 1.0
-        },
-        "accuracy": 0.6956521739130435,
+        "accuracy": 0.8021978021978022,
         "macro avg": {
-          "precision": 0.47619047619047616,
-          "recall": 0.3984848484848485,
-          "f1-score": 0.3876923076923077,
-          "support": 23.0
+          "precision": 0.6437142857142857,
+          "recall": 0.5301346801346801,
+          "f1-score": 0.539085020242915,
+          "support": 91.0
         },
         "weighted avg": {
-          "precision": 0.6790890269151139,
-          "recall": 0.6956521739130435,
-          "f1-score": 0.6381270903010033,
-          "support": 23.0
+          "precision": 0.8251491365777079,
+          "recall": 0.8021978021978022,
+          "f1-score": 0.8001308003737153,
+          "support": 91.0
         }
       }
     },
     {
       "target": "campaign_goal",
       "model": "sentencebert_xgboost",
-      "accuracy": 0.782609,
-      "weighted_f1": 0.71505,
-      "macro_f1": 0.433846,
+      "accuracy": 0.769231,
+      "weighted_f1": 0.729124,
+      "macro_f1": 0.379261,
       "classification_report": {
         "awareness": {
-          "precision": 0.7333333333333333,
-          "recall": 1.0,
-          "f1-score": 0.8461538461538461,
-          "support": 11.0
+          "precision": 0.85,
+          "recall": 0.9444444444444444,
+          "f1-score": 0.8947368421052632,
+          "support": 54.0
         },
         "conversion": {
-          "precision": 0.8571428571428571,
-          "recall": 1.0,
-          "f1-score": 0.9230769230769231,
-          "support": 6.0
+          "precision": 0.6296296296296297,
+          "recall": 0.7727272727272727,
+          "f1-score": 0.6938775510204082,
+          "support": 22.0
         },
         "engagement": {
           "precision": 0.0,
           "recall": 0.0,
           "f1-score": 0.0,
-          "support": 1.0
+          "support": 2.0
         },
         "lead_generation": {
-          "precision": 1.0,
-          "recall": 0.25,
-          "f1-score": 0.4,
-          "support": 4.0
+          "precision": 0.5,
+          "recall": 0.2222222222222222,
+          "f1-score": 0.3076923076923077,
+          "support": 9.0
         },
         "retention": {
           "precision": 0.0,
           "recall": 0.0,
           "f1-score": 0.0,
-          "support": 1.0
+          "support": 4.0
         },
-        "accuracy": 0.782608695652174,
+        "accuracy": 0.7692307692307693,
         "macro avg": {
-          "precision": 0.518095238095238,
-          "recall": 0.45,
-          "f1-score": 0.4338461538461538,
-          "support": 23.0
+          "precision": 0.3959259259259259,
+          "recall": 0.3878787878787879,
+          "f1-score": 0.3792613401635958,
+          "support": 91.0
         },
         "weighted avg": {
-          "precision": 0.74824016563147,
-          "recall": 0.782608695652174,
-          "f1-score": 0.7150501672240803,
-          "support": 23.0
+          "precision": 0.706064306064306,
+          "recall": 0.7692307692307693,
+          "f1-score": 0.7291244655534502,
+          "support": 91.0
         }
       }
     },
     {
       "target": "tone",
       "model": "tfidf_logistic",
-      "accuracy": 0.869565,
-      "weighted_f1": 0.875454,
-      "macro_f1": 0.880224,
+      "accuracy": 0.885714,
+      "weighted_f1": 0.867162,
+      "macro_f1": 0.722663,
       "classification_report": {
+        "emotional": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 2.0
+        },
         "friendly": {
           "precision": 1.0,
           "recall": 1.0,
           "f1-score": 1.0,
-          "support": 1.0
+          "support": 2.0
         },
         "luxury": {
-          "precision": 0.6,
+          "precision": 0.5714285714285714,
           "recall": 1.0,
-          "f1-score": 0.75,
-          "support": 3.0
+          "f1-score": 0.7272727272727273,
+          "support": 4.0
         },
         "persuasive": {
-          "precision": 0.875,
-          "recall": 0.7777777777777778,
-          "f1-score": 0.8235294117647058,
-          "support": 9.0
+          "precision": 0.9285714285714286,
+          "recall": 1.0,
+          "f1-score": 0.9629629629629629,
+          "support": 13.0
         },
         "professional": {
           "precision": 1.0,
-          "recall": 0.9,
-          "f1-score": 0.9473684210526315,
-          "support": 10.0
+          "recall": 0.8571428571428571,
+          "f1-score": 0.9230769230769231,
+          "support": 14.0
         },
-        "accuracy": 0.8695652173913043,
+        "accuracy": 0.8857142857142857,
         "macro avg": {
-          "precision": 0.86875,
-          "recall": 0.9194444444444444,
-          "f1-score": 0.8802244582043343,
-          "support": 23.0
+          "precision": 0.7,
+          "recall": 0.7714285714285715,
+          "f1-score": 0.7226625226625227,
+          "support": 35.0
         },
         "weighted avg": {
-          "precision": 0.898913043478261,
-          "recall": 0.8695652173913043,
-          "f1-score": 0.8754543007134202,
-          "support": 23.0
+          "precision": 0.8673469387755102,
+          "recall": 0.8857142857142857,
+          "f1-score": 0.8671624671624671,
+          "support": 35.0
         }
       }
     },
     {
       "target": "tone",
       "model": "sentencebert_xgboost",
-      "accuracy": 0.869565,
-      "weighted_f1": 0.863768,
-      "macro_f1": 0.740351,
+      "accuracy": 0.8,
+      "weighted_f1": 0.755968,
+      "macro_f1": 0.51362,
       "classification_report": {
+        "emotional": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 2.0
+        },
         "friendly": {
-          "precision": 0.5,
-          "recall": 1.0,
-          "f1-score": 0.6666666666666666,
-          "support": 1.0
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 2.0
         },
         "luxury": {
-          "precision": 0.5,
-          "recall": 0.3333333333333333,
-          "f1-score": 0.4,
-          "support": 3.0
+          "precision": 1.0,
+          "recall": 0.75,
+          "f1-score": 0.8571428571428571,
+          "support": 4.0
         },
         "persuasive": {
-          "precision": 0.9,
-          "recall": 1.0,
-          "f1-score": 0.9473684210526315,
-          "support": 9.0
+          "precision": 0.9230769230769231,
+          "recall": 0.9230769230769231,
+          "f1-score": 0.9230769230769231,
+          "support": 13.0
         },
         "professional": {
-          "precision": 1.0,
-          "recall": 0.9,
-          "f1-score": 0.9473684210526315,
-          "support": 10.0
+          "precision": 0.6842105263157895,
+          "recall": 0.9285714285714286,
+          "f1-score": 0.7878787878787878,
+          "support": 14.0
         },
-        "accuracy": 0.8695652173913043,
+        "accuracy": 0.8,
         "macro avg": {
-          "precision": 0.725,
-          "recall": 0.8083333333333332,
-          "f1-score": 0.7403508771929824,
-          "support": 23.0
+          "precision": 0.5214574898785426,
+          "recall": 0.5203296703296704,
+          "f1-score": 0.5136197136197136,
+          "support": 35.0
         },
         "weighted avg": {
-          "precision": 0.8739130434782609,
-          "recall": 0.8695652173913043,
-          "f1-score": 0.863768115942029,
-          "support": 23.0
+          "precision": 0.730827067669173,
+          "recall": 0.8,
+          "f1-score": 0.7559678416821274,
+          "support": 35.0
         }
       }
     }

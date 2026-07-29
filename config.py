@@ -6,20 +6,28 @@ import hashlib
 # Native threading / OpenMP safety
 # ---------------------------------------------------------------------------
 # This block must run before numpy, torch or xgboost are imported. PyTorch and
-# XGBoost each bundle their own OpenMP runtime (libomp); on macOS, loading both
-# and then fitting XGBoost while torch is active segfaults.
+# XGBoost each bundle their own OpenMP runtime (libomp); on macOS, *fitting* an
+# XGBoost model in a process where torch is loaded segfaults the interpreter
+# (exit code 139, no traceback).
 #
-# The actual crash guard is two-part and neither part needs a single thread:
-#   1. KMP_DUPLICATE_LIB_OK lets the duplicate runtimes coexist.
-#   2. Every XGBoost estimator in this project is constructed with n_jobs=1,
-#      so XGBoost never spawns the pool that clashes with torch's.
+# Measured on this project (torch 2.13, xgboost 3.2, macOS arm64):
 #
-# Pinning OMP_NUM_THREADS=1 globally was the previous blunt fix. It also capped
-# every torch CPU matmul and every BLAS call to a single core, which made CPU
-# inference roughly as many times slower as the machine has cores. The default
-# below leaves one core for the OS and uses the rest.
+#   KMP_DUPLICATE_LIB_OK=TRUE ............ does NOT prevent the crash
+#   XGBoost estimator n_jobs/nthread=1 ... does NOT prevent the crash
+#   torch on CPU instead of MPS .......... does NOT prevent the crash
+#   OMP_NUM_THREADS=1 .................... prevents the crash
 #
-# Override per run, e.g.  PIPELINE_NUM_THREADS=1 python main.py
+# So the two mitigations below are kept for defence in depth, but they are not
+# sufficient on their own — an earlier version of this comment claimed they
+# were, which is why `goal_tone.train()` died silently and the label encoders
+# were never written.
+#
+# Only *fitting* is affected; inference and embedding are fine multi-threaded.
+# Training is therefore run single-threaded through scripts/train_models.py,
+# while everything else keeps the cores. Override per run with:
+#
+#     PIPELINE_NUM_THREADS=1 python <anything>
+
 _DEFAULT_THREADS = str(max(1, (os.cpu_count() or 2) - 1))
 _THREADS = os.environ.get("PIPELINE_NUM_THREADS", _DEFAULT_THREADS)
 
@@ -62,10 +70,37 @@ DATA_FINETUNE_MODEL_NAME = "facebook/bart-large-mnli"
 # Backward compatibility
 DATA_FINETUNE_MODAL = DATA_FINETUNE_MODEL_NAME
 
-# Score weights
-SEMANTIC_WEIGHT = 0.30
-PLATFORM_WEIGHT = 0.25
-ENGAGEMENT_WEIGHT = 0.45
+# ---------------------------------------------------------------------------
+# Content score weights
+# ---------------------------------------------------------------------------
+# final_score = SEMANTIC·semantic + PLATFORM·platform_fit + ENGAGEMENT·engagement
+#
+# These were 0.30 / 0.25 / 0.45, leaning hardest on the engagement model. That
+# weighting rested on a reported R² of 0.99 — which turned out to come entirely
+# from label leakage: `likes`, `comments`, `shares` and `impressions` were left
+# in the feature set while the target was (likes+comments+shares)/impressions.
+#
+# With the leak removed and only text-derived features remaining, the measured
+# result on data/raw/datasets/your_engagement_dataset.csv is:
+#
+#     R²        -0.30   (worse than predicting the training mean)
+#     Spearman   0.02   (no rank correlation)
+#
+# and no individual text feature correlates with engagement at any reasonable
+# significance (all p > 0.16). The dataset appears to carry no relationship
+# between wording and engagement at all, so this is a property of the data
+# rather than a fixable modelling failure.
+#
+# The weights below therefore lean on the two components that *are* meaningful:
+# platform fit is a deterministic check against each platform's own length,
+# hashtag and emoji conventions, and semantic similarity keeps the copy on
+# message. Engagement is kept as a small tie-breaker rather than removed, so the
+# pathway stays wired for when a dataset with real signal is available — but it
+# no longer decides the ranking on the strength of a model with no demonstrated
+# skill.
+SEMANTIC_WEIGHT = 0.40
+PLATFORM_WEIGHT = 0.40
+ENGAGEMENT_WEIGHT = 0.20
 
 # Default platforms
 PLATFORMS = ["instagram", "linkedin", "shorts", "email"]
@@ -197,10 +232,14 @@ def select_visual(platform, marketing_summary):
 
     spec = platform_spec(platform)
 
-    options = spec.get(
-        "visual_options",
-        ["image"]
-    )
+    # Platforms that do not offer "visual_options" are not adaptive — their
+    # "visual" is a fixed property of the medium and must be honoured.
+    # (Without this, "shorts" fell through to the ["image"] default and never
+    # received a shorts_prompt, so the video platform got an image brief.)
+    if "visual_options" not in spec:
+        return spec["visual"]
+
+    options = spec["visual_options"]
 
     text = (
         marketing_summary.get("summary","")

@@ -9,6 +9,9 @@ readme = "README.md"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-q"
+markers = [
+    "slow: takes more than a few seconds (deselect with '-m \"not slow\"')",
+]
 
 [tool.ruff]
 line-length = 100

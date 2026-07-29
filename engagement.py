@@ -1,5 +1,9 @@
 """Engagement model: feature extraction, training (RF + XGBoost), prediction."""
 
+# Loaded first, on purpose: torch must initialise before xgboost or the
+# process segfaults on macOS. See openmp_guard.py for the full explanation.
+import openmp_guard  # noqa: F401  (import order matters)
+
 import re
 import joblib
 import numpy as np
@@ -48,6 +52,38 @@ def extract_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+#: Everything the model is allowed to see. Named explicitly rather than derived
+#: by exclusion, because the previous version selected features by dropping only
+#: "text" and "engagement_rate" — which silently left `likes`, `comments`,
+#: `shares` and `impressions` in the feature set. The target is
+#: (likes + comments + shares) / impressions, so the model was handed its own
+#: answer and scored R² ≈ 0.99.
+#:
+#: The failure was invisible in training and fatal in production: a generated
+#: caption has no like count, so at prediction time those four columns were
+#: filled with zeros — far outside anything the model had seen — and the
+#: engagement score that drives 45% of every content ranking became noise.
+TEXT_FEATURES = [
+    "char_length", "word_count", "hashtag_count", "emoji_count",
+    "cta_present", "question_hook", "sentiment_score", "readability_score",
+]
+
+#: Columns that are outcomes, not inputs. Guarded by name so a future edit to
+#: extract_features cannot reintroduce them.
+LEAKY_COLUMNS = {"likes", "comments", "shares", "impressions", "engagement_rate"}
+
+
+def model_feature_columns(features: pd.DataFrame) -> list[str]:
+    """Text-derived features plus platform one-hots — and nothing else."""
+    platform_cols = [c for c in features.columns if c.startswith("platform_")]
+    cols = [c for c in TEXT_FEATURES if c in features.columns] + sorted(platform_cols)
+
+    leaked = LEAKY_COLUMNS.intersection(cols)
+    if leaked:                                    # pragma: no cover — guard
+        raise ValueError(f"outcome columns must never be features: {sorted(leaked)}")
+    return cols
+
+
 def _load_engagement_csv() -> pd.DataFrame:
     raw = pd.read_csv(config.ENGAGEMENT_DATASET_CSV)
     df = pd.DataFrame()
@@ -67,7 +103,7 @@ def train():
     raw = _load_engagement_csv()
     features = extract_features(raw).fillna(0)
     target = "engagement_rate"
-    feature_cols = [c for c in features.columns if c not in ("text", "engagement_rate")]
+    feature_cols = model_feature_columns(features)
 
     X_tr, X_te, y_tr, y_te = train_test_split(
         features[feature_cols], features[target], test_size=0.20, random_state=42
@@ -81,31 +117,83 @@ def train():
     ).fit(X_tr, y_tr)
 
     def _metrics(y_true, y_pred):
+        from scipy.stats import spearmanr
+
+        # Spearman is the metric that matters here. The model exists to *order*
+        # candidate captions, not to predict an engagement rate in absolute
+        # terms, and rank correlation measures exactly that. R² is reported too,
+        # and is expected to be poor: predicting engagement from wording alone,
+        # with no audience or timing signal, is genuinely hard.
+        rho = spearmanr(y_true, y_pred).statistic
         return (
             mean_absolute_error(y_true, y_pred),
             float(np.sqrt(np.mean((y_true - y_pred) ** 2))),
             r2_score(y_true, y_pred),
+            float(rho) if rho == rho else 0.0,      # NaN-safe
         )
 
-    rf_mae, rf_rmse, rf_r2 = _metrics(y_te, rf.predict(X_te))
-    xgb_mae, xgb_rmse, xgb_r2 = _metrics(y_te, xgb.predict(X_te))
+    rf_mae, rf_rmse, rf_r2, rf_rho = _metrics(y_te, rf.predict(X_te))
+    xgb_mae, xgb_rmse, xgb_r2, xgb_rho = _metrics(y_te, xgb.predict(X_te))
+
+    # A model that always predicts the training mean. Any real model must beat
+    # it; without this baseline an R² near zero is hard to interpret.
+    baseline_pred = np.full(len(y_te), y_tr.mean())
+    b_mae, b_rmse, b_r2, b_rho = _metrics(y_te, baseline_pred)
 
     results = pd.DataFrame(
         {
-            "model": ["RandomForest", "XGBoost"],
-            "MAE": [rf_mae, xgb_mae],
-            "RMSE": [rf_rmse, xgb_rmse],
-            "R2": [rf_r2, xgb_r2],
+            "model": ["Baseline (mean)", "RandomForest", "XGBoost"],
+            "MAE": [b_mae, rf_mae, xgb_mae],
+            "RMSE": [b_rmse, rf_rmse, xgb_rmse],
+            "R2": [b_r2, rf_r2, xgb_r2],
+            "Spearman": [b_rho, rf_rho, xgb_rho],
         }
     )
-    print(results.to_string())
+    print(results.to_string(index=False))
     results.to_csv(config.OUTPUTS / "engagement_model_comparison.csv", index=False)
 
-    best_name = results.sort_values("R2", ascending=False).iloc[0]["model"]
-    best = xgb if best_name == "XGBoost" else rf
+    # Selected on rank correlation, since ranking is the job.
+    trained = {"RandomForest": rf, "XGBoost": xgb}
+    ranked = results[results.model != "Baseline (mean)"].sort_values(
+        "Spearman", ascending=False)
+    best_name = ranked.iloc[0]["model"]
+    best = trained[best_name]
+
     joblib.dump(best, config.ENGAGEMENT_MODEL_PKL)
     joblib.dump(feature_cols, config.ENGAGEMENT_FEATURES_PKL)
-    print(f"Best engagement model: {best_name}")
+
+    # Record measured skill next to the artifact so the Research page can report
+    # what this model actually does rather than repeat a claim from a README.
+    import json
+
+    best_row = ranked.iloc[0]
+    baseline_row = results[results.model == "Baseline (mean)"].iloc[0]
+    beats_baseline = bool(best_row["R2"] > baseline_row["R2"])
+
+    metrics = {
+        "model": best_name,
+        "features": feature_cols,
+        "n_features": len(feature_cols),
+        "n_rows": int(len(features)),
+        "r2": round(float(best_row["R2"]), 4),
+        "spearman": round(float(best_row["Spearman"]), 4),
+        "mae": round(float(best_row["MAE"]), 4),
+        "baseline_r2": round(float(baseline_row["R2"]), 4),
+        "beats_baseline": beats_baseline,
+        "leakage_guard": sorted(LEAKY_COLUMNS),
+        "verdict": (
+            "Usable as a ranker." if best_row["Spearman"] > 0.15 else
+            "No demonstrated skill on this dataset — the ranking it produces is "
+            "close to arbitrary, and its weight in the content score is set low "
+            "accordingly."
+        ),
+    }
+    (config.MODELS / "engagement_metrics.json").write_text(json.dumps(metrics, indent=2))
+
+    print(f"\nBest engagement model: {best_name} "
+          f"(Spearman {best_row['Spearman']:.3f}, R² {best_row['R2']:.3f})")
+    print(f"Features ({len(feature_cols)}): {', '.join(feature_cols)}")
+    print(f"Verdict: {metrics['verdict']}")
     return best, feature_cols
 
 

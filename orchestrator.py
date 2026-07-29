@@ -20,6 +20,12 @@ Streamlit app imports (`from orchestrator import run_full`).
 
 from __future__ import annotations
 
+# Loaded first, on purpose: torch must initialise before xgboost or fitting
+# an XGBoost model later in this process segfaults on macOS.
+# See openmp_guard.py and the note at the top of config.py.
+import openmp_guard  # noqa: F401  (import order matters)
+
+
 import json
 import subprocess
 import sys

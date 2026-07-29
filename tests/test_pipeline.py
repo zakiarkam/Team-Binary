@@ -147,16 +147,37 @@ def test_final_score_weights_sum_to_one():
     assert total == pytest.approx(1.0)
 
 
-def test_final_score_linear_combination():
-    s, p, e = 1.0, 0.8, 0.5
-    expected = (
-        config.SEMANTIC_WEIGHT * s
-        + config.PLATFORM_WEIGHT * p
-        + config.ENGAGEMENT_WEIGHT * e
+def test_final_score_is_a_convex_combination():
+    """The score must stay a weighted average, so it is always in [0, 1] and
+    comparable across assets.
+
+    Deliberately asserts the *property* rather than the literal weights. The
+    previous version pinned 0.30/0.25/0.45, which meant changing a weight failed
+    the test without saying anything about whether the change was wrong.
+    """
+    weights = (config.SEMANTIC_WEIGHT, config.PLATFORM_WEIGHT,
+               config.ENGAGEMENT_WEIGHT)
+    assert all(0.0 <= w <= 1.0 for w in weights)
+    assert sum(weights) == pytest.approx(1.0)
+
+    for parts in ((0.0, 0.0, 0.0), (1.0, 1.0, 1.0), (1.0, 0.8, 0.5)):
+        score = sum(w * p for w, p in zip(weights, parts))
+        assert 0.0 <= score <= 1.0
+        assert score == pytest.approx(
+            min(parts) if len(set(parts)) == 1 else score)
+
+
+def test_engagement_weight_reflects_the_models_measured_skill():
+    """The engagement model has no demonstrated skill on the available data
+    (R² -0.30, Spearman 0.02 — worse than predicting the mean), so it must not
+    dominate the ranking. It used to carry 0.45 on the strength of an R² of
+    0.99 that came entirely from label leakage.
+    """
+    assert config.ENGAGEMENT_WEIGHT <= 0.25, (
+        "engagement carries more weight than its measured skill supports"
     )
-    assert expected == pytest.approx(
-        0.30 * 1.0 + 0.25 * 0.8 + 0.45 * 0.5
-    )
+    assert config.ENGAGEMENT_WEIGHT < config.SEMANTIC_WEIGHT
+    assert config.ENGAGEMENT_WEIGHT < config.PLATFORM_WEIGHT
 
 
 # --- Generator JSON parsing ------------------------------------------------
@@ -233,3 +254,55 @@ def test_build_kb_produces_combined_text():
     assert "EcoSmart Bottle" in kb["combined_text"]
     assert "Sustainable hydration" in kb["combined_text"]
     assert kb["title"] == "EcoSmart Bottles"
+
+
+# --- Engagement model leakage guard ----------------------------------------
+
+def test_engagement_model_never_sees_outcome_columns():
+    """Regression guard for the leak that produced a fake R² of 0.99.
+
+    `likes`, `comments`, `shares` and `impressions` are the components of the
+    target, `(likes + comments + shares) / impressions`. Leaving them in the
+    feature set taught the model to divide, and at prediction time — where a
+    generated caption has no like count — those columns arrive as zeros, far
+    outside anything the model saw in training.
+    """
+    import pandas as pd
+
+    import engagement
+
+    frame = pd.DataFrame({
+        "text": ["A short caption about a product #launch"],
+        "platform": ["instagram"],
+        "likes": [10], "comments": [2], "shares": [1], "impressions": [100],
+        "engagement_rate": [0.13],
+    })
+    features = engagement.extract_features(frame)
+    cols = engagement.model_feature_columns(features)
+
+    for outcome in ("likes", "comments", "shares", "impressions", "engagement_rate"):
+        assert outcome not in cols, f"{outcome} is an outcome, not a feature"
+
+    # Only text-derived signals and platform one-hots may remain.
+    assert set(cols) <= set(engagement.TEXT_FEATURES) | {
+        c for c in features.columns if c.startswith("platform_")
+    }
+
+
+def test_engagement_feature_columns_match_the_saved_model():
+    """The shipped artifact must have been trained on the guarded feature set —
+    otherwise the leak is still baked into the model on disk."""
+    import joblib
+
+    import config
+    import engagement
+
+    if not config.ENGAGEMENT_FEATURES_PKL.exists():
+        pytest.skip("engagement model not trained in this checkout")
+
+    saved = joblib.load(config.ENGAGEMENT_FEATURES_PKL)
+    leaked = set(saved) & engagement.LEAKY_COLUMNS
+    assert not leaked, (
+        f"the saved engagement model was trained with outcome columns {sorted(leaked)} — "
+        "retrain with: venv/bin/python scripts/train_models.py --only engagement"
+    )

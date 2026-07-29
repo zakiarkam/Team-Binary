@@ -1,5 +1,5 @@
 class,precision,recall,f1,support
-send_general_reminder,0.9895,0.9889,0.9892,1716
-send_personalized_offer,0.9677,0.8824,0.9231,34
-send_premium_offer,0.91,0.9286,0.9192,196
+send_general_reminder,0.9562,0.9796,0.9678,1716
+send_personalized_offer,0.6667,0.1765,0.2791,34
+send_premium_offer,0.8212,0.75,0.784,196
 send_reactivation_campaign,1.0,1.0,1.0,54

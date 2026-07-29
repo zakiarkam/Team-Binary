@@ -18,6 +18,12 @@ Then re-ranked, with platform order nudged by Module 3's analytics feedback.
 
 from __future__ import annotations
 
+# Loaded first, on purpose: torch must initialise before xgboost or fitting
+# an XGBoost model later in this process segfaults on macOS.
+# See openmp_guard.py and the note at the top of config.py.
+import openmp_guard  # noqa: F401  (import order matters)
+
+
 import re
 from typing import Any, Callable
 
@@ -100,13 +106,69 @@ def infer_goal_tone(text: str) -> tuple[str, str]:
     return goal, tone
 
 
-def build_summary(product_input: dict, priorities: dict | None = None) -> dict:
-    """Assemble a marketing_summary and infer goal + tone."""
-    name = _clean(product_input.get("product_name", "the product"))
+def _from_website(website_data: dict | None) -> dict[str, Any]:
+    """Pull a product description and keywords out of a crawled page.
+
+    Copy written by the company about its own product beats anything inferred
+    from a one-line brief, so when a crawl is available it supplies the
+    description and the hashtag keywords. Falls back silently when the site
+    could not be read — an unreachable site must not break generation.
+    """
+    if not website_data or website_data.get("status") == "failed":
+        return {}
+
+    meta = _clean(website_data.get("meta_description", ""))
+    paragraphs = [p for p in website_data.get("paragraphs", []) if len(p) > 60]
+    headings = [h for h in website_data.get("headings", []) if 3 < len(h) < 60]
+
+    # Prefer the meta description (deliberately written to describe the product),
+    # then the first substantial paragraph.
+    description = meta or (_clean(paragraphs[0]) if paragraphs else "")
+    if description and len(description) < 40 and paragraphs:
+        description = f"{description} {_clean(paragraphs[0])}".strip()
+
+    # Headings are the site's own vocabulary — better hashtags than guesses.
+    stop = {"the", "and", "for", "with", "your", "our", "you", "how", "why",
+            "get", "all", "new", "more", "that", "this", "from", "are"}
+    words: list[str] = []
+    for heading in headings[:12]:
+        for raw in re.findall(r"[A-Za-z][A-Za-z0-9]{3,}", heading):
+            token = raw.lower()
+            if token not in stop and token not in words:
+                words.append(token)
+
+    return {
+        "description": description,
+        "keywords": words[:8],
+        "title": _clean(website_data.get("title", "")),
+        "ctas": [c for c in website_data.get("cta_texts", []) if 3 < len(c) < 40][:6],
+    }
+
+
+def build_summary(product_input: dict, priorities: dict | None = None,
+                  website_data: dict | None = None) -> dict:
+    """Assemble a marketing_summary and infer goal + tone.
+
+    When `website_data` is supplied (from crawler.run), the product's own copy
+    drives the description and keywords instead of the typed one-liner. The
+    result records which source was used so the UI can show it rather than
+    implying the site was read when it was not.
+    """
+    site = _from_website(website_data)
+
+    name = _clean(product_input.get("product_name", "")) or site.get("title", "") \
+        or "the product"
     aud = _clean(product_input.get("target_audience", "modern teams"))
     seg = _clean(product_input.get("customer_segment", ""))
-    desc = _clean(product_input.get("product_description",
-                  f"{name} helps {aud} work better. {seg}"))
+
+    typed_desc = _clean(product_input.get("product_description", ""))
+    site_desc = site.get("description", "")
+    desc = site_desc or typed_desc or f"{name} helps {aud} work better. {seg}"
+
+    if site_desc and typed_desc:
+        # Both available: lead with the site's own words, keep the brief as context.
+        desc = f"{site_desc} {typed_desc}".strip()
+
     goal, tone = infer_goal_tone(f"{name}. {desc}. For {aud}. {seg}")
     return {
         "product_name": name,
@@ -117,6 +179,9 @@ def build_summary(product_input: dict, priorities: dict | None = None) -> dict:
         "tone": tone,
         "summary": desc,
         "preferred_platforms": product_input.get("preferred_platforms", config.PLATFORMS),
+        "site_keywords": site.get("keywords", []),
+        "site_ctas": site.get("ctas", []),
+        "content_source": "website" if site_desc else "brief",
     }
 
 
@@ -197,9 +262,13 @@ def _template_asset(platform: str, summary: dict, keywords: list[str]) -> dict:
 
 
 def _template_assets(summary: dict, platforms: list[str]) -> pd.DataFrame:
-    keywords = _keywords({"product_name": summary["product_name"],
-                          "target_audience": summary["target_audience"],
-                          "customer_segment": summary["customer_segment"]})
+    # Keywords lifted from the site's own headings when we have them; the brief
+    # is only a fallback, because a company names its product better than we can
+    # infer it from an audience description.
+    keywords = summary.get("site_keywords") or _keywords(
+        {"product_name": summary["product_name"],
+         "target_audience": summary["target_audience"],
+         "customer_segment": summary["customer_segment"]})
     rows = [_template_asset(p, summary, keywords) for p in platforms]
     return pd.DataFrame(rows, columns=["platform", "caption", "hashtags", "cta",
                                        "image_prompt", "shorts_prompt"])
@@ -252,14 +321,25 @@ def score_assets(assets: pd.DataFrame, summary: dict,
 def generate(product_input: dict, priorities: dict | None = None,
              engine: str = "fast", with_semantic: bool = True,
              semantic_method: str | None = None,
+             website_data: dict | None = None,
              log: Callable[[str], None] | None = None) -> dict[str, Any]:
-    """Turn a product brief into ranked, platform-ready, scored marketing assets."""
+    """Turn a product brief into ranked, platform-ready, scored marketing assets.
+
+    `website_data` is the output of crawler.run(). Supplying it makes the
+    generated copy derive from the product's own site rather than from the
+    typed brief alone.
+    """
     def _l(m):
         print(m, flush=True)
         if log:
             log(m)
 
-    summary = build_summary(product_input, priorities)
+    summary = build_summary(product_input, priorities, website_data=website_data)
+    if summary["content_source"] == "website":
+        _l(f"[M4] read the website — {len(summary['site_keywords'])} keywords, "
+           f"{len(summary['site_ctas'])} calls to action")
+    else:
+        _l("[M4] no website content available — generating from the typed brief")
     _l(f"[M4] inferred goal='{summary['campaign_goal']}', tone='{summary['tone']}'")
 
     platforms = list(summary["preferred_platforms"])
@@ -291,6 +371,7 @@ def generate(product_input: dict, priorities: dict | None = None,
         "engine": engine,
         "priorities": priorities or {},
         "platform_order": platforms,
+        "content_source": summary["content_source"],
     }
 
 

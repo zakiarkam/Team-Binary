@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Design tokens for the Marketing OS dashboard.
+   Kept in one place so every chart, badge and card pulls from the same palette.
+   --------------------------------------------------------------------------- */
+@theme {
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-line: #e2e8f0;
+  --color-canvas: #f6f8fb;
+
+  --color-brand: #3b5bdb;
+  --color-brand-soft: #eef2ff;
+
+  --color-ok: #16a34a;
+  --color-warn: #f59e0b;
+  --color-bad: #dc2626;
+  --color-info: #0ea5e9;
+  --color-accent: #8b5cf6;
+}
+
+html,
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Card surface used across the dashboard. */
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgb(15 23 42 / 0.06);
+  padding: 20px 22px;
+}
+
+.label {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+code.snippet {
+  display: block;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 0.8rem;
+  overflow-x: auto;
+  white-space: pre;
+}

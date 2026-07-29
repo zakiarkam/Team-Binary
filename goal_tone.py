@@ -11,6 +11,10 @@ The best model is selected using weighted F1.
 
 from __future__ import annotations
 
+# Loaded first, on purpose: torch must initialise before xgboost or the
+# process segfaults on macOS. See openmp_guard.py for the full explanation.
+import openmp_guard  # noqa: F401  (import order matters)
+
 import json
 from pathlib import Path
 
@@ -150,6 +154,11 @@ def load_labeled_dataset() -> pd.DataFrame:
         ].str.len() >= 10
     ]
 
+    # A row needs a confident label for at least ONE target to be useful.
+    # Requiring both discarded a row whose goal was certain merely because its
+    # tone was not, which cost roughly three quarters of the corpus. The two
+    # classifiers train separately, so each takes the rows labelled for it and
+    # ignores the blanks.
     dataframe = dataframe[
         (
             dataframe[
@@ -157,7 +166,7 @@ def load_labeled_dataset() -> pd.DataFrame:
             ]
             != ""
         )
-        &
+        |
         (
             dataframe[
                 TONE_COLUMN
@@ -183,7 +192,11 @@ def load_labeled_dataset() -> pd.DataFrame:
         TONE_COLUMN,
     ):
 
-        counts = dataframe[
+        labelled = dataframe[
+            dataframe[target_column] != ""
+        ]
+
+        counts = labelled[
             target_column
         ].value_counts()
 
@@ -199,11 +212,16 @@ def load_labeled_dataset() -> pd.DataFrame:
                 f"needs at least two): {small_classes.to_dict()}"
             )
 
-            dataframe = dataframe[
-                ~dataframe[target_column].isin(
+            # Blank the sparse label rather than deleting the row — the row may
+            # still carry a perfectly good label for the *other* target.
+            dataframe.loc[
+                dataframe[target_column].isin(
                     small_classes.index,
-                )
-            ].reset_index(
+                ),
+                target_column,
+            ] = ""
+
+            dataframe = dataframe.reset_index(
                 drop=True,
             )
 
@@ -478,7 +496,40 @@ def train() -> dict[str, str]:
             f"\nTraining models for {target_column}..."
         )
 
-        target_labels = dataframe[
+        # Each classifier trains on the rows whose label for *its* target is
+        # confident enough to learn from. A row whose tone was uncertain is
+        # still good goal training data, and requiring both to be confident
+        # discarded three quarters of the corpus (114 rows instead of ~450).
+        # Blank labels are the marker; see scripts/rebuild_goal_tone_training.py.
+        label_series = (
+            dataframe[target_column]
+            .fillna("")
+            .astype(str)
+            .str.strip()
+        )
+        usable = (
+            (label_series != "")
+            & (label_series.str.lower() != "nan")
+        ).to_numpy()
+
+        target_frame = dataframe[usable]
+        target_embeddings = (
+            embeddings[usable]
+            if embeddings is not None
+            else None
+        )
+        target_texts = [
+            text
+            for text, keep in zip(texts, usable)
+            if keep
+        ]
+
+        print(
+            f"  {int(usable.sum())} of {len(dataframe)} rows carry a "
+            f"confident {target_column} label"
+        )
+
+        target_labels = target_frame[
             target_column
         ].to_numpy()
 
@@ -496,26 +547,21 @@ def train() -> dict[str, str]:
             create_tfidf_pipeline()
         )
 
-        print("1")
         tfidf_model.fit(
-            dataframe.iloc[
+            target_frame.iloc[
                 train_indexes
             ][TEXT_COLUMN],
             target_labels[
                 train_indexes
             ],
         )
-        print("2")
-        print("3")
-
         tfidf_predictions = (
             tfidf_model.predict(
-                dataframe.iloc[
+                target_frame.iloc[
                     test_indexes
                 ][TEXT_COLUMN]
             )
         )
-        print("4")
 
         tfidf_metrics = (
             calculate_metrics(
@@ -561,26 +607,18 @@ def train() -> dict[str, str]:
                 ),
             )
         )
-        print("5")
-
-        print(embeddings.shape)
-        print(embeddings.dtype)
-        print(encoded_labels.shape)
-        print(encoded_labels.dtype)
         xgboost_model.fit(
-            embeddings[
+            target_embeddings[
                 train_indexes
             ],
             encoded_labels[
                 train_indexes
             ],
         )
-        print("6")
-
         encoded_predictions = (
             xgboost_model
             .predict(
-                embeddings[
+                target_embeddings[
                     test_indexes
                 ]
             )

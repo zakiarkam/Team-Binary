@@ -36,14 +36,32 @@ def build_features(
         grp = grp.sort_values("timestamp")
         event_types = set(grp["event_type"])
 
-        # ---- counts ----
-        n_sent   = (grp["event_type"] == "sent").sum()
-        n_opens  = (grp["event_type"] == "open").sum()
-        n_clicks = (grp["event_type"] == "click").sum()
-        journey_length = len(grp)
+        # ---- target derived from the FULL journey (incl. convert) ----
+        converted = int("convert" in event_types)
 
-        # ---- timing ----
-        timestamps = grp["timestamp"].sort_values().reset_index(drop=True)
+        # ---- LEAKAGE GUARD: features are built from PRE-CONVERSION events ----
+        # The `convert` event (and anything after it) must never feed the
+        # features that predict conversion; otherwise the label leaks in through
+        # journey_length / timing and the classifier scores a fake ~1.0 AUC.
+        # All events of one touch share a timestamp, so we keep the sent/open/
+        # click of the converting touch (they legitimately precede the decision)
+        # but drop the convert row itself and any events from later touches.
+        if converted:
+            first_conv_ts = grp.loc[grp["event_type"] == "convert", "timestamp"].min()
+            pre = grp[(grp["timestamp"] <= first_conv_ts) & (grp["event_type"] != "convert")]
+        else:
+            pre = grp
+        if pre.empty:                       # safety: never leave a user featureless
+            pre = grp[grp["event_type"] != "convert"]
+
+        # ---- counts (pre-conversion only) ----
+        n_sent   = (pre["event_type"] == "sent").sum()
+        n_opens  = (pre["event_type"] == "open").sum()
+        n_clicks = (pre["event_type"] == "click").sum()
+        journey_length = len(pre)
+
+        # ---- timing (pre-conversion only) ----
+        timestamps = pre["timestamp"].sort_values().reset_index(drop=True)
         if len(timestamps) > 1:
             diffs = timestamps.diff().dropna().dt.total_seconds() / 3600
             avg_gap_hours = diffs.mean()
@@ -52,16 +70,15 @@ def build_features(
 
         recency_days = (reference_date - timestamps.iloc[-1]).total_seconds() / 86400
 
-        # ---- channel features ----
-        dominant_channel = grp["channel"].value_counts().idxmax()
-        first_channel    = grp.iloc[0]["channel"]
-        last_channel     = grp.iloc[-1]["channel"]
+        # ---- channel features (pre-conversion only) ----
+        dominant_channel = pre["channel"].value_counts().idxmax()
+        first_channel    = pre.iloc[0]["channel"]
+        last_channel     = pre.iloc[-1]["channel"]
 
         # strategy: take the mode (most-used for this user)
-        strategy = grp["strategy"].mode().iloc[0]
+        strategy = pre["strategy"].mode().iloc[0]
 
-        # ---- targets ----
-        converted   = int("convert" in event_types)
+        # ---- drop-off target ----
         # dropped_off: engaged (open or click) but no conversion within the window
         engaged = "open" in event_types or "click" in event_types
         if engaged and not converted:

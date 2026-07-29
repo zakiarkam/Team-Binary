@@ -32,5 +32,17 @@ outputs/models/*.pkl
 # Integrated run artifacts (regenerable)
 data/integrated/run_bundle.json
 
+# Secrets and local configuration.
+# NOTE: a bare `config.py` rule used to live here. It silently swallowed
+# modules/m1_segmentation/config.py (which held DB_CONFIG), leaving that
+# dashboard importing a name nothing defines. Secrets now live in .env only.
+.env
+.env.local
+.env.*.local
 
-config.py
+# Node / Next.js dashboard
+web/node_modules/
+web/.next/
+web/out/
+web/next-env.d.ts
+node_modules/
