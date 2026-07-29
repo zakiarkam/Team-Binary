@@ -7,6 +7,7 @@
 - **Cold start is handled explicitly, and it had to be defended.** The engine declines to cluster below thirty customers and says why; individual customers with thin histories are decided by rules and flagged. The vote-order defect showed how easily that contribution can be destroyed by a pipeline that looks correct.
 - **Attribution model choice changes the conclusion.** On the same journeys the four models disagree over a third of attributed credit on average. Any single-model dashboard is a decision, not a measurement.
 - **Simpler models won twice.** TF-IDF matched Sentence-BERT on goal and tone, and interpretable rules matched the full hybrid on conversion separation. Neither result was expected.
+- **The recommender was answering the wrong question.** Ranking customers by predicted conversion and ranking them by the *incremental effect* of the action select materially different people — they share only about half their choices at a realistic budget. This is the clearest direction for future work the project produced.
 
 
 ## 4.2 What the evidence does not support
@@ -14,7 +15,8 @@
 - **That the hybrid segmentation separates conversion better than rules alone.** It does not, on this dataset. Its value lies in calibrated confidence and explicit cold start.
 - **That any one automation policy is best.** The simulator and the live build disagree, and the ranking depends on how response is modelled rather than on the policies themselves.
 - **That engagement can be predicted from caption text.** Not on this corpus, where no text feature survives correction.
-- **That the prediction thresholds transfer.** They were set on the distribution the models were fitted on and do not carry to another audience.
+- **That the prediction thresholds transfer.** They were set on the distribution the models were fitted on and do not carry to another audience. The production recommender was changed to rank rather than threshold as a direct consequence.
+- **That uplift modelling is straightforwardly better.** The best uplift learner beat the current policy, but the intervals overlap and the second uplift learner did worse. The framing is right; the evidence for any particular learner is not yet strong.
 
 
 # THREATS TO VALIDITY
@@ -50,3 +52,6 @@ The goal corpus has 453 labelled rows and the tone corpus 174, with one tone cla
 - **`humorous` tone has a single training example** and cannot be learned or evaluated.
 - **Open-rate tracking under-reports** by design: most mail clients block the pixel, so click-through is the reliable engagement signal.
 - **Three real platform datasets ship unused** — they are comment-level scrapes that pair no post text with post engagement.
+- **No action was ever randomised on this project's own audience**, so the next-best-action recommendation cannot be validated on it at all. E8 borrows a dataset where treatment *was* randomised, and the actions there are not this project's actions.
+- **Capability detection was evaluated on the sample used to develop it.** Fifteen websites, with both the detector and two labels corrected after seeing the results, so the reported agreement is optimistic and a fresh sample is needed before it can be quoted as accuracy.
+- **The action vocabulary is authored, not discovered.** Detection decides which families of action a site can support; it does not invent new ones. A client whose marketing needs an action outside the catalogue must have it added by hand.

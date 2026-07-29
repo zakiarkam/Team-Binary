@@ -150,10 +150,19 @@ def segment_frame(site_id: int) -> pd.DataFrame:
     if not rows:
         return pd.DataFrame(columns=["user_id", "segment", "confidence"])
 
+    # Route through the adapter rather than lower-casing here. Module 1 emits
+    # "New Cold User"; Module 3 was trained on "new_cold_customer". A local
+    # `.lower().replace(" ", "_")` produced "new_cold_user", which the model's
+    # encoder does not recognise — and because it is configured with
+    # handle_unknown="ignore", the segment silently became an all-zero vector.
+    # Cold-start customers were reaching the model with no segment at all: the
+    # same failure as the vote-order defect, one module boundary further on.
+    from adapters.segment_labels import to_snake
+
     df = pd.DataFrame(rows)
     return pd.DataFrame({
         "user_id": df["user_id"].astype(str),
-        "segment": df["segment_name"].str.lower().str.replace(" ", "_"),
+        "segment": df["segment_name"].map(to_snake),
         "confidence": pd.to_numeric(df["segment_confidence"], errors="coerce").fillna(0.5),
     })
 
@@ -333,6 +342,62 @@ def build_predictions(site_id: int) -> dict[str, Any]:
             records,
         )
 
+    # Record what was decided, with the probability it was decided under. The
+    # recommendation in `analytics_output` is overwritten on every run and so
+    # cannot serve as evidence about anything; this log is append-only and is
+    # what makes the policy improvable later. See api/services/decisions.py.
+    from api.services import actions_catalogue as catalogue
+    from api.services import content as content_svc
+    from api.services import decisions as decision_log
+
+    segment_of = dict(zip(feature_df["user_id"].astype(str),
+                          feature_df.get("segment", pd.Series(dtype=str))))
+
+    # What this website can actually do, pooled from its crawls. A site with no
+    # checkout cannot be told to send a discount, however high the model scores
+    # the customer.
+    capabilities = content_svc.site_capabilities(site_id)
+
+    # Behavioural context per customer, used to decide eligibility — a
+    # replenishment reminder needs a repeat buyer, a reactivation needs someone
+    # who has actually lapsed.
+    from api.routers.visitors import VISITOR_FEATURES_SQL
+
+    behaviour = {
+        str(row["visitor_id"]): row
+        for row in db.fetch_all(VISITOR_FEATURES_SQL, site_id=site_id)
+    }
+
+    decisions_to_log = []
+    for r in records:
+        context = {
+            "predicted_conversion": r["pc"], "drop_off_risk": r["dr"],
+            "segment": segment_of.get(str(r["visitor_id"])),
+        }
+        stats = behaviour.get(str(r["visitor_id"]), {})
+        eligibility = {
+            "purchases": stats.get("purchases", 0),
+            "sessions": stats.get("sessions", 0),
+            "page_views": stats.get("page_views", 0),
+            "days_since_last_seen": stats.get("days_since_last_seen", 0),
+            "add_to_carts": stats.get("add_to_carts", 0),
+        }
+        candidates = catalogue.available(capabilities, eligibility)
+        decisions_to_log.append({
+            "visitor_id": r["visitor_id"],
+            "greedy": r["rec"],
+            "candidates": candidates,
+            # The features as they were at the moment of the decision, so a
+            # model refitted later trains on what was known then, not on what is
+            # known now — the difference between learning a policy and reading
+            # the future.
+            "context": {**context, **eligibility},
+        })
+
+    logged = decision_log.log_decisions(site_id, decisions_to_log)
+    logged["capabilities"] = capabilities
+    rewards = decision_log.attach_rewards(site_id)
+
     mix: dict[str, int] = {}
     for r in records:
         mix[r["rec"]] = mix.get(r["rec"], 0) + 1
@@ -349,6 +414,7 @@ def build_predictions(site_id: int) -> dict[str, Any]:
         "high_intent_users": sum(1 for r in records if r["pc"] >= 0.5),
         "at_risk_users": sum(1 for r in records if r["dr"] >= 0.6),
         "calibration_warnings": _calibration_warnings(records),
+        "decision_log": {**logged, **rewards},
     }
 
 
@@ -408,15 +474,23 @@ def _score(site_id: int, feature_df: pd.DataFrame,
 
     best_platform = _best_platform_per_user(events)
 
+    frame = feature_df.reset_index(drop=True)
+
+    # Decided by rank across this audience, not by the absolute cut-offs Module
+    # 3's rule uses. Those cut-offs belong to the distribution the models were
+    # fitted on; see rank_based_actions() and experiment E5.
+    actions = rules.rank_based_actions(
+        p_conv, p_drop, frame.get("segment", pd.Series([""] * len(frame))))
+
     records = []
-    for i, row in feature_df.reset_index(drop=True).iterrows():
+    for i, row in frame.iterrows():
         pc, dr = float(p_conv[i]), float(p_drop[i])
         records.append({
             "site_id": site_id,
             "visitor_id": int(row["user_id"]),
             "pc": round(pc, 4),
             "dr": round(dr, 4),
-            "rec": rules.next_best_action(pc, dr, str(row.get("segment", ""))),
+            "rec": actions[i],
             "plat": best_platform.get(str(row["user_id"]), "email"),
             "attr": "last_touch",
             "conf": round(rules.confidence(pc, dr), 4),

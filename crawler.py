@@ -70,6 +70,110 @@ USER_AGENT = (
     "Chrome/138.0.0.0 Safari/537.36"
 )
 
+# ── Capability detection ─────────────────────────────────────────────────────
+# What a website can actually do, read off its own pages.
+#
+# This exists because the recommender used to offer the same four actions to
+# every client. A news site has no checkout, so "send a premium offer" is not a
+# recommendation there, it is a category error. What a site can do is evidence
+# on the page, so it is detected rather than predicted — see
+# api/services/actions_catalogue.py for why a classifier would be the wrong
+# tool here.
+#
+# Deliberately conservative. A false positive invents an action the client
+# cannot perform, which is worse than a false negative: the fallback is simply
+# a smaller action set. So each signal needs a real match, not a stray word in
+# a paragraph.
+
+#: Structural signals, matched against link targets, form actions and CTA text.
+_CAPABILITY_SIGNALS: dict[str, tuple[str, ...]] = {
+    "commerce": (
+        "add to cart", "add to basket", "add to bag", "buy now", "checkout",
+        "shopping cart", "view basket", "proceed to payment", "order now",
+    ),
+    "subscription": (
+        "start free trial", "free trial", "upgrade", "choose plan",
+        "compare plans", "per month", "/mo", "billed annually", "subscribe now",
+    ),
+    "lead_capture": (
+        "subscribe", "sign up", "join the list", "newsletter", "get updates",
+        "book a demo", "request a demo", "contact sales",
+    ),
+    "donation": (
+        "donate", "give now", "make a gift", "support us", "fundraise",
+        "one-off donation", "monthly gift",
+    ),
+}
+
+#: Link evidence, matched against whole path segments and host labels rather
+#: than as raw substrings. Substring matching was measurably wrong (E10):
+#: `/product` fired on a magazine's `/categories/product-strategy`, and
+#: `/support` fired on a retailer's customer-support subdomain and was read as
+#: a donation page. A URL is a structured thing and matching it as free text
+#: invents capabilities that are not there — the expensive direction of error,
+#: because it makes the system recommend what a client cannot do.
+#:
+#: "support" is deliberately absent: as a URL it means customer service far
+#: more often than it means donating. It survives only as a *phrase*
+#: ("support us") in the visible-text signals above.
+_CAPABILITY_HREFS: dict[str, tuple[str, ...]] = {
+    "commerce": ("cart", "basket", "checkout", "add-to-cart", "shop",
+                 "shopping", "store", "products"),
+    "subscription": ("pricing", "plans", "subscribe", "upgrade", "billing"),
+    "lead_capture": ("newsletter", "signup", "sign-up", "subscribe", "contact",
+                     "demo"),
+    "donation": ("donate", "donation", "donations", "give", "giving",
+                 "fundraising", "fundraise"),
+}
+
+
+def _url_tokens(url: str) -> set[str]:
+    """Whole path segments and host labels of a URL, lower-cased.
+
+    `https://shop.example.org/en/cart/` becomes {shop, example, org, en, cart},
+    so a fragment matches only when it is a complete part of the address and
+    never when it merely appears inside a longer word.
+    """
+    from urllib.parse import urlparse
+
+    try:
+        parts = urlparse(url.strip().lower())
+    except ValueError:
+        return set()
+
+    tokens = {t for t in parts.netloc.split(".") if t}
+    tokens |= {t for t in parts.path.split("/") if t}
+    return tokens
+
+
+def detect_capabilities(soup, cta_texts: list[str],
+                        headings: list[str]) -> dict[str, bool]:
+    """Which marketing capabilities this page shows evidence of."""
+    tokens: set[str] = set()
+    for tag in soup.find_all("a"):
+        tokens |= _url_tokens(tag.get("href") or "")
+    for form in soup.find_all("form"):
+        tokens |= _url_tokens(form.get("action") or "")
+
+    visible = " ".join(cta_texts + headings).lower()
+
+    found: dict[str, bool] = {}
+    for capability in ("commerce", "subscription", "lead_capture", "donation"):
+        by_text = any(term in visible for term in _CAPABILITY_SIGNALS[capability])
+        by_link = bool(tokens.intersection(_CAPABILITY_HREFS[capability]))
+        found[capability] = bool(by_text or by_link)
+
+    # An email input is direct evidence of lead capture regardless of wording.
+    if soup.find("input", attrs={"type": "email"}):
+        found["lead_capture"] = True
+
+    # Every site has content; the flag marks a site that has *only* content, so
+    # it still receives digest and recommendation actions rather than nothing.
+    found["content"] = True
+
+    return found
+
+
 def extract_page_data(html: str) -> dict:
     """
     Extract all marketing-related information from HTML.
@@ -148,6 +252,7 @@ def extract_page_data(html: str) -> dict:
         "cta_texts": list(dict.fromkeys(cta_texts)),
         "image_alt_texts": list(dict.fromkeys(image_alt_texts)),
         "iframe_links": iframe_links,
+        "capabilities": detect_capabilities(soup, cta_texts, headings),
     }
 
 def crawl_playwright(url: str) -> str:

@@ -32,7 +32,8 @@ tools. That is Module 3 of the report: **Decision Support**.
 
 ```bash
 make setup     # once — Python, Node, Chromium, .env
-make db        # PostgreSQL in Docker
+make db        # PostgreSQL — Homebrew service if present, else Docker
+make db-create # once, on the Homebrew path — creates the role and database
 
 make api       # terminal 2
 make web       # terminal 3
@@ -127,7 +128,7 @@ scripts/        setup, dataset import, training
 
 ## Results
 
-`make research` runs seven experiments and regenerates every figure from the
+`make research` runs nine experiments and regenerates every figure from the
 results it just wrote, so a chart cannot disagree with the number it plots.
 Full write-up in **[docs/research/](docs/research/)**.
 
@@ -159,6 +160,53 @@ markov        email 53%    · referral 12% · ppc 12% · seo 11% · social 11%
 Across 7,811 converting journeys the widest pair disagrees over **68% of all
 attributed credit**. A company reading only last-touch would conclude email is
 everything and cut the acquisition spend that built the audience.
+
+### Module 3 — the recommender was answering the wrong question
+
+Ranking customers by **predicted conversion** is not the same as ranking them by
+whether the action *changes* what they do. On the Hillstrom dataset — 64,000
+customers randomly assigned to mens email / womens email / no email, so the
+counterfactual is estimable — the two policies share only **56%** of their
+choices at a 30% budget (Spearman 0.40):
+
+| Policy | Qini | 95% CI | Extra visits per 1,000 targeted |
+|---|---:|---|---:|
+| uplift (S-learner) | 93.6 | [56.1, 129.8] | **103** |
+| uplift (T-learner) | 70.4 | [30.2, 112.3] | 92 |
+| predicted response *(what the recommender did)* | 75.9 | [38.8, 110.0] | 91 |
+| random targeting | −9.8 | [−48.7, 27.0] | 58 |
+
+**Stated carefully:** the intervals overlap, and the second uplift learner does
+*worse* than the current policy — so "use uplift modelling" is not a conclusion
+on its own. What the data supports is that these are different policies choosing
+different people, by a margin large enough to matter.
+
+This cannot be validated on the project's own audience at all: no action was
+ever randomised there, so no counterfactual exists.
+
+### Module 3 — and the mechanism that makes it fixable
+
+E8 showed the recommender asks the wrong question and that no borrowed dataset
+can answer the right one for *your* actions. So the system now records what it
+needs to answer it itself: an append-only `action_log` holding every decision,
+**the probability it was taken under**, and what followed — plus 10% of
+decisions made at random on purpose, because a deterministic policy assigns
+probability zero to every action it doesn't take, and you cannot learn from a
+denominator of zero.
+
+Validated against a known answer (E9): at 10,000 logged decisions the
+self-normalised estimator recovers a candidate policy's true value with a bias
+of −0.003, interval containing zero.
+
+**The finding worth remembering:** without exploration the estimate is biased
+**upwards** — it reports a candidate policy as better than it is — and the
+deterministic log looks *more* trustworthy, not less. Its effective sample size
+is 1,094 against 107, because every weight is 0 or 1 rather than spread out. The
+standard diagnostic points the wrong way. **Stability is not correctness.**
+
+Token exploration is worse than none: at 1% the estimator has the worst error of
+any setting tested. Exploration is a commitment, not a gesture — and it costs
+about 7.5% of achievable reward at a 10% rate.
 
 ### Module 4 — the simpler model wins, and macro-F1 is why we know
 
@@ -206,6 +254,9 @@ the crawler that turned every em-dash in the store's copy into mojibake.
 - **The engagement dataset carries no usable text signal** — 0 of 8 text
   features survive Holm–Bonferroni correction. Not a modelling failure.
 - **`humorous` tone has one training example** and cannot be learned.
+- **No action was ever randomised on this audience**, so the next-best-action
+  recommendation cannot be validated on it. E8 borrows a dataset where treatment
+  *was* randomised; those actions are not this project's actions.
 - **Open rates under-report** — most mail clients block the pixel. Click-through
   is the reliable signal.
 - Three real platform datasets ship unused: comment-level scrapes that pair no

@@ -221,7 +221,486 @@
         "Clustering alone barely separates conversion at all. It groups users by behavioural similarity, which is not the same thing as grouping them by commercial value \u2014 and this is the measurement that shows the difference rather than assuming it.",
         "Silhouette is 0.087: the clusters overlap heavily in feature space. The segments are commercially useful without being geometrically clean, and reporting only the separation would hide that."
       ],
-      "seconds": 117.7
+      "seconds": 107.7
+    },
+    "E10": {
+      "id": "E10",
+      "title": "Module 4 \u2014 capability detection on real websites",
+      "status": "ok",
+      "metrics": {
+        "sites_evaluated": 15,
+        "sites_unreachable": 2,
+        "judgements": 21,
+        "overall_agreement": 1.0,
+        "agreement_ci": [
+          0.845,
+          1.0
+        ],
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "tables": {
+        "e10_per_capability": [
+          {
+            "capability": "commerce",
+            "judgements": 8,
+            "correct": 8,
+            "agreement": 1.0,
+            "ci_low": 0.676,
+            "ci_high": 1.0,
+            "false_positives": 0,
+            "false_negatives": 0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "capability": "subscription",
+            "judgements": 4,
+            "correct": 4,
+            "agreement": 1.0,
+            "ci_low": 0.51,
+            "ci_high": 1.0,
+            "false_positives": 0,
+            "false_negatives": 0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "capability": "lead_capture",
+            "judgements": 1,
+            "correct": 1,
+            "agreement": 1.0,
+            "ci_low": 0.207,
+            "ci_high": 1.0,
+            "false_positives": 0,
+            "false_negatives": 0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "capability": "donation",
+            "judgements": 8,
+            "correct": 8,
+            "agreement": 1.0,
+            "ci_low": 0.676,
+            "ci_high": 1.0,
+            "false_positives": 0,
+            "false_negatives": 0,
+            "precision": 1.0,
+            "recall": 1.0
+          }
+        ],
+        "e10_judgements": [
+          {
+            "url": "https://www.gymshark.com/",
+            "kind": "retail",
+            "capability": "commerce",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.gymshark.com/",
+            "kind": "retail",
+            "capability": "donation",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.lush.com/uk/en",
+            "kind": "retail",
+            "capability": "commerce",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://slack.com/",
+            "kind": "saas",
+            "capability": "subscription",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://slack.com/",
+            "kind": "saas",
+            "capability": "donation",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.notion.com/",
+            "kind": "saas",
+            "capability": "subscription",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.figma.com/",
+            "kind": "saas",
+            "capability": "subscription",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.dropbox.com/",
+            "kind": "saas",
+            "capability": "subscription",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.wateraid.org/uk/",
+            "kind": "charity",
+            "capability": "donation",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.wateraid.org/uk/",
+            "kind": "charity",
+            "capability": "commerce",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.redcross.org.uk/",
+            "kind": "charity",
+            "capability": "donation",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.wwf.org.uk/",
+            "kind": "charity",
+            "capability": "donation",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.oxfam.org.uk/",
+            "kind": "charity",
+            "capability": "donation",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.bbc.co.uk/news",
+            "kind": "content",
+            "capability": "commerce",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.bbc.co.uk/news",
+            "kind": "content",
+            "capability": "donation",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://arstechnica.com/",
+            "kind": "content",
+            "capability": "commerce",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.smashingmagazine.com/",
+            "kind": "content",
+            "capability": "commerce",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://css-tricks.com/",
+            "kind": "content",
+            "capability": "commerce",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "local:demo-site/index.html",
+            "kind": "retail (local control)",
+            "capability": "commerce",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "local"
+          },
+          {
+            "url": "local:demo-site/index.html",
+            "kind": "retail (local control)",
+            "capability": "lead_capture",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "local"
+          },
+          {
+            "url": "local:demo-site/index.html",
+            "kind": "retail (local control)",
+            "capability": "donation",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "local"
+          }
+        ],
+        "e10_unreachable": [
+          {
+            "url": "https://www.allbirds.com/",
+            "kind": "retail",
+            "reason": "HTTPError"
+          },
+          {
+            "url": "https://www.patagonia.com/shop/index",
+            "kind": "retail",
+            "reason": "HTTPError"
+          }
+        ]
+      },
+      "notes": [
+        "21 capability judgements across 15 websites. Overall agreement with the hand label is 100% [85%, 100%].",
+        "The label records what the business demonstrably does; the detector sees one page. A shop whose homepage links to no basket is a true miss for single-page detection \u2014 the running system pools evidence across every page it has crawled, which this experiment deliberately does not, so these figures are a lower bound on what the system achieves.",
+        "Around twenty sites supports a verdict, not a precise accuracy. The intervals are wide and are reported rather than rounded away.",
+        "**This sample is a development set, not a held-out test set, and the figure above is fitted.** The first run disagreed on four judgements. Two were detector faults and were fixed: substring matching on URLs fired `/product` on a magazine's `/categories/product-strategy` and read a retailer's customer-support subdomain as a donation page, so matching now works on whole path segments and host labels. The other two were faults in the labels \u2014 a charity with a shop and a publisher with a store were both marked as having no commerce, and the detector was right. Both the code and the labels therefore changed after seeing the results, which is precisely what makes an accuracy figure optimistic. A fresh sample of sites never inspected during development would be needed to claim generalisation, and this experiment does not claim it.",
+        "The useful finding is not the percentage but what the disagreements taught: capability is not a site *type*. A charity that sells merchandise has both donation and commerce; a publisher running a store has commerce as well as content. Modelling capabilities as independent flags rather than as a category is what let the detector be right where the hand label was wrong.",
+        "No false positives: the detector never claimed a capability a site does not have. That is the error that matters, because it would have the system recommend something the client cannot do.",
+        "2 site(s) could not be fetched (HTTPError) and are excluded. Reported rather than quietly dropped."
+      ],
+      "seconds": 2.8
+    },
+    "E11": {
+      "id": "E11",
+      "title": "Module 3 \u2014 the cost of a larger action set",
+      "status": "ok",
+      "metrics": {
+        "replications": 30,
+        "usable_error_target": 0.02,
+        "smallest_set": 2,
+        "smallest_set_decisions_needed": 5000,
+        "largest_set": 16,
+        "largest_set_decisions_needed": 80000
+      },
+      "tables": {
+        "e11_error_grid": [
+          {
+            "n_actions": 2,
+            "log_size": 1000,
+            "rmse": 0.0268,
+            "bias": -0.0014,
+            "usable": false,
+            "decisions_per_action": 500
+          },
+          {
+            "n_actions": 2,
+            "log_size": 5000,
+            "rmse": 0.0126,
+            "bias": -0.0016,
+            "usable": true,
+            "decisions_per_action": 2500
+          },
+          {
+            "n_actions": 2,
+            "log_size": 20000,
+            "rmse": 0.0059,
+            "bias": -0.0003,
+            "usable": true,
+            "decisions_per_action": 10000
+          },
+          {
+            "n_actions": 4,
+            "log_size": 1000,
+            "rmse": 0.0458,
+            "bias": -0.0103,
+            "usable": false,
+            "decisions_per_action": 250
+          },
+          {
+            "n_actions": 4,
+            "log_size": 5000,
+            "rmse": 0.0186,
+            "bias": 0.0028,
+            "usable": true,
+            "decisions_per_action": 1250
+          },
+          {
+            "n_actions": 4,
+            "log_size": 20000,
+            "rmse": 0.0099,
+            "bias": 0.0006,
+            "usable": true,
+            "decisions_per_action": 5000
+          },
+          {
+            "n_actions": 8,
+            "log_size": 1000,
+            "rmse": 0.0661,
+            "bias": 0.0127,
+            "usable": false,
+            "decisions_per_action": 125
+          },
+          {
+            "n_actions": 8,
+            "log_size": 5000,
+            "rmse": 0.0325,
+            "bias": 0.0025,
+            "usable": false,
+            "decisions_per_action": 625
+          },
+          {
+            "n_actions": 8,
+            "log_size": 20000,
+            "rmse": 0.012,
+            "bias": -0.0006,
+            "usable": true,
+            "decisions_per_action": 2500
+          },
+          {
+            "n_actions": 16,
+            "log_size": 1000,
+            "rmse": 0.1576,
+            "bias": 0.045,
+            "usable": false,
+            "decisions_per_action": 62
+          },
+          {
+            "n_actions": 16,
+            "log_size": 5000,
+            "rmse": 0.0834,
+            "bias": -0.0179,
+            "usable": false,
+            "decisions_per_action": 312
+          },
+          {
+            "n_actions": 16,
+            "log_size": 20000,
+            "rmse": 0.029,
+            "bias": -0.0013,
+            "usable": false,
+            "decisions_per_action": 1250
+          }
+        ],
+        "e11_data_requirement": [
+          {
+            "n_actions": 2,
+            "decisions_needed": 5000,
+            "per_action": 2500,
+            "reached": true
+          },
+          {
+            "n_actions": 4,
+            "decisions_needed": 5000,
+            "per_action": 1250,
+            "reached": true
+          },
+          {
+            "n_actions": 8,
+            "decisions_needed": 20000,
+            "per_action": 2500,
+            "reached": true
+          },
+          {
+            "n_actions": 16,
+            "decisions_needed": 80000,
+            "per_action": 5000,
+            "reached": true
+          }
+        ],
+        "e11_exploration_lever": [
+          {
+            "exploration_rate": 0.05,
+            "n_actions": 4,
+            "rmse": 0.0199,
+            "reward_given_up": 0.0375
+          },
+          {
+            "exploration_rate": 0.05,
+            "n_actions": 16,
+            "rmse": 0.0862,
+            "reward_given_up": 0.0469
+          },
+          {
+            "exploration_rate": 0.1,
+            "n_actions": 4,
+            "rmse": 0.0194,
+            "reward_given_up": 0.075
+          },
+          {
+            "exploration_rate": 0.1,
+            "n_actions": 16,
+            "rmse": 0.0748,
+            "reward_given_up": 0.0938
+          },
+          {
+            "exploration_rate": 0.2,
+            "n_actions": 4,
+            "rmse": 0.0125,
+            "reward_given_up": 0.15
+          },
+          {
+            "exploration_rate": 0.2,
+            "n_actions": 16,
+            "rmse": 0.0434,
+            "reward_given_up": 0.1875
+          },
+          {
+            "exploration_rate": 0.4,
+            "n_actions": 4,
+            "rmse": 0.011,
+            "reward_given_up": 0.3
+          },
+          {
+            "exploration_rate": 0.4,
+            "n_actions": 16,
+            "rmse": 0.0289,
+            "reward_given_up": 0.375
+          }
+        ]
+      },
+      "notes": [
+        "Letting each website use only the actions it can actually perform is not free. Exploration is a fixed budget, so the more actions on offer, the less evidence each one accumulates and the longer before a logged comparison means anything.",
+        "Reaching an RMSE of 0.02 takes 5,000 logged decisions with 2 actions and 80,000 with 16 \u2014 16.0\u00d7 the data for 8\u00d7 the actions. The requirement grows with the action set, so a site offering twelve actions should not expect conclusions on the same timescale as one offering four.",
+        "Exploring harder helps but does not rescue it: at 16 actions, quadrupling exploration from 10% to 40% cuts RMSE by 0.0459 while giving up 38% of achievable reward. Volume is the effective lever; exploration rate is the expensive one.",
+        "The practical reading for this system: the catalogue should stay as small as honestly covers what a site can do. Adding an action nobody will choose costs every other action some of its evidence.",
+        "Simulated, deliberately \u2014 the claim is about how an estimator behaves, which is checkable exactly against a known answer, and says nothing about real customers."
+      ],
+      "seconds": 0.8
     },
     "E2": {
       "id": "E2",
@@ -1466,11 +1945,11 @@
             "strategy": "hybrid",
             "recipients": 400,
             "sent": 400,
-            "opens": 269,
-            "clicks": 108,
-            "conversions": 39,
-            "click_through_rate": 0.27,
-            "conversions_per_1000_sends": 97.5,
+            "opens": 268,
+            "clicks": 109,
+            "conversions": 42,
+            "click_through_rate": 0.2725,
+            "conversions_per_1000_sends": 105.0,
             "operational_complexity": 8,
             "data_basis": "dataset"
           }
@@ -1483,7 +1962,7 @@
         "trigger leads fixed by 3.3 conversions per 1,000 sends for 3 extra decision rules \u2014 the trade the report has to argue.",
         "Messages per user differ sharply (fixed 4.00, trigger 1.32, hybrid 3.05). A policy that stops early is rewarded by a per-send metric and penalised by a per-user one; both are reported so the choice of metric is visible rather than decisive."
       ],
-      "seconds": 52.4
+      "seconds": 53.4
     },
     "E4": {
       "id": "E4",
@@ -1609,7 +2088,7 @@
           {
             "model": "markov",
             "channel": "email",
-            "credit": 0.5331
+            "credit": 0.533
           },
           {
             "model": "markov",
@@ -1619,7 +2098,7 @@
           {
             "model": "markov",
             "channel": "referral",
-            "credit": 0.1242
+            "credit": 0.1243
           },
           {
             "model": "markov",
@@ -1646,7 +2125,7 @@
           {
             "model_a": "first_touch",
             "model_b": "markov",
-            "total_variation_distance": 0.3252
+            "total_variation_distance": 0.3251
           },
           {
             "model_a": "last_touch",
@@ -1661,7 +2140,7 @@
           {
             "model_a": "linear",
             "model_b": "markov",
-            "total_variation_distance": 0.0248
+            "total_variation_distance": 0.0249
           }
         ]
       },
@@ -1671,7 +2150,7 @@
         "first_touch and last_touch disagree over 68% of all attributed credit on the same journeys \u2014 the single clearest argument in this project against trusting one attribution model.",
         "Ground-truth scoring is only possible on simulated journeys, where the true channel influence is known by construction. No such column exists for a real audience, which is why the live half reports disagreement rather than accuracy."
       ],
-      "seconds": 2.5
+      "seconds": 2.6
     },
     "E5": {
       "id": "E5",
@@ -1808,7 +2287,7 @@
         "drop_off: xgboost (AUC 0.990) clears the baseline with no interval overlap.",
         "These models are fitted on Module 3's simulator. Applying them to the imported audience is a transfer across distributions: the ranking is usable, the absolute probabilities are not calibrated for it."
       ],
-      "seconds": 11.2
+      "seconds": 11.3
     },
     "E6": {
       "id": "E6",
@@ -2104,7 +2583,7 @@
         "`tone`: best macro-F1 0.732 (tfidf + logistic) against a majority baseline of 0.112; accuracy 0.818 against 0.386. The accuracy gap flatters the model far more than the macro-F1 gap does.",
         "`campaign_goal`: best macro-F1 0.500 (tfidf + logistic) against a majority baseline of 0.148; accuracy 0.772 against 0.588. The accuracy gap flatters the model far more than the macro-F1 gap does."
       ],
-      "seconds": 6.8
+      "seconds": 7.2
     },
     "E7": {
       "id": "E7",
@@ -2220,11 +2699,2282 @@
         "None of the 8 text features correlates with engagement after Holm\u2013Bonferroni correction. This is a property of the dataset, not a modelling failure \u2014 no model can extract a signal that is not there, and the honest response is to reduce the weight this score carries in content ranking rather than to keep tuning.",
         "The corrected model's rank correlation is 0.012 [-0.028, 0.054] \u2014 the interval spans zero, so no ranking skill is demonstrated on held-out data."
       ],
-      "seconds": 15.0
+      "seconds": 15.3
+    },
+    "E8": {
+      "id": "E8",
+      "title": "Module 3 \u2014 targeting by uplift versus targeting by predicted response",
+      "status": "ok",
+      "metrics": {
+        "dataset": "Hillstrom MineThatData (64,000 customers, 3 randomised arms)",
+        "outcome": "visit",
+        "n_train": 44800,
+        "n_test": 19200,
+        "budget": 0.3,
+        "best_policy": "uplift (S-learner)",
+        "best_uplift_per_1000": 103.45,
+        "current_policy_uplift_per_1000": 91.26,
+        "rank_agreement_spearman": 0.3952,
+        "top_share_overlap": 0.5582
+      },
+      "tables": {
+        "e8_policy_summary": [
+          {
+            "policy": "uplift (S-learner)",
+            "qini_coefficient": 93.62,
+            "ci_low": 56.11,
+            "ci_high": 129.76,
+            "n_targeted": 5760,
+            "treated_response": 0.2122,
+            "control_response": 0.1087,
+            "uplift_per_1000": 103.45
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "qini_coefficient": 75.91,
+            "ci_low": 38.8,
+            "ci_high": 109.98,
+            "n_targeted": 5760,
+            "treated_response": 0.2427,
+            "control_response": 0.1515,
+            "uplift_per_1000": 91.26
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "qini_coefficient": 70.36,
+            "ci_low": 30.19,
+            "ci_high": 112.29,
+            "n_targeted": 5760,
+            "treated_response": 0.204,
+            "control_response": 0.112,
+            "uplift_per_1000": 92.0
+          },
+          {
+            "policy": "random targeting",
+            "qini_coefficient": -9.75,
+            "ci_low": -48.65,
+            "ci_high": 26.95,
+            "n_targeted": 5760,
+            "treated_response": 0.1595,
+            "control_response": 0.1017,
+            "uplift_per_1000": 57.76
+          }
+        ],
+        "e8_qini_curves": [
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.0001,
+            "incremental_responders": 0.0
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.0101,
+            "incremental_responders": 24.98
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.0202,
+            "incremental_responders": 36.65
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.0303,
+            "incremental_responders": 58.43
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.0404,
+            "incremental_responders": 77.73
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.0505,
+            "incremental_responders": 93.48
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.0606,
+            "incremental_responders": 110.77
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.0707,
+            "incremental_responders": 113.97
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.0808,
+            "incremental_responders": 148.35
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.0909,
+            "incremental_responders": 164.73
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.101,
+            "incremental_responders": 160.65
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.1111,
+            "incremental_responders": 180.55
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.1212,
+            "incremental_responders": 182.66
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.1314,
+            "incremental_responders": 191.92
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.1415,
+            "incremental_responders": 212.47
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.1515,
+            "incremental_responders": 221.6
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.1616,
+            "incremental_responders": 227.66
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.1717,
+            "incremental_responders": 242.22
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.1818,
+            "incremental_responders": 258.06
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.1919,
+            "incremental_responders": 260.71
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.202,
+            "incremental_responders": 278.72
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.2121,
+            "incremental_responders": 286.23
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.2222,
+            "incremental_responders": 300.79
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.2323,
+            "incremental_responders": 323.37
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.2424,
+            "incremental_responders": 324.31
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.2526,
+            "incremental_responders": 335.99
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.2627,
+            "incremental_responders": 348.24
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.2728,
+            "incremental_responders": 363.23
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.2829,
+            "incremental_responders": 371.17
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.2929,
+            "incremental_responders": 386.54
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.303,
+            "incremental_responders": 400.08
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.3131,
+            "incremental_responders": 405.2
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.3232,
+            "incremental_responders": 413.69
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.3333,
+            "incremental_responders": 419.74
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.3434,
+            "incremental_responders": 427.41
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.3535,
+            "incremental_responders": 440.83
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.3636,
+            "incremental_responders": 447.41
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.3738,
+            "incremental_responders": 455.47
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.3839,
+            "incremental_responders": 471.99
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.394,
+            "incremental_responders": 469.95
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.4041,
+            "incremental_responders": 476.55
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.4142,
+            "incremental_responders": 487.88
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.4243,
+            "incremental_responders": 493.93
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.4343,
+            "incremental_responders": 501.56
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.4444,
+            "incremental_responders": 516.28
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.4545,
+            "incremental_responders": 516.31
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.4646,
+            "incremental_responders": 518.15
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.4747,
+            "incremental_responders": 523.68
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.4848,
+            "incremental_responders": 532.46
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.4949,
+            "incremental_responders": 539.01
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.5051,
+            "incremental_responders": 537.51
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.5152,
+            "incremental_responders": 537.81
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.5253,
+            "incremental_responders": 544.13
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.5354,
+            "incremental_responders": 549.0
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.5455,
+            "incremental_responders": 537.62
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.5556,
+            "incremental_responders": 555.42
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.5657,
+            "incremental_responders": 573.09
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.5757,
+            "incremental_responders": 586.61
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.5858,
+            "incremental_responders": 606.62
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.5959,
+            "incremental_responders": 614.36
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.606,
+            "incremental_responders": 611.75
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.6161,
+            "incremental_responders": 619.95
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.6262,
+            "incremental_responders": 620.32
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.6364,
+            "incremental_responders": 644.52
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.6465,
+            "incremental_responders": 650.31
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.6566,
+            "incremental_responders": 661.67
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.6667,
+            "incremental_responders": 671.61
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.6768,
+            "incremental_responders": 684.75
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.6869,
+            "incremental_responders": 692.49
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.697,
+            "incremental_responders": 685.86
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.7071,
+            "incremental_responders": 691.9
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.7171,
+            "incremental_responders": 690.44
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.7272,
+            "incremental_responders": 699.57
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.7373,
+            "incremental_responders": 701.84
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.7474,
+            "incremental_responders": 704.82
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.7576,
+            "incremental_responders": 709.41
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.7677,
+            "incremental_responders": 717.04
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.7778,
+            "incremental_responders": 713.53
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.7879,
+            "incremental_responders": 718.32
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.798,
+            "incremental_responders": 724.93
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.8081,
+            "incremental_responders": 731.11
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.8182,
+            "incremental_responders": 729.9
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.8283,
+            "incremental_responders": 736.11
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.8384,
+            "incremental_responders": 744.43
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.8485,
+            "incremental_responders": 744.02
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.8585,
+            "incremental_responders": 754.57
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.8686,
+            "incremental_responders": 752.44
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.8788,
+            "incremental_responders": 754.19
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.8889,
+            "incremental_responders": 769.39
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.899,
+            "incremental_responders": 765.28
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.9091,
+            "incremental_responders": 764.36
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.9192,
+            "incremental_responders": 779.15
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.9293,
+            "incremental_responders": 779.96
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.9394,
+            "incremental_responders": 786.96
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.9495,
+            "incremental_responders": 786.4
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.9596,
+            "incremental_responders": 788.87
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.9697,
+            "incremental_responders": 801.87
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.9798,
+            "incremental_responders": 826.28
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 0.9899,
+            "incremental_responders": 826.55
+          },
+          {
+            "policy": "uplift (S-learner)",
+            "share_targeted": 1.0,
+            "incremental_responders": 823.54
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.0001,
+            "incremental_responders": 0.0
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.0101,
+            "incremental_responders": 21.84
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.0202,
+            "incremental_responders": 31.8
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.0303,
+            "incremental_responders": 43.86
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.0404,
+            "incremental_responders": 54.02
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.0505,
+            "incremental_responders": 58.03
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.0606,
+            "incremental_responders": 66.08
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.0707,
+            "incremental_responders": 85.25
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.0808,
+            "incremental_responders": 89.85
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.0909,
+            "incremental_responders": 109.25
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.101,
+            "incremental_responders": 127.18
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.1111,
+            "incremental_responders": 141.82
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.1212,
+            "incremental_responders": 156.05
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.1314,
+            "incremental_responders": 166.23
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.1415,
+            "incremental_responders": 183.18
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.1515,
+            "incremental_responders": 192.11
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.1616,
+            "incremental_responders": 218.55
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.1717,
+            "incremental_responders": 233.42
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.1818,
+            "incremental_responders": 236.48
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.1919,
+            "incremental_responders": 254.36
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.202,
+            "incremental_responders": 274.58
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.2121,
+            "incremental_responders": 277.34
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.2222,
+            "incremental_responders": 281.02
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.2323,
+            "incremental_responders": 294.79
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.2424,
+            "incremental_responders": 310.57
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.2526,
+            "incremental_responders": 325.66
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.2627,
+            "incremental_responders": 328.13
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.2728,
+            "incremental_responders": 336.99
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.2829,
+            "incremental_responders": 342.82
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.2929,
+            "incremental_responders": 355.75
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.303,
+            "incremental_responders": 358.15
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.3131,
+            "incremental_responders": 374.07
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.3232,
+            "incremental_responders": 385.69
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.3333,
+            "incremental_responders": 384.05
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.3434,
+            "incremental_responders": 393.6
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.3535,
+            "incremental_responders": 397.88
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.3636,
+            "incremental_responders": 416.68
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.3738,
+            "incremental_responders": 415.33
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.3839,
+            "incremental_responders": 421.16
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.394,
+            "incremental_responders": 437.21
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.4041,
+            "incremental_responders": 447.98
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.4142,
+            "incremental_responders": 448.36
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.4243,
+            "incremental_responders": 459.34
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.4343,
+            "incremental_responders": 477.31
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.4444,
+            "incremental_responders": 488.29
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.4545,
+            "incremental_responders": 496.74
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.4646,
+            "incremental_responders": 503.53
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.4747,
+            "incremental_responders": 508.83
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.4848,
+            "incremental_responders": 517.6
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.4949,
+            "incremental_responders": 518.05
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.5051,
+            "incremental_responders": 524.36
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.5152,
+            "incremental_responders": 529.87
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.5253,
+            "incremental_responders": 530.98
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.5354,
+            "incremental_responders": 540.85
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.5455,
+            "incremental_responders": 551.45
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.5556,
+            "incremental_responders": 561.6
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.5657,
+            "incremental_responders": 572.46
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.5757,
+            "incremental_responders": 575.51
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.5858,
+            "incremental_responders": 584.8
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.5959,
+            "incremental_responders": 597.02
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.606,
+            "incremental_responders": 600.11
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.6161,
+            "incremental_responders": 605.76
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.6262,
+            "incremental_responders": 609.57
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.6364,
+            "incremental_responders": 614.66
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.6465,
+            "incremental_responders": 620.36
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.6566,
+            "incremental_responders": 629.13
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.6667,
+            "incremental_responders": 639.56
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.6768,
+            "incremental_responders": 651.25
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.6869,
+            "incremental_responders": 655.26
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.697,
+            "incremental_responders": 660.68
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.7071,
+            "incremental_responders": 663.54
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.7171,
+            "incremental_responders": 666.87
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.7272,
+            "incremental_responders": 672.88
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.7373,
+            "incremental_responders": 675.93
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.7474,
+            "incremental_responders": 676.46
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.7576,
+            "incremental_responders": 682.16
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.7677,
+            "incremental_responders": 681.48
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.7778,
+            "incremental_responders": 686.72
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.7879,
+            "incremental_responders": 685.88
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.798,
+            "incremental_responders": 692.9
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.8081,
+            "incremental_responders": 697.64
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.8182,
+            "incremental_responders": 697.61
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.8283,
+            "incremental_responders": 698.84
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.8384,
+            "incremental_responders": 703.31
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.8485,
+            "incremental_responders": 704.35
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.8585,
+            "incremental_responders": 714.52
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.8686,
+            "incremental_responders": 713.56
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.8788,
+            "incremental_responders": 723.68
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.8889,
+            "incremental_responders": 733.51
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.899,
+            "incremental_responders": 750.73
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.9091,
+            "incremental_responders": 750.09
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.9192,
+            "incremental_responders": 767.23
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.9293,
+            "incremental_responders": 779.05
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.9394,
+            "incremental_responders": 792.58
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.9495,
+            "incremental_responders": 796.59
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.9596,
+            "incremental_responders": 792.02
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.9697,
+            "incremental_responders": 799.11
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.9798,
+            "incremental_responders": 805.59
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 0.9899,
+            "incremental_responders": 812.56
+          },
+          {
+            "policy": "uplift (T-learner)",
+            "share_targeted": 1.0,
+            "incremental_responders": 823.54
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.0001,
+            "incremental_responders": 0.0
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.0101,
+            "incremental_responders": 14.91
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.0202,
+            "incremental_responders": 39.99
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.0303,
+            "incremental_responders": 54.94
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.0404,
+            "incremental_responders": 75.77
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.0505,
+            "incremental_responders": 77.54
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.0606,
+            "incremental_responders": 99.22
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.0707,
+            "incremental_responders": 105.62
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.0808,
+            "incremental_responders": 117.96
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.0909,
+            "incremental_responders": 133.67
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.101,
+            "incremental_responders": 140.66
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.1111,
+            "incremental_responders": 153.85
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.1212,
+            "incremental_responders": 157.25
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.1314,
+            "incremental_responders": 182.15
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.1415,
+            "incremental_responders": 198.29
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.1515,
+            "incremental_responders": 215.58
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.1616,
+            "incremental_responders": 226.77
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.1717,
+            "incremental_responders": 241.26
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.1818,
+            "incremental_responders": 246.38
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.1919,
+            "incremental_responders": 244.48
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.202,
+            "incremental_responders": 248.72
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.2121,
+            "incremental_responders": 259.04
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.2222,
+            "incremental_responders": 271.19
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.2323,
+            "incremental_responders": 274.33
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.2424,
+            "incremental_responders": 271.71
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.2526,
+            "incremental_responders": 279.52
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.2627,
+            "incremental_responders": 288.57
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.2728,
+            "incremental_responders": 306.86
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.2829,
+            "incremental_responders": 321.12
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.2929,
+            "incremental_responders": 337.46
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.303,
+            "incremental_responders": 354.69
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.3131,
+            "incremental_responders": 363.44
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.3232,
+            "incremental_responders": 363.95
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.3333,
+            "incremental_responders": 369.32
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.3434,
+            "incremental_responders": 380.56
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.3535,
+            "incremental_responders": 394.97
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.3636,
+            "incremental_responders": 403.86
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.3738,
+            "incremental_responders": 417.72
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.3839,
+            "incremental_responders": 430.95
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.394,
+            "incremental_responders": 436.52
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.4041,
+            "incremental_responders": 446.03
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.4142,
+            "incremental_responders": 459.64
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.4243,
+            "incremental_responders": 475.41
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.4343,
+            "incremental_responders": 476.3
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.4444,
+            "incremental_responders": 499.72
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.4545,
+            "incremental_responders": 502.04
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.4646,
+            "incremental_responders": 512.44
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.4747,
+            "incremental_responders": 513.15
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.4848,
+            "incremental_responders": 521.55
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.4949,
+            "incremental_responders": 536.8
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.5051,
+            "incremental_responders": 538.77
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.5152,
+            "incremental_responders": 538.74
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.5253,
+            "incremental_responders": 542.03
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.5354,
+            "incremental_responders": 551.4
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.5455,
+            "incremental_responders": 562.51
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.5556,
+            "incremental_responders": 563.14
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.5657,
+            "incremental_responders": 566.08
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.5757,
+            "incremental_responders": 573.19
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.5858,
+            "incremental_responders": 585.1
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.5959,
+            "incremental_responders": 579.24
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.606,
+            "incremental_responders": 590.11
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.6161,
+            "incremental_responders": 601.11
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.6262,
+            "incremental_responders": 605.49
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.6364,
+            "incremental_responders": 603.63
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.6465,
+            "incremental_responders": 619.67
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.6566,
+            "incremental_responders": 628.98
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.6667,
+            "incremental_responders": 634.92
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.6768,
+            "incremental_responders": 626.62
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.6869,
+            "incremental_responders": 638.46
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.697,
+            "incremental_responders": 649.12
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.7071,
+            "incremental_responders": 658.56
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.7171,
+            "incremental_responders": 666.28
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.7272,
+            "incremental_responders": 665.4
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.7373,
+            "incremental_responders": 673.57
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.7474,
+            "incremental_responders": 677.82
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.7576,
+            "incremental_responders": 674.55
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.7677,
+            "incremental_responders": 687.75
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.7778,
+            "incremental_responders": 693.51
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.7879,
+            "incremental_responders": 702.66
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.798,
+            "incremental_responders": 717.77
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.8081,
+            "incremental_responders": 732.81
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.8182,
+            "incremental_responders": 731.26
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.8283,
+            "incremental_responders": 735.42
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.8384,
+            "incremental_responders": 742.81
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.8485,
+            "incremental_responders": 757.9
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.8585,
+            "incremental_responders": 762.45
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.8686,
+            "incremental_responders": 771.89
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.8788,
+            "incremental_responders": 781.02
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.8889,
+            "incremental_responders": 790.83
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.899,
+            "incremental_responders": 777.26
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.9091,
+            "incremental_responders": 778.74
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.9192,
+            "incremental_responders": 775.87
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.9293,
+            "incremental_responders": 783.43
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.9394,
+            "incremental_responders": 799.93
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.9495,
+            "incremental_responders": 810.01
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.9596,
+            "incremental_responders": 817.79
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.9697,
+            "incremental_responders": 817.12
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.9798,
+            "incremental_responders": 818.17
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 0.9899,
+            "incremental_responders": 824.68
+          },
+          {
+            "policy": "predicted response (current policy)",
+            "share_targeted": 1.0,
+            "incremental_responders": 823.54
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.0001,
+            "incremental_responders": 0.0
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.0101,
+            "incremental_responders": 16.35
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.0202,
+            "incremental_responders": 25.96
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.0303,
+            "incremental_responders": 43.8
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.0404,
+            "incremental_responders": 51.61
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.0505,
+            "incremental_responders": 63.23
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.0606,
+            "incremental_responders": 73.18
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.0707,
+            "incremental_responders": 74.05
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.0808,
+            "incremental_responders": 86.76
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.0909,
+            "incremental_responders": 86.69
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.101,
+            "incremental_responders": 102.08
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.1111,
+            "incremental_responders": 110.5
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.1212,
+            "incremental_responders": 117.8
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.1314,
+            "incremental_responders": 132.36
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.1415,
+            "incremental_responders": 136.98
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.1515,
+            "incremental_responders": 145.1
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.1616,
+            "incremental_responders": 150.04
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.1717,
+            "incremental_responders": 156.66
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.1818,
+            "incremental_responders": 175.34
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.1919,
+            "incremental_responders": 184.91
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.202,
+            "incremental_responders": 193.33
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.2121,
+            "incremental_responders": 194.8
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.2222,
+            "incremental_responders": 216.3
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.2323,
+            "incremental_responders": 221.53
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.2424,
+            "incremental_responders": 219.29
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.2526,
+            "incremental_responders": 213.23
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.2627,
+            "incremental_responders": 221.3
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.2728,
+            "incremental_responders": 225.93
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.2829,
+            "incremental_responders": 226.05
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.2929,
+            "incremental_responders": 220.87
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.303,
+            "incremental_responders": 221.5
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.3131,
+            "incremental_responders": 218.99
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.3232,
+            "incremental_responders": 223.43
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.3333,
+            "incremental_responders": 231.51
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.3434,
+            "incremental_responders": 246.03
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.3535,
+            "incremental_responders": 263.68
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.3636,
+            "incremental_responders": 268.14
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.3738,
+            "incremental_responders": 276.08
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.3839,
+            "incremental_responders": 287.54
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.394,
+            "incremental_responders": 294.78
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.4041,
+            "incremental_responders": 302.7
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.4142,
+            "incremental_responders": 311.57
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.4243,
+            "incremental_responders": 326.14
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.4343,
+            "incremental_responders": 329.19
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.4444,
+            "incremental_responders": 341.4
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.4545,
+            "incremental_responders": 347.54
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.4646,
+            "incremental_responders": 351.94
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.4747,
+            "incremental_responders": 357.4
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.4848,
+            "incremental_responders": 360.65
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.4949,
+            "incremental_responders": 367.28
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.5051,
+            "incremental_responders": 375.27
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.5152,
+            "incremental_responders": 390.53
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.5253,
+            "incremental_responders": 400.02
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.5354,
+            "incremental_responders": 420.69
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.5455,
+            "incremental_responders": 423.01
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.5556,
+            "incremental_responders": 436.44
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.5657,
+            "incremental_responders": 449.5
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.5757,
+            "incremental_responders": 455.53
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.5858,
+            "incremental_responders": 463.51
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.5959,
+            "incremental_responders": 461.29
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.606,
+            "incremental_responders": 456.57
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.6161,
+            "incremental_responders": 465.78
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.6262,
+            "incremental_responders": 480.0
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.6364,
+            "incremental_responders": 481.74
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.6465,
+            "incremental_responders": 492.04
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.6566,
+            "incremental_responders": 502.31
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.6667,
+            "incremental_responders": 511.1
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.6768,
+            "incremental_responders": 522.14
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.6869,
+            "incremental_responders": 531.17
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.697,
+            "incremental_responders": 552.09
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.7071,
+            "incremental_responders": 569.16
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.7171,
+            "incremental_responders": 580.84
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.7272,
+            "incremental_responders": 579.9
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.7373,
+            "incremental_responders": 595.77
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.7474,
+            "incremental_responders": 608.1
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.7576,
+            "incremental_responders": 614.76
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.7677,
+            "incremental_responders": 614.31
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.7778,
+            "incremental_responders": 624.04
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.7879,
+            "incremental_responders": 630.73
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.798,
+            "incremental_responders": 647.24
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.8081,
+            "incremental_responders": 655.35
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.8182,
+            "incremental_responders": 664.98
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.8283,
+            "incremental_responders": 670.0
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.8384,
+            "incremental_responders": 677.17
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.8485,
+            "incremental_responders": 691.74
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.8585,
+            "incremental_responders": 708.82
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.8686,
+            "incremental_responders": 716.24
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.8788,
+            "incremental_responders": 723.1
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.8889,
+            "incremental_responders": 741.23
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.899,
+            "incremental_responders": 752.81
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.9091,
+            "incremental_responders": 745.68
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.9192,
+            "incremental_responders": 761.47
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.9293,
+            "incremental_responders": 773.75
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.9394,
+            "incremental_responders": 781.15
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.9495,
+            "incremental_responders": 777.18
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.9596,
+            "incremental_responders": 785.06
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.9697,
+            "incremental_responders": 797.69
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.9798,
+            "incremental_responders": 804.41
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 0.9899,
+            "incremental_responders": 811.82
+          },
+          {
+            "policy": "random targeting",
+            "share_targeted": 1.0,
+            "incremental_responders": 823.54
+          }
+        ],
+        "e8_action_assignment": [
+          {
+            "assigned_action": "Mens E-Mail",
+            "customers": 13601,
+            "share": 0.7084,
+            "observed_uplift_per_1000": 71.27
+          },
+          {
+            "assigned_action": "Womens E-Mail",
+            "customers": 5054,
+            "share": 0.2632,
+            "observed_uplift_per_1000": 87.47
+          },
+          {
+            "assigned_action": "No E-Mail",
+            "customers": 545,
+            "share": 0.0284,
+            "observed_uplift_per_1000": 0.0
+          }
+        ]
+      },
+      "notes": [
+        "uplift (S-learner) targets best: 103.45 extra visits per 1,000 customers emailed at a 30% budget, against 91.26 for ranking by predicted response \u2014 the policy this system currently uses.",
+        "Their Qini intervals overlap ([56.11, 129.76] against [38.8, 109.98]), so the ordering of the two policies is NOT established on this split. What the data does support is that they are different policies, not that one is reliably better.",
+        "The two uplift learners disagree with each other \u2014 uplift (S-learner) scores 93.62 and uplift (T-learner) 70.36, the latter below the current policy. 'Use uplift modelling' is therefore not a conclusion on its own: on this data the choice of learner matters as much as the choice of paradigm.",
+        "Assignment was randomised, which is the only reason any of these numbers are causal. The same computation on observational data would measure who was targeted, not what targeting achieved.",
+        "The two rankings agree only moderately (Spearman 0.40). At a 30% budget they share 56% of their chosen customers \u2014 so roughly 44% of the list would be emailed by one policy and not the other.",
+        "Hillstrom's actions are mens and womens email, not this project's four. The experiment establishes that ranking by response and ranking by uplift are different policies with different returns; it does not produce a policy deployable to the imported audience."
+      ],
+      "seconds": 4.4
+    },
+    "E9": {
+      "id": "E9",
+      "title": "Module 3 \u2014 off-policy evaluation, and why exploration is not optional",
+      "status": "ok",
+      "metrics": {
+        "replications": 40,
+        "largest_log": 10000,
+        "best_estimator": "snips",
+        "best_bias": -0.0029,
+        "best_rmse": 0.0166,
+        "bias_without_exploration": 0.0391,
+        "bias_with_exploration": -0.0015,
+        "ess_without_exploration": 1094.3,
+        "ess_with_exploration": 107.2,
+        "true_policy_gain": 0.0361,
+        "detected_gain": 0.0419
+      },
+      "tables": {
+        "e9_estimator_accuracy": [
+          {
+            "estimator": "ips",
+            "log_size": 500,
+            "true_value": 0.2728,
+            "mean_estimate": 0.243,
+            "bias": -0.0297,
+            "bias_ci_low": -0.0528,
+            "bias_ci_high": -0.0031,
+            "rmse": 0.0853,
+            "unbiased": false
+          },
+          {
+            "estimator": "snips",
+            "log_size": 500,
+            "true_value": 0.2728,
+            "mean_estimate": 0.2568,
+            "bias": -0.016,
+            "bias_ci_low": -0.0399,
+            "bias_ci_high": 0.0089,
+            "rmse": 0.0783,
+            "unbiased": true
+          },
+          {
+            "estimator": "doubly_robust",
+            "log_size": 500,
+            "true_value": 0.2728,
+            "mean_estimate": 0.2569,
+            "bias": -0.0159,
+            "bias_ci_low": -0.0401,
+            "bias_ci_high": 0.0094,
+            "rmse": 0.0788,
+            "unbiased": true
+          },
+          {
+            "estimator": "ips",
+            "log_size": 2000,
+            "true_value": 0.2732,
+            "mean_estimate": 0.2662,
+            "bias": -0.007,
+            "bias_ci_low": -0.0207,
+            "bias_ci_high": 0.0072,
+            "rmse": 0.0457,
+            "unbiased": true
+          },
+          {
+            "estimator": "snips",
+            "log_size": 2000,
+            "true_value": 0.2732,
+            "mean_estimate": 0.2703,
+            "bias": -0.0029,
+            "bias_ci_low": -0.0149,
+            "bias_ci_high": 0.0092,
+            "rmse": 0.0389,
+            "unbiased": true
+          },
+          {
+            "estimator": "doubly_robust",
+            "log_size": 2000,
+            "true_value": 0.2732,
+            "mean_estimate": 0.2696,
+            "bias": -0.0037,
+            "bias_ci_low": -0.0157,
+            "bias_ci_high": 0.0088,
+            "rmse": 0.0399,
+            "unbiased": true
+          },
+          {
+            "estimator": "ips",
+            "log_size": 10000,
+            "true_value": 0.2734,
+            "mean_estimate": 0.2728,
+            "bias": -0.0006,
+            "bias_ci_low": -0.0071,
+            "bias_ci_high": 0.0057,
+            "rmse": 0.0213,
+            "unbiased": true
+          },
+          {
+            "estimator": "snips",
+            "log_size": 10000,
+            "true_value": 0.2734,
+            "mean_estimate": 0.2705,
+            "bias": -0.0029,
+            "bias_ci_low": -0.008,
+            "bias_ci_high": 0.0019,
+            "rmse": 0.0166,
+            "unbiased": true
+          },
+          {
+            "estimator": "doubly_robust",
+            "log_size": 10000,
+            "true_value": 0.2734,
+            "mean_estimate": 0.2703,
+            "bias": -0.0031,
+            "bias_ci_low": -0.0084,
+            "bias_ci_high": 0.0018,
+            "rmse": 0.017,
+            "unbiased": true
+          }
+        ],
+        "e9_exploration": [
+          {
+            "exploration_rate": 0.0,
+            "true_value": 0.2735,
+            "mean_estimate": 0.3126,
+            "bias": 0.0391,
+            "rmse": 0.0423,
+            "effective_sample_size": 1094.3,
+            "cost_of_exploring": 0.0
+          },
+          {
+            "exploration_rate": 0.01,
+            "true_value": 0.2738,
+            "mean_estimate": 0.2843,
+            "bias": 0.0105,
+            "rmse": 0.1124,
+            "effective_sample_size": 63.8,
+            "cost_of_exploring": 0.0075
+          },
+          {
+            "exploration_rate": 0.05,
+            "true_value": 0.2737,
+            "mean_estimate": 0.2879,
+            "bias": 0.0142,
+            "rmse": 0.0655,
+            "effective_sample_size": 56.8,
+            "cost_of_exploring": 0.0375
+          },
+          {
+            "exploration_rate": 0.1,
+            "true_value": 0.2728,
+            "mean_estimate": 0.2713,
+            "bias": -0.0015,
+            "rmse": 0.0332,
+            "effective_sample_size": 107.2,
+            "cost_of_exploring": 0.075
+          },
+          {
+            "exploration_rate": 0.25,
+            "true_value": 0.2736,
+            "mean_estimate": 0.2626,
+            "bias": -0.011,
+            "rmse": 0.0242,
+            "effective_sample_size": 253.3,
+            "cost_of_exploring": 0.1875
+          }
+        ]
+      },
+      "notes": [
+        "At 10,000 logged decisions the best estimator (snips) recovers the candidate policy's true value with a bias of -0.0029 [-0.0080, +0.0019] \u2014 an interval containing zero. The estimate is trustworthy at that volume.",
+        "Without exploration the estimator is biased by +0.0391 against -0.0015 at a 10% exploration rate \u2014 and it is biased *upwards*, reporting the candidate policy as better than it truly is. That is the failure mode that matters: not a number that is obviously wrong, but a flattering one.",
+        "The trap is that the deterministic log looks *more* trustworthy, not less. Its effective sample size is 1094 against 107 with exploration, because every weight is 0 or 1 rather than spread out. The usual diagnostic for an unreliable importance-weighted estimate therefore points the wrong way here: the estimate is stable and wrong, because it is computed only over the customers where the candidate happens to agree with the logged policy. Stability is not correctness.",
+        "If you explore, explore enough. At a 1% rate the estimator has the worst error of any setting tested (RMSE 0.1124 against 0.0332 at 10%): too few random decisions to remove the bias, and weights large enough to wreck the variance. Token exploration is worse than none.",
+        "Exploring costs something real: at a 10% rate roughly 7.5% of the achievable reward is given up to random assignment. That is the price of being able to tell whether the policy is any good, and the report should quote it rather than present exploration as free.",
+        "Estimator choice matters at small volumes. At 500 decisions plain IPS is measurably biased while the self-normalised and doubly-robust variants are not, so SNIPS is the one to quote until the log is large.",
+        "This is a simulation, deliberately. The claim under test is a property of an estimator \u2014 unbiasedness \u2014 which is decided by mathematics and can therefore be checked exactly against a known answer. Nothing here claims anything about real customers.",
+        "The candidate policy is worth 0.0361 more reward per customer than the one generating the logs, and the mechanism detects that from logged data alone \u2014 without having deployed it to anybody."
+      ],
+      "seconds": 0.2
     }
   },
   "status_counts": {
-    "ok": 7,
+    "ok": 11,
     "skipped": 0,
     "failed": 0
   }

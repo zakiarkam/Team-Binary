@@ -1,0 +1,22 @@
+url,kind,capability,expected,detected,correct,source
+https://www.gymshark.com/,retail,commerce,True,True,True,cached
+https://www.gymshark.com/,retail,donation,False,False,True,cached
+https://www.lush.com/uk/en,retail,commerce,True,True,True,cached
+https://slack.com/,saas,subscription,True,True,True,cached
+https://slack.com/,saas,donation,False,False,True,cached
+https://www.notion.com/,saas,subscription,True,True,True,cached
+https://www.figma.com/,saas,subscription,True,True,True,cached
+https://www.dropbox.com/,saas,subscription,True,True,True,cached
+https://www.wateraid.org/uk/,charity,donation,True,True,True,cached
+https://www.wateraid.org/uk/,charity,commerce,True,True,True,cached
+https://www.redcross.org.uk/,charity,donation,True,True,True,cached
+https://www.wwf.org.uk/,charity,donation,True,True,True,cached
+https://www.oxfam.org.uk/,charity,donation,True,True,True,cached
+https://www.bbc.co.uk/news,content,commerce,False,False,True,cached
+https://www.bbc.co.uk/news,content,donation,False,False,True,cached
+https://arstechnica.com/,content,commerce,True,True,True,cached
+https://www.smashingmagazine.com/,content,commerce,False,False,True,cached
+https://css-tricks.com/,content,commerce,False,False,True,cached
+local:demo-site/index.html,retail (local control),commerce,True,True,True,local
+local:demo-site/index.html,retail (local control),lead_capture,True,True,True,local
+local:demo-site/index.html,retail (local control),donation,False,False,True,local

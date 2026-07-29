@@ -431,6 +431,187 @@ def fig_engagement() -> list[str]:
     return _save(fig, "fig_e7_engagement")
 
 
+# ── E8 ───────────────────────────────────────────────────────────────────────
+def fig_uplift() -> list[str]:
+    curves = _table("e8_qini_curves")
+    summary = _table("e8_policy_summary")
+    if curves is None or summary is None:
+        return []
+    import matplotlib.pyplot as plt
+
+    fig, (left, right) = plt.subplots(1, 2, figsize=(9.6, 3.8),
+                                      gridspec_kw={"width_ratios": [1.25, 1]})
+
+    style = {
+        "uplift (S-learner)": (config.PALETTE["green"], "-"),
+        "uplift (T-learner)": (config.PALETTE["teal"], "-"),
+        "predicted response (current policy)": (config.PALETTE["blue"], "-"),
+        "random targeting": (config.PALETTE["slate"], ":"),
+    }
+
+    for policy, group in curves.groupby("policy"):
+        colour, dash = style.get(str(policy), (config.PALETTE["slate"], "-"))
+        group = group.sort_values("share_targeted")
+        left.plot(group["share_targeted"], group["incremental_responders"],
+                  label=policy, color=colour, linestyle=dash, linewidth=1.8)
+
+    left.axhline(0, color=config.INK, linewidth=0.8)
+    left.set_xlabel("share of the list targeted")
+    left.set_ylabel("incremental visits gained")
+    left.set_title("Qini — who to email first")
+    left.legend(frameon=False, fontsize=7.5, loc="upper left")
+
+    # The number a marketer can act on.
+    summary = summary.sort_values("uplift_per_1000")
+    colours = [style.get(str(p), (config.PALETTE["slate"], "-"))[0]
+               for p in summary["policy"]]
+    y = np.arange(len(summary))
+    right.barh(y, summary["uplift_per_1000"], color=colours, height=0.6)
+    for i, value in enumerate(summary["uplift_per_1000"]):
+        right.text(value + 1.5, i, f"{value:.0f}", va="center", fontsize=8)
+    right.set_yticks(y, [str(p).replace(" (", "\n(") for p in summary["policy"]],
+                     fontsize=7.5)
+    right.set_xlabel("extra visits per 1,000 targeted (30% budget)")
+    right.set_title("What each policy buys")
+    right.set_xlim(0, summary["uplift_per_1000"].max() * 1.25)
+    right.grid(axis="y", visible=False)
+
+    fig.suptitle("Module 3 — ranking by uplift is not ranking by response",
+                 fontsize=11, fontweight="bold")
+    fig.tight_layout()
+    _caption(left, "Hillstrom MineThatData: 64,000 customers, randomised arms. "
+                   "Causal because assignment was random.")
+    return _save(fig, "fig_e8_uplift")
+
+
+# ── E9 ───────────────────────────────────────────────────────────────────────
+def fig_offpolicy() -> list[str]:
+    accuracy = _table("e9_estimator_accuracy")
+    exploration = _table("e9_exploration")
+    if accuracy is None or exploration is None:
+        return []
+    import matplotlib.pyplot as plt
+
+    fig, (left, right) = plt.subplots(1, 2, figsize=(9.6, 3.7))
+
+    colours = {"ips": config.PALETTE["rose"],
+               "snips": config.PALETTE["green"],
+               "doubly_robust": config.PALETTE["blue"]}
+
+    for estimator, group in accuracy.groupby("estimator"):
+        group = group.sort_values("log_size")
+        left.plot(group["log_size"], group["rmse"], marker="o",
+                  label=str(estimator).replace("_", " "),
+                  color=colours.get(str(estimator), config.PALETTE["slate"]))
+    left.set_xscale("log")
+    left.set_xlabel("logged decisions")
+    left.set_ylabel("RMSE against the true policy value")
+    left.set_title("The estimate sharpens as the log grows")
+    left.legend(frameon=False, fontsize=8)
+
+    # Bias against exploration — the argument for exploring at all.
+    exploration = exploration.sort_values("exploration_rate")
+    x = np.arange(len(exploration))
+    bars = right.bar(x, exploration["bias"],
+                     color=[config.PALETTE["rose"] if abs(b) > 0.01
+                            else config.PALETTE["green"]
+                            for b in exploration["bias"]], width=0.6)
+    right.axhline(0, color=config.INK, linewidth=1)
+    for i, (bias, rmse) in enumerate(zip(exploration["bias"], exploration["rmse"])):
+        right.text(i, bias + (0.003 if bias >= 0 else -0.005),
+                   f"{bias:+.3f}", ha="center", fontsize=7.5,
+                   va="bottom" if bias >= 0 else "top")
+    right.set_xticks(x, [f"{r:.0%}" for r in exploration["exploration_rate"]])
+    right.set_xlabel("share of decisions made at random")
+    right.set_ylabel("bias of the estimate")
+    right.set_title("No exploration → confidently wrong")
+    right.set_ylim(min(exploration["bias"]) - 0.015,
+                   max(exploration["bias"]) + 0.015)
+
+    fig.suptitle("Module 3 — off-policy evaluation, and the price of exploring",
+                 fontsize=11, fontweight="bold")
+    fig.tight_layout()
+    _caption(left, "Simulated world with a known reward function, so the true "
+                   "policy value is computable and the estimator can be scored "
+                   "against it. 40 replications per point.")
+    return _save(fig, "fig_e9_offpolicy")
+
+
+# ── E10 ──────────────────────────────────────────────────────────────────────
+def fig_capability_detection() -> list[str]:
+    data = _table("e10_per_capability")
+    if data is None:
+        return []
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(7.0, 3.4))
+    data = data.sort_values("judgements", ascending=True)
+    y = np.arange(len(data))
+
+    ax.barh(y, data["agreement"], height=0.6, color=config.PALETTE["green"])
+    ax.errorbar(data["agreement"], y,
+                xerr=[data["agreement"] - data["ci_low"],
+                      data["ci_high"] - data["agreement"]],
+                fmt="none", ecolor=config.INK, elinewidth=1.1, capsize=3)
+
+    for i, (value, n) in enumerate(zip(data["agreement"], data["judgements"])):
+        ax.text(1.02, i, f"{value:.0%}  (n={n})", va="center", fontsize=8)
+
+    ax.set_yticks(y, [c.replace("_", " ") for c in data["capability"]])
+    ax.set_xlim(0, 1.32)
+    ax.set_xlabel("agreement with the hand label")
+    ax.set_title("Module 4 — capability detection on real websites")
+    ax.grid(axis="y", visible=False)
+    _caption(ax, "Wilson intervals. The sample is small and was used during "
+                 "development, so the point estimates are optimistic — the "
+                 "width of these bars is the honest content of the figure.")
+    return _save(fig, "fig_e10_capability_detection")
+
+
+# ── E11 ──────────────────────────────────────────────────────────────────────
+def fig_action_set_size() -> list[str]:
+    grid = _table("e11_error_grid")
+    requirement = _table("e11_data_requirement")
+    if grid is None or requirement is None:
+        return []
+    import matplotlib.pyplot as plt
+
+    fig, (left, right) = plt.subplots(1, 2, figsize=(9.6, 3.7))
+
+    shades = [config.PALETTE["green"], config.PALETTE["blue"],
+              config.PALETTE["amber"], config.PALETTE["rose"]]
+    for colour, (k, group) in zip(shades, grid.groupby("n_actions")):
+        group = group.sort_values("log_size")
+        left.plot(group["log_size"], group["rmse"], marker="o",
+                  label=f"{k} actions", color=colour)
+
+    left.set_xscale("log")
+    left.set_yscale("log")
+    left.set_xlabel("logged decisions")
+    left.set_ylabel("RMSE against the true policy value")
+    left.set_title("More actions, thinner evidence")
+    left.legend(frameon=False, fontsize=8)
+
+    requirement = requirement.dropna(subset=["decisions_needed"])
+    x = np.arange(len(requirement))
+    right.bar(x, requirement["decisions_needed"], color=config.PALETTE["purple"],
+              width=0.6)
+    for i, value in enumerate(requirement["decisions_needed"]):
+        right.text(i, value * 1.05, f"{int(value):,}", ha="center", fontsize=8)
+    right.set_xticks(x, [f"{int(k)}" for k in requirement["n_actions"]])
+    right.set_yscale("log")
+    right.set_xlabel("actions on offer")
+    right.set_ylabel("decisions needed")
+    right.set_title("Data required before a comparison means anything")
+
+    fig.suptitle("Module 3 — what a per-website action set costs in data",
+                 fontsize=11, fontweight="bold")
+    fig.tight_layout()
+    _caption(left, "Simulated world with a known reward function. Exploration "
+                   "held at 10%; 30 replications per point.")
+    return _save(fig, "fig_e11_action_set_size")
+
+
 BUILDERS = (
     fig_segmentation_ablation,
     fig_segment_profile,
@@ -441,6 +622,10 @@ BUILDERS = (
     fig_prediction,
     fig_goal_tone,
     fig_engagement,
+    fig_uplift,
+    fig_offpolicy,
+    fig_capability_detection,
+    fig_action_set_size,
 )
 
 

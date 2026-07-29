@@ -57,6 +57,33 @@ Stop the database with `docker-compose down` (data is kept) or
 
 ---
 
+### PostgreSQL: two supported paths
+
+`make db` starts a Homebrew `postgresql@16` service if one is installed and
+falls back to Docker otherwise. Both listen on **5434**, so nothing else in the
+project changes.
+
+```bash
+# Homebrew (fewer moving parts — recommended before a demo)
+brew install postgresql@16
+# set `port = 5434` in /opt/homebrew/var/postgresql@16/postgresql.conf
+make db          # starts the service
+make db-create   # once: creates the `mos` role and `marketing_os` database
+
+# Docker
+make db-docker
+```
+
+Homebrew is the default because Docker adds a virtual machine and an image
+store between you and the database. A corrupted Docker image store took this
+project's database down once; the Homebrew path has one moving part and
+rebuilds the whole demo in about a minute either way.
+
+`make reset` drops and recreates the database on the Homebrew path, or removes
+the volume on the Docker one.
+
+---
+
 ## Ports
 
 | Service | Port | Why |

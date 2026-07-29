@@ -1,0 +1,5 @@
+policy,qini_coefficient,ci_low,ci_high,n_targeted,treated_response,control_response,uplift_per_1000
+uplift (S-learner),93.62,56.11,129.76,5760,0.2122,0.1087,103.45
+predicted response (current policy),75.91,38.8,109.98,5760,0.2427,0.1515,91.26
+uplift (T-learner),70.36,30.19,112.29,5760,0.204,0.112,92.0
+random targeting,-9.75,-48.65,26.95,5760,0.1595,0.1017,57.76

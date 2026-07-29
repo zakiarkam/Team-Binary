@@ -190,12 +190,20 @@ def setup(r: Results) -> list[Block]:
          "527-row goal/tone corpus", "Macro-F1, McNemar"],
         ["E7", "Engagement leakage and text signal",
          "12,000-row engagement corpus", "R², Spearman, Holm–Bonferroni"],
+        ["E8", "Targeting by uplift versus by predicted response",
+         "Hillstrom, 64,000 randomised", "Qini, incremental response"],
+        ["E9", "Does the decision log make the policy learnable?",
+         "Simulated world, known rewards", "Estimator bias, RMSE"],
+        ["E10", "Can the system read what a website can do?",
+         "15 real websites, hand-labelled", "Agreement, precision, recall"],
+        ["E11", "What a per-website action set costs in data",
+         "Simulated world, known rewards", "RMSE, decisions required"],
     ]
     return [
         ("h1", "EXPERIMENTAL SETUP"),
 
         ("h2", "2.1 The experiments"),
-        ("p", "Seven experiments cover the four modules. Each writes its tables "
+        ("p", "Eleven experiments cover the four modules. Each writes its tables "
               "to `research/results/`, and every figure in the next chapter is "
               "drawn from those tables rather than plotted by hand, so a chart "
               "cannot drift away from the number it shows."),
@@ -543,6 +551,268 @@ def results_chapter(r: Results) -> list[Block]:
                     "Figure R9 — The leak, and the absence of text signal."),
         ]
 
+    # ── E8 ──────────────────────────────────────────────────────────────────
+    if r.ok("E8"):
+        summary = r.table("e8_policy_summary")
+        actions = r.table("e8_action_assignment")
+        overlap = r.m("E8", "top_share_overlap")
+
+        blocks += [
+            ("h2", "3.8 Who to target is not who will convert"),
+            ("p", "The recommender ranks customers by predicted conversion and "
+                  "gives the strongest action to the top of that ranking. That "
+                  "is the intuitive thing to do and it answers the wrong "
+                  "question. What matters is not who will convert but for whom "
+                  "the action *changes* whether they convert — a customer "
+                  "certain to buy anyway gains nothing from a discount, and the "
+                  "discount is wasted on them."),
+            ("p", "Answering that needs counterfactuals, and this project's own "
+                  "audience cannot supply any: every imported customer received "
+                  "one treatment, nobody recorded which, and no comparable "
+                  "customer received an alternative. No model can recover a "
+                  "causal effect from data where the cause never varied. The "
+                  "experiment therefore moves to the **Hillstrom MineThatData** "
+                  "dataset — 64,000 customers randomly assigned to one of three "
+                  "arms (mens email, womens email, no email) with observed "
+                  "visits. Random assignment is what makes the counterfactual "
+                  "estimable."),
+            _table_block(
+                "Table R13 — Targeting policies scored on held-out customers. "
+                "Qini is incremental responders above random targeting; the "
+                "final column is what a 30% email budget buys.",
+                ["Policy", "Qini", "95% CI", "Extra visits per 1,000 targeted"],
+                [[row["policy"], row["qini_coefficient"],
+                  f"[{row['ci_low']}, {row['ci_high']}]",
+                  row["uplift_per_1000"]] for row in summary]),
+            _figure("fig_e8_uplift",
+                    "Figure R10 — Qini curves and what each policy buys at a "
+                    "fixed budget."),
+            ("p", f"Ranking by uplift and ranking by predicted response select "
+                  f"substantially different people: the two scores correlate at "
+                  f"Spearman {r.m('E8', 'rank_agreement_spearman'):.2f}, and at a "
+                  f"30% budget the two policies share only "
+                  f"{_pct(overlap, 0)} of their chosen customers — so about "
+                  f"{_pct(1 - overlap, 0)} of the list would be emailed by one "
+                  f"and not the other."),
+            ("note", "**What this does and does not establish.** The best uplift "
+                     "learner buys more incremental visits than the current "
+                     "policy, but their Qini intervals overlap, so the ordering "
+                     "of the two is not established on this split. The two uplift "
+                     "learners also disagree with each other, one of them falling "
+                     "below the current policy — so “use uplift modelling” is not "
+                     "a conclusion on its own. What the data does support is the "
+                     "weaker and more useful claim: these are different policies "
+                     "that target different people, and the difference is large "
+                     "enough to matter."),
+        ]
+
+        if actions:
+            blocks += [
+                _table_block(
+                    "Table R14 — The three-arm version: which action each "
+                    "customer should receive, rather than whether to act.",
+                    ["Assigned action", "Customers", "Share",
+                     "Observed uplift per 1,000"],
+                    [[row["assigned_action"], row["customers"],
+                      f"{float(row['share']):.1%}",
+                      row["observed_uplift_per_1000"] or "—"]
+                     for row in actions]),
+                ("p", "This is the next-best-action problem proper: not send or "
+                      "do not send, but which of several actions. Note that the "
+                      "policy assigns a share of customers to *no email at all* "
+                      "— an output the current rule cannot produce, because "
+                      "every customer is given some action regardless of whether "
+                      "acting helps."),
+            ]
+
+        blocks += [
+            ("p", "Hillstrom's actions are mens and womens email, not this "
+                  "project's premium, personalised, reactivation and reminder. "
+                  "The experiment demonstrates the method on real randomised "
+                  "data and shows that the current policy is answering a "
+                  "different question from the one it should. It does not "
+                  "produce a policy deployable to the imported audience, and "
+                  "nothing in this report should be read as claiming it does."),
+        ]
+
+    # ── E9 ──────────────────────────────────────────────────────────────────
+    if r.ok("E9"):
+        accuracy = r.table("e9_estimator_accuracy")
+        exploration = r.table("e9_exploration")
+
+        blocks += [
+            ("h2", "3.9 Making the recommendation learnable"),
+            ("p", "E8 showed the recommender was answering the wrong question, "
+                  "and that no borrowed dataset can answer the right one for "
+                  "this project's actions. The response was to change what the "
+                  "system records. `analytics_output` is overwritten on every "
+                  "run and therefore holds only the current opinion; a new "
+                  "append-only `action_log` records the decision that was "
+                  "actually taken, **the probability it was taken under**, the "
+                  "features it was taken on, and what followed."),
+            ("p", "The propensity is the column that matters. Without it, logged "
+                  "data can only report what the running policy achieved. With "
+                  "it, an inverse-propensity estimator can answer what a "
+                  "*different* policy would have achieved on the same customers "
+                  "— a counterfactual recovered from observational logs. And "
+                  "because a deterministic policy assigns probability zero to "
+                  "every action it does not take, a small share of decisions are "
+                  "made at random on purpose."),
+            ("p", "That machinery is only worth having if it works, so this "
+                  "experiment checks it in the one setting where “works” is "
+                  "precisely defined: a simulated world with a known reward "
+                  "function, where the true value of any policy is computable "
+                  "and the estimate can be scored against it."),
+            _table_block(
+                "Table R15 — Estimator error against the true policy value, as "
+                "the log grows. 40 replications per row.",
+                ["Estimator", "Logged decisions", "Bias", "95% CI", "RMSE",
+                 "Unbiased"],
+                [[row["estimator"].replace("_", " "), row["log_size"],
+                  row["bias"], f"[{row['bias_ci_low']}, {row['bias_ci_high']}]",
+                  row["rmse"], "yes" if row["unbiased"] == "True" else "no"]
+                 for row in accuracy]),
+            _table_block(
+                "Table R16 — What exploration buys, and what it costs.",
+                ["Exploration rate", "Bias", "RMSE", "Reward given up"],
+                [[f"{float(row['exploration_rate']):.0%}", row["bias"],
+                  row["rmse"], f"{float(row['cost_of_exploring']):.1%}"]
+                 for row in exploration]),
+            _figure("fig_e9_offpolicy",
+                    "Figure R11 — Estimator error against log size, and bias "
+                    "against exploration rate."),
+            ("p", f"At {r.m('E9', 'largest_log'):,} logged decisions the "
+                  f"self-normalised estimator recovers the candidate policy's "
+                  f"true value with a bias of {r.m('E9', 'best_bias'):+.4f} and "
+                  f"an interval containing zero. The mechanism also detects that "
+                  f"the candidate policy is worth "
+                  f"{r.m('E9', 'true_policy_gain'):.4f} more reward per customer "
+                  f"than the one generating the logs — from logged data alone, "
+                  f"without having deployed it to anybody."),
+            ("note", "**The finding worth carrying into the viva.** Without "
+                     f"exploration the estimate is biased by "
+                     f"{r.m('E9', 'bias_without_exploration'):+.4f}, and biased "
+                     "*upwards* — it reports the candidate policy as better than "
+                     "it is. Worse, the deterministic log looks more trustworthy: "
+                     "its effective sample size is "
+                     f"{r.m('E9', 'ess_without_exploration'):.0f} against "
+                     f"{r.m('E9', 'ess_with_exploration'):.0f} with exploration, "
+                     "because every weight is 0 or 1 rather than spread out. The "
+                     "standard diagnostic for an unreliable importance-weighted "
+                     "estimate points the wrong way. The estimate is stable and "
+                     "wrong, computed only over the customers where the candidate "
+                     "happens to agree with the logged policy. **Stability is not "
+                     "correctness.**"),
+            ("p", "Token exploration is worse than none: at a 1% rate the "
+                  "estimator has the worst error of any setting tested — too few "
+                  "random decisions to remove the bias, and weights large enough "
+                  "to wreck the variance. Exploration is a commitment, not a "
+                  "gesture."),
+            ("p", "This experiment is a simulation, deliberately and without "
+                  "apology. The claim under test is a property of an *estimator* "
+                  "— unbiasedness — which is settled by mathematics and can "
+                  "therefore be checked exactly against a known answer. It claims "
+                  "nothing about real customers. What it establishes is that the "
+                  "mechanism now in the system will produce a usable answer once "
+                  "enough decisions have been logged, which is the difference "
+                  "between a system that can improve and one that can only "
+                  "assert."),
+        ]
+
+    # ── E10 + E11 ───────────────────────────────────────────────────────────
+    if r.ok("E10") or r.ok("E11"):
+        blocks += [
+            ("h2", "3.10 The action set is a property of the website"),
+            ("p", "Every result so far assumed a fixed vocabulary of four "
+                  "actions. That assumption does not survive contact with a "
+                  "second client. A news site has no checkout, so recommending "
+                  "a discount there is not a poor recommendation but a category "
+                  "error; a charity has no upgrade path; a subscription product "
+                  "has no basket to abandon. The action set is therefore not a "
+                  "constant but the intersection of two things — what the "
+                  "website can perform, and what the customer qualifies for."),
+            ("p", "It is tempting to learn this. There is no dataset of "
+                  "websites labelled with marketing actions, so the labels would "
+                  "have to be synthesised from a rule and the model would learn "
+                  "that rule back — the same circularity as the two defects in "
+                  "3.2 and 3.7. What a site can do is *evidence on its pages*, "
+                  "so it is detected; which of the available actions is best is "
+                  "genuinely unknown, so that is left to the decision log."),
+        ]
+
+    if r.ok("E10"):
+        per_capability = r.table("e10_per_capability")
+        blocks += [
+            ("h3", "3.10.1 Detecting what a website can do"),
+            _table_block(
+                "Table R17 — Capability detection against hand labels on real "
+                "websites.",
+                ["Capability", "Judgements", "Agreement", "95% CI",
+                 "False positives", "False negatives"],
+                [[row["capability"].replace("_", " "), row["judgements"],
+                  row["agreement"], f"[{row['ci_low']}, {row['ci_high']}]",
+                  row["false_positives"], row["false_negatives"]]
+                 for row in per_capability]),
+            _figure("fig_e10_capability_detection",
+                    "Figure R12 — Agreement per capability, with Wilson "
+                    "intervals. The width of the bars is the honest content."),
+            ("note", "**This is a development set and the figure is fitted.** "
+                     "The first run disagreed on four judgements. Two were "
+                     "detector faults, both caused by matching URLs as free "
+                     "text: `/product` fired on a magazine's "
+                     "`/categories/product-strategy`, and a retailer's "
+                     "`support.` subdomain was read as a donation page. Matching "
+                     "now works on whole path segments and host labels. The "
+                     "other two were faults in the *labels* — a charity with a "
+                     "shop and a publisher with a store had both been marked as "
+                     "having no commerce, and the detector was right. Code and "
+                     "labels both changed after seeing results, so a fresh "
+                     "sample would be needed to claim generalisation, and none "
+                     "is claimed here."),
+            ("p", "The finding that matters is not the percentage but what the "
+                  "disagreements taught: capability is not a site *type*. A "
+                  "charity that sells merchandise has donation and commerce "
+                  "both; a publisher running a store has commerce as well as "
+                  "content. Modelling capabilities as independent flags rather "
+                  "than as a category is what allowed the detector to be right "
+                  "where the human label was wrong."),
+        ]
+
+    if r.ok("E11"):
+        requirement = r.table("e11_data_requirement")
+        blocks += [
+            ("h3", "3.10.2 What a larger action set costs"),
+            ("p", "Letting each site use its own actions is not free. "
+                  "Exploration is a fixed budget, so the more actions on offer "
+                  "the less evidence each accumulates, and the longer before a "
+                  "logged policy comparison means anything."),
+            _table_block(
+                f"Table R18 — Logged decisions needed to reach an RMSE of "
+                f"{r.m('E11', 'usable_error_target')} against the true policy "
+                f"value.",
+                ["Actions on offer", "Decisions needed", "Per action"],
+                [[row["n_actions"], f"{int(row['decisions_needed']):,}"
+                  if row["decisions_needed"] else "not reached",
+                  row["per_action"] or "—"] for row in requirement]),
+            _figure("fig_e11_action_set_size",
+                    "Figure R13 — Estimator error against action-set size, and "
+                    "the data each size requires."),
+            ("p", f"Reaching a usable estimate takes "
+                  f"{r.m('E11', 'smallest_set_decisions_needed'):,} decisions "
+                  f"with {r.m('E11', 'smallest_set')} actions and "
+                  f"{r.m('E11', 'largest_set_decisions_needed'):,} with "
+                  f"{r.m('E11', 'largest_set')}. Raising the exploration rate "
+                  f"helps but does not substitute for volume, and every "
+                  f"explored decision is one deliberately not taken greedily."),
+            ("note", "**The design guidance this yields.** The catalogue should "
+                     "stay as small as honestly covers what a site can do. "
+                     "Adding an action nobody will choose is not free — it takes "
+                     "evidence away from every other action. A site offering "
+                     "twelve actions should not expect conclusions on the same "
+                     "timescale as one offering four, and the system should say "
+                     "so rather than present an early estimate as settled."),
+        ]
+
     return blocks
 
 
@@ -569,6 +839,12 @@ def discussion(r: Results) -> list[Block]:
             "**Simpler models won twice.** TF-IDF matched Sentence-BERT on goal "
             "and tone, and interpretable rules matched the full hybrid on "
             "conversion separation. Neither result was expected.",
+            "**The recommender was answering the wrong question.** Ranking "
+            "customers by predicted conversion and ranking them by the "
+            "*incremental effect* of the action select materially different "
+            "people — they share only about half their choices at a realistic "
+            "budget. This is the clearest direction for future work the project "
+            "produced.",
         ]),
 
         ("h2", "4.2 What the evidence does not support"),
@@ -583,7 +859,12 @@ def discussion(r: Results) -> list[Block]:
             "corpus, where no text feature survives correction.",
             "**That the prediction thresholds transfer.** They were set on the "
             "distribution the models were fitted on and do not carry to another "
-            "audience.",
+            "audience. The production recommender was changed to rank rather "
+            "than threshold as a direct consequence.",
+            "**That uplift modelling is straightforwardly better.** The best "
+            "uplift learner beat the current policy, but the intervals overlap "
+            "and the second uplift learner did worse. The framing is right; the "
+            "evidence for any particular learner is not yet strong.",
         ]),
 
         ("h1", "THREATS TO VALIDITY"),
@@ -642,6 +923,19 @@ def discussion(r: Results) -> list[Block]:
             "block the pixel, so click-through is the reliable engagement signal.",
             "**Three real platform datasets ship unused** — they are "
             "comment-level scrapes that pair no post text with post engagement.",
+            "**No action was ever randomised on this project's own audience**, "
+            "so the next-best-action recommendation cannot be validated on it at "
+            "all. E8 borrows a dataset where treatment *was* randomised, and the "
+            "actions there are not this project's actions.",
+            "**Capability detection was evaluated on the sample used to develop "
+            "it.** Fifteen websites, with both the detector and two labels "
+            "corrected after seeing the results, so the reported agreement is "
+            "optimistic and a fresh sample is needed before it can be quoted as "
+            "accuracy.",
+            "**The action vocabulary is authored, not discovered.** Detection "
+            "decides which families of action a site can support; it does not "
+            "invent new ones. A client whose marketing needs an action outside "
+            "the catalogue must have it added by hand.",
         ]),
     ]
     return blocks
