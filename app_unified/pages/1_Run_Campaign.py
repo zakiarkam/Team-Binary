@@ -22,7 +22,7 @@ lib.header("Run a Campaign",
            "Dashboard › Run Campaign")
 
 DEFAULTS = json.loads((lib.ROOT / "input.json").read_text())
-ALL_PLATFORMS = ["instagram", "linkedin", "tiktok", "shorts", "email", "facebook"]
+ALL_PLATFORMS = ["instagram", "tiktok", "linkedin", "email"]
 
 # --------------------------------------------------------------------------- #
 # Product brief form
