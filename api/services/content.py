@@ -218,7 +218,12 @@ def generate_for_site(site_id: int, platforms: list[str] | None = None,
         "caption": a.get("caption", ""),
         "hashtags": json.dumps(a.get("hashtags") or []),
         "cta": a.get("cta", ""),
+        # A video platform returns `shorts_prompt`, an image platform
+        # `image_prompt`. Both are creative briefs, so they share a column —
+        # but which medium it is has to travel with it, or the dashboard shows
+        # a video brief labelled as an image brief.
         "image_prompt": a.get("image_prompt") or a.get("shorts_prompt") or "",
+        "visual_kind": "video" if (a.get("shorts_prompt") or "").strip() else "image",
         "campaign_goal": summary.get("campaign_goal"),
         "tone": summary.get("tone"),
         "engagement": _f(a.get("engagement_score")),
@@ -233,12 +238,13 @@ def generate_for_site(site_id: int, platforms: list[str] | None = None,
             """
             INSERT INTO content_assets (site_id, campaign_id, platform, subject,
                                         caption, hashtags, cta, image_prompt,
-                                        campaign_goal, tone, engagement_score,
-                                        semantic_score, platform_suitability_score,
+                                        visual_kind, campaign_goal, tone,
+                                        engagement_score, semantic_score,
+                                        platform_suitability_score,
                                         final_score, engine)
             VALUES (:site_id, :campaign_id, :platform, :subject, :caption,
                     CAST(:hashtags AS jsonb), :cta, :image_prompt,
-                    :campaign_goal, :tone, :engagement, :semantic,
+                    :visual_kind, :campaign_goal, :tone, :engagement, :semantic,
                     :platform_fit, :final, :engine)
             """,
             rows,
@@ -330,7 +336,7 @@ def list_assets(site_id: int, platform: str | None = None,
     rows = db.fetch_all(
         f"""
         SELECT id, platform, subject, caption, hashtags, cta, image_prompt,
-               campaign_goal, tone,
+               visual_kind, campaign_goal, tone,
                engagement_score::float8          AS engagement_score,
                semantic_score::float8            AS semantic_score,
                platform_suitability_score::float8 AS platform_suitability_score,
@@ -350,7 +356,7 @@ def best_asset(site_id: int, platform: str) -> dict | None:
     """Highest-scoring stored asset for a platform — used to fill campaign copy."""
     return db.fetch_one(
         """
-        SELECT id, subject, caption, cta, hashtags,
+        SELECT id, subject, caption, cta, hashtags, image_prompt, visual_kind,
                final_score::float8 AS final_score
         FROM content_assets
         WHERE site_id = :s AND platform = :p

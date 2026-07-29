@@ -128,6 +128,30 @@ function AssetCard({ asset }: { asset: ContentAsset }) {
             {tags.join(" ")}
           </p>
         )}
+
+        {/* The generator returns caption, hashtags, cta and a creative brief
+            per platform. Showing only the first two would hide half of what
+            Module 4 produces — and the CTA and the brief are the parts someone
+            actually has to act on. */}
+        {asset.cta && (
+          <div className="mt-4 rounded-lg bg-slate-50 px-3 py-2">
+            <p className="text-[0.65rem] font-bold tracking-wide text-slate-400">
+              CALL TO ACTION
+            </p>
+            <p className="mt-0.5 text-sm text-slate-700">{asset.cta}</p>
+          </div>
+        )}
+
+        {asset.image_prompt && (
+          <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2">
+            <p className="text-[0.65rem] font-bold tracking-wide text-slate-400">
+              {asset.visual_kind === "video" ? "VIDEO BRIEF" : "IMAGE BRIEF"}
+            </p>
+            <p className="mt-0.5 text-sm italic leading-relaxed text-slate-600">
+              {asset.image_prompt}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-x-5 gap-y-1 border-t border-slate-100 bg-slate-50 px-5 py-3 text-xs text-slate-500">

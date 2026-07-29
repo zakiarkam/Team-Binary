@@ -163,8 +163,15 @@ def list_visitors(
     known_only: bool = False,
     reachable_only: bool = False,
     segment: str | None = None,
+    q: str | None = Query(None, max_length=200,
+                          description="Match email or visitor id"),
 ) -> dict:
-    """Paged audience list with behavioural features and current segment."""
+    """Paged audience list with behavioural features and current segment.
+
+    An audience of several thousand cannot be read by scrolling, so the list is
+    searchable as well as paged. `q` matches the email address or the visitor
+    id, which are the two handles anyone actually has when looking someone up.
+    """
     _require_site(site_id)
 
     filters = []
@@ -174,7 +181,13 @@ def list_visitors(
         filters.append("f.email_consent")
     if segment:
         filters.append("s.segment_name = :segment")
+    if q:
+        # ILIKE on both handles. The parameter is bound, never interpolated —
+        # a search box is the most natural place in the whole system for an
+        # injection attempt, so it must not be built by string concatenation.
+        filters.append("(f.email ILIKE :q OR f.visitor_uid ILIKE :q)")
     where = f"WHERE {' AND '.join(filters)}" if filters else ""
+    pattern = f"%{q.strip()}%" if q else None
 
     rows = db.fetch_all(
         f"""
@@ -192,7 +205,7 @@ def list_visitors(
         ORDER BY f.last_seen DESC
         LIMIT :limit OFFSET :offset
         """,
-        site_id=site_id, limit=limit, offset=offset, segment=segment,
+        site_id=site_id, limit=limit, offset=offset, segment=segment, q=pattern,
     )
 
     total = db.fetch_one(
@@ -202,7 +215,7 @@ def list_visitors(
         FROM f LEFT JOIN user_segments s ON s.visitor_id = f.visitor_id
         {where}
         """,
-        site_id=site_id, segment=segment,
+        site_id=site_id, segment=segment, q=pattern,
     )
 
     return {
@@ -210,6 +223,7 @@ def list_visitors(
         "total": (total or {}).get("n", 0),
         "limit": limit,
         "offset": offset,
+        "query": q,
     }
 
 

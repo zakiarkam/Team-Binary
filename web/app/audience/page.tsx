@@ -8,6 +8,8 @@ import {
   ErrorState,
   Kpi,
   PageHeader,
+  Pagination,
+  SearchBox,
   SectionLabel,
   Table,
   pct,
@@ -21,7 +23,19 @@ import { currentSite, safeGet } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-export default async function AudiencePage() {
+/** Rows per page in the visitor table. */
+const PAGE_SIZE = 25;
+
+export default async function AudiencePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; segment?: string; offset?: string }>;
+}) {
+  const params = await searchParams;
+  const query = params.q?.trim() || undefined;
+  const segment = params.segment?.trim() || undefined;
+  const offset = Math.max(0, Number(params.offset ?? 0) || 0);
+
   const { site, error } = await currentSite();
   if (error) return <ErrorState error={error} />;
   if (!site) {
@@ -41,7 +55,13 @@ export default async function AudiencePage() {
     safeGet<AudienceSummary>(`/sites/${site.id}/audience/summary`),
     safeGet<ReachableAudience>(`/sites/${site.id}/audience/reachable`),
     safeGet<{ visitors: Visitor[]; total: number }>(
-      `/sites/${site.id}/visitors?limit=25`,
+      `/sites/${site.id}/visitors?` +
+        new URLSearchParams({
+          limit: String(PAGE_SIZE),
+          offset: String(offset),
+          ...(query ? { q: query } : {}),
+          ...(segment ? { segment } : {}),
+        }),
     ),
   ]);
 
@@ -161,13 +181,23 @@ export default async function AudiencePage() {
       </div>
 
       <Card className="mt-4">
-        <div className="flex items-center justify-between">
-          <SectionLabel>VISITORS</SectionLabel>
-          <span className="text-xs text-slate-400">
-            showing {visitorList?.visitors.length ?? 0} of{" "}
-            {visitorList?.total ?? 0}
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SectionLabel>
+            {segment ? `VISITORS — ${segment.toUpperCase()}` : "VISITORS"}
+          </SectionLabel>
+          <SearchBox
+            action="/audience"
+            placeholder="Search email or visitor id"
+            value={query}
+            hidden={{ segment }}
+          />
         </div>
+        {query && (
+          <p className="mt-2 text-xs text-slate-500">
+            {(visitorList?.total ?? 0).toLocaleString()} visitor(s) match{" "}
+            <b className="text-slate-700">{query}</b>
+          </p>
+        )}
         <Table
           rows={visitorList?.visitors ?? []}
           columns={[
@@ -212,7 +242,14 @@ export default async function AudiencePage() {
               render: (v) => (v.email_consent ? "yes" : "—"),
             },
           ]}
-          empty="No visitors tracked yet."
+          empty={query ? `Nobody matches "${query}".` : "No visitors tracked yet."}
+        />
+        <Pagination
+          action="/audience"
+          total={visitorList?.total ?? 0}
+          limit={PAGE_SIZE}
+          offset={offset}
+          params={{ q: query, segment }}
         />
       </Card>
     </div>

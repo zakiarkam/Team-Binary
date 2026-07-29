@@ -220,6 +220,67 @@ def test_reachable_filter_returns_only_consented_visitors(
     assert res["visitors"][0]["email"] == "k@x.com"
 
 
+def test_visitor_search_matches_email_and_visitor_id(
+    client: TestClient, site: dict
+) -> None:
+    """An audience of thousands has to be searchable, not scrolled."""
+    _post(client, _batch(site["site_key"], "needle-uid", [
+        {"type": "identify", "props": {"email": "findme@example.com"}}]))
+    _post(client, _batch(site["site_key"], "other-uid", [
+        {"type": "identify", "props": {"email": "someone@example.com"}}]))
+
+    by_email = client.get(f"/sites/{site['id']}/visitors?q=findme").json()
+    assert by_email["total"] == 1
+    assert by_email["visitors"][0]["email"] == "findme@example.com"
+
+    by_uid = client.get(f"/sites/{site['id']}/visitors?q=needle").json()
+    assert by_uid["total"] == 1
+
+    # Case-insensitive: nobody types an address the way it was stored.
+    assert client.get(
+        f"/sites/{site['id']}/visitors?q=FINDME").json()["total"] == 1
+
+    assert client.get(
+        f"/sites/{site['id']}/visitors?q=nobody-here").json()["total"] == 0
+
+
+def test_visitor_search_is_not_vulnerable_to_injection(
+    client: TestClient, site: dict
+) -> None:
+    """A search box is the most inviting place in the system for an injection.
+
+    The query is a bound parameter, so a payload that would drop a table is
+    simply text that matches nothing.
+    """
+    _post(client, _batch(site["site_key"], "safe-uid", [
+        {"type": "identify", "props": {"email": "safe@example.com"}}]))
+
+    payload = "'; DROP TABLE visitors; --"
+    res = client.get(f"/sites/{site['id']}/visitors", params={"q": payload})
+
+    assert res.status_code == 200
+    assert res.json()["total"] == 0
+    # The table is still there and still has the visitor in it.
+    assert client.get(f"/sites/{site['id']}/visitors?q=safe").json()["total"] == 1
+
+
+def test_visitor_list_pages_without_losing_or_repeating_rows(
+    client: TestClient, site: dict
+) -> None:
+    for i in range(5):
+        _post(client, _batch(site["site_key"], f"page-uid-{i}",
+                             [{"type": "page_view"}]))
+
+    first = client.get(f"/sites/{site['id']}/visitors?limit=2&offset=0").json()
+    second = client.get(f"/sites/{site['id']}/visitors?limit=2&offset=2").json()
+
+    assert first["total"] == second["total"] >= 5
+    assert len(first["visitors"]) == 2
+    ids = {v["visitor_id"] for v in first["visitors"]}
+    assert ids.isdisjoint({v["visitor_id"] for v in second["visitors"]}), (
+        "a paged table that repeats rows is worse than one that truncates")
+
+
 # ── The snippet itself ───────────────────────────────────────────────────────
 
 def test_snippet_is_served_and_self_configuring(client: TestClient) -> None:

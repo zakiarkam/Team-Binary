@@ -190,7 +190,14 @@ CREATE TABLE IF NOT EXISTS content_assets (
     caption                   TEXT        NOT NULL,
     hashtags                  JSONB       NOT NULL DEFAULT '[]'::jsonb,
     cta                       TEXT,
+    -- The creative brief, and which medium it is for. Instagram, Facebook and
+    -- LinkedIn are adaptive — `select_visual()` chooses image or video per
+    -- asset — so the medium cannot be derived from the platform afterwards.
+    -- Storing only the text would leave the dashboard labelling a video brief
+    -- as an image brief, which is how `shorts` silently lost its video prompt
+    -- in the first place.
     image_prompt              TEXT,
+    visual_kind               TEXT,                   -- image | video
     campaign_goal             TEXT,
     tone                      TEXT,
     target_segment            TEXT,
@@ -203,6 +210,9 @@ CREATE TABLE IF NOT EXISTS content_assets (
 );
 
 CREATE INDEX IF NOT EXISTS idx_content_assets_site ON content_assets (site_id, created_at DESC);
+
+-- Existing databases predate visual_kind.
+ALTER TABLE content_assets ADD COLUMN IF NOT EXISTS visual_kind TEXT;
 
 -- ---------------------------------------------------------------------------
 -- MODULE 2 — campaigns and campaign_sends

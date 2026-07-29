@@ -229,6 +229,116 @@ export function Table<T extends object>({
   );
 }
 
+/**
+ * A search box that works without client-side JavaScript.
+ *
+ * These pages are server components, and an audience of several thousand needs
+ * to be searchable rather than scrolled. A plain GET form puts the query in the
+ * URL, which means the server renders the filtered page directly, the result is
+ * linkable and bookmarkable, and the back button behaves — none of which comes
+ * for free with client-side filtering. `hidden` carries any other filters
+ * already in the URL so searching does not silently discard them.
+ */
+export function SearchBox({
+  action,
+  placeholder,
+  value,
+  hidden = {},
+}: {
+  action: string;
+  placeholder: string;
+  value?: string;
+  hidden?: Record<string, string | undefined>;
+}) {
+  return (
+    <form action={action} method="get" className="flex gap-2">
+      {Object.entries(hidden).map(([k, v]) =>
+        v ? <input key={k} type="hidden" name={k} value={v} /> : null,
+      )}
+      <input
+        type="search"
+        name="q"
+        defaultValue={value ?? ""}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        className="w-56 rounded-lg border border-slate-200 px-3 py-1.5 text-sm
+                   outline-none focus:border-slate-400"
+      />
+      <button
+        type="submit"
+        className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm font-medium
+                   text-white hover:bg-slate-700"
+      >
+        Search
+      </button>
+      {value ? (
+        <a
+          href={action}
+          className="self-center text-sm text-slate-500 hover:text-slate-800"
+        >
+          Clear
+        </a>
+      ) : null}
+    </form>
+  );
+}
+
+/**
+ * Previous / next links over a paged list.
+ *
+ * Says how many rows are being shown out of how many exist — a table that
+ * silently shows the first 15 of 8,000 reads as though 15 is all there is.
+ */
+export function Pagination({
+  action,
+  total,
+  limit,
+  offset,
+  params = {},
+}: {
+  action: string;
+  total: number;
+  limit: number;
+  offset: number;
+  params?: Record<string, string | undefined>;
+}) {
+  const query = (next: number) => {
+    const search = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) if (v) search.set(k, v);
+    if (next > 0) search.set("offset", String(next));
+    const s = search.toString();
+    return s ? `${action}?${s}` : action;
+  };
+
+  const from = total === 0 ? 0 : offset + 1;
+  const to = Math.min(offset + limit, total);
+  const hasPrevious = offset > 0;
+  const hasNext = to < total;
+
+  return (
+    <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+      <span>
+        {from.toLocaleString()}–{to.toLocaleString()} of{" "}
+        <b className="text-slate-700">{total.toLocaleString()}</b>
+      </span>
+      <span className="flex gap-3">
+        {hasPrevious ? (
+          <a className="font-medium text-slate-700 hover:underline"
+             href={query(Math.max(0, offset - limit))}>← Previous</a>
+        ) : (
+          <span className="text-slate-300">← Previous</span>
+        )}
+        {hasNext ? (
+          <a className="font-medium text-slate-700 hover:underline"
+             href={query(offset + limit)}>Next →</a>
+        ) : (
+          <span className="text-slate-300">Next →</span>
+        )}
+      </span>
+    </div>
+  );
+}
+
 export const SEGMENT_COLOR: Record<string, string> = {
   "High Intent": "#16a34a",
   "Loyal Customer": "#3b5bdb",

@@ -7,6 +7,8 @@ import {
   ErrorState,
   Kpi,
   PageHeader,
+  Pagination,
+  SearchBox,
   SectionLabel,
   Table,
   pct,
@@ -20,7 +22,19 @@ import { currentSite, safeGet } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-export default async function AnalyticsPage() {
+/** Rows per page in the per-customer prediction table. */
+const PAGE_SIZE = 25;
+
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; segment?: string; offset?: string }>;
+}) {
+  const params = await searchParams;
+  const query = params.q?.trim() || undefined;
+  const segment = params.segment?.trim() || undefined;
+  const offset = Math.max(0, Number(params.offset ?? 0) || 0);
+
   const { site, error } = await currentSite();
   if (error) return <ErrorState error={error} />;
   if (!site) {
@@ -36,8 +50,19 @@ export default async function AnalyticsPage() {
   const [funnel, attribution, recs] = await Promise.all([
     safeGet<FunnelResult>(`/sites/${site.id}/analytics/funnel`),
     safeGet<AttributionResult>(`/sites/${site.id}/analytics/attribution`),
-    safeGet<{ recommendations: Recommendation[]; mix: { recommendation: string; visitors: number }[]; note: string }>(
-      `/sites/${site.id}/analytics/recommendations?limit=15`,
+    safeGet<{
+      recommendations: Recommendation[];
+      mix: { recommendation: string; visitors: number }[];
+      total: number;
+      note: string;
+    }>(
+      `/sites/${site.id}/analytics/recommendations?` +
+        new URLSearchParams({
+          limit: String(PAGE_SIZE),
+          offset: String(offset),
+          ...(query ? { q: query } : {}),
+          ...(segment ? { segment } : {}),
+        }),
     ),
   ]);
 
@@ -155,11 +180,27 @@ export default async function AnalyticsPage() {
           )}
 
           <Card className="mt-4">
-            <SectionLabel>NEXT-BEST ACTION PER VISITOR</SectionLabel>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <SectionLabel>
+                {segment
+                  ? `NEXT-BEST ACTION — ${segment.toUpperCase()}`
+                  : "NEXT-BEST ACTION PER CUSTOMER"}
+              </SectionLabel>
+              <SearchBox
+                action="/analytics"
+                placeholder="Search email or visitor id"
+                value={query}
+                hidden={{ segment }}
+              />
+            </div>
+            {/* The mix counts the whole audience, not the current page — it is
+                a breakdown of everyone scored, and paging must not change it. */}
             <div className="mt-2 mb-3 flex flex-wrap gap-4 text-sm text-slate-600">
               {(recs?.mix ?? []).map((m) => (
                 <span key={m.recommendation}>
-                  <b className="text-slate-800">{m.visitors}</b>{" "}
+                  <b className="text-slate-800">
+                    {m.visitors.toLocaleString()}
+                  </b>{" "}
                   {m.recommendation.replace(/_/g, " ")}
                 </span>
               ))}
@@ -198,7 +239,18 @@ export default async function AnalyticsPage() {
                   render: (r) => r.recommendation.replace(/_/g, " "),
                 },
               ]}
-              empty="No predictions yet — run analytics."
+              empty={
+                query
+                  ? `Nobody matches "${query}".`
+                  : "No predictions yet — run analytics."
+              }
+            />
+            <Pagination
+              action="/analytics"
+              total={recs?.total ?? 0}
+              limit={PAGE_SIZE}
+              offset={offset}
+              params={{ q: query, segment }}
             />
             {recs?.note && <Caveat>{recs.note}</Caveat>}
           </Card>

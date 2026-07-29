@@ -234,6 +234,7 @@ export interface AttributionResult {
 export interface Recommendation {
   visitor_id: number;
   email: string | null;
+  visitor_uid: string;
   segment_name: string | null;
   predicted_conversion: number;
   drop_off_risk: number;
@@ -251,6 +252,8 @@ export interface ContentAsset {
   hashtags: string[];
   cta: string | null;
   image_prompt: string | null;
+  /** Which medium the brief is for — adaptive platforms vary per asset. */
+  visual_kind: "image" | "video" | null;
   campaign_goal: string | null;
   tone: string | null;
   engagement_score: number | null;

@@ -291,3 +291,40 @@ def test_call_to_action_is_not_repeated(site) -> None:
     cta = (asset.get("cta") or "").strip()
     if cta:
         assert body.count(cta) <= 1, "the call to action appears twice"
+
+
+def test_every_asset_carries_the_four_fields_the_generator_produces(site) -> None:
+    """Module 4's output per platform is caption + hashtags + CTA + a brief.
+
+    Storing only the first two would silently drop half of what the module
+    produces, and the CTA and the brief are the parts someone has to act on.
+    """
+    _cache_crawl(site["id"])
+    svc.generate_for_site(site["id"])
+
+    assets = svc.list_assets(site["id"])["assets"]
+    assert assets, "generation produced nothing"
+
+    for asset in assets:
+        assert asset["caption"].strip(), f"{asset['platform']} has no caption"
+        assert (asset["cta"] or "").strip(), f"{asset['platform']} has no CTA"
+        assert (asset["image_prompt"] or "").strip(), (
+            f"{asset['platform']} has no creative brief")
+        assert asset["visual_kind"] in {"image", "video"}
+
+
+def test_a_video_platform_is_not_given_an_image_brief(site) -> None:
+    """Regression for defect 6.
+
+    `shorts` declares `visual: video` but had no `visual_options`, so the
+    selector fell through to the default and returned an image brief. Both
+    briefs share one column, so without `visual_kind` the dashboard could not
+    tell that the video platform had been handed the wrong medium.
+    """
+    _cache_crawl(site["id"])
+    svc.generate_for_site(site["id"], platforms=["shorts", "linkedin"])
+
+    by_platform = {a["platform"]: a for a in svc.list_assets(site["id"])["assets"]}
+
+    assert by_platform["shorts"]["visual_kind"] == "video"
+    assert by_platform["linkedin"]["visual_kind"] == "image"

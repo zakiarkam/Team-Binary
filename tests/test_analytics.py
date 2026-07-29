@@ -310,6 +310,42 @@ def test_full_run_produces_checkable_insights(site, client: TestClient) -> None:
     assert any(any(ch.isdigit() for ch in text) for text in body["insights"])
 
 
+def test_recommendations_are_searchable_and_paged(
+    site, client: TestClient
+) -> None:
+    """8,000 scored customers is not a table anyone reads top to bottom.
+
+    The row a marketer wants is a specific person, so the endpoint must be
+    searchable — and it must report the total, or a page of 25 reads as though
+    25 is all there is.
+    """
+    cid = _campaign(site["id"])
+    for i in range(6):
+        _journey(site["id"], cid, f"rec-{i}", utm="linkedin", convert=i % 2 == 0)
+
+    client.post(f"/sites/{site['id']}/analytics/run")
+
+    everyone = client.get(
+        f"/sites/{site['id']}/analytics/recommendations?limit=2").json()
+    assert everyone["total"] >= 6, "total must count the audience, not the page"
+    assert len(everyone["recommendations"]) == 2
+
+    # Paging must not repeat a row.
+    page_two = client.get(
+        f"/sites/{site['id']}/analytics/recommendations?limit=2&offset=2").json()
+    first_ids = {r["visitor_id"] for r in everyone["recommendations"]}
+    assert first_ids.isdisjoint({r["visitor_id"] for r in page_two["recommendations"]})
+
+    # Searching narrows to the person asked for.
+    found = client.get(
+        f"/sites/{site['id']}/analytics/recommendations?q=rec-3").json()
+    assert found["total"] == 1
+    assert found["recommendations"][0]["visitor_uid"] == "rec-3"
+
+    # The mix describes the whole audience, so paging must not change it.
+    assert everyone["mix"] == page_two["mix"]
+
+
 def test_analytics_endpoints_404_on_unknown_site(client: TestClient) -> None:
     for path in ("analytics/funnel", "analytics/attribution",
                  "analytics/recommendations"):

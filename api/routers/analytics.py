@@ -51,13 +51,41 @@ def run(site_id: int) -> dict:
 
 
 @router.get("/sites/{site_id}/analytics/recommendations")
-def recommendations(site_id: int, limit: int = Query(50, ge=1, le=500)) -> dict:
-    """Per-visitor predictions and next-best actions, highest intent first."""
+def recommendations(
+    site_id: int,
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    q: str | None = Query(None, max_length=200,
+                          description="Match email or visitor id"),
+    segment: str | None = None,
+    recommendation: str | None = None,
+) -> dict:
+    """Per-customer predictions and next-best actions, highest intent first.
+
+    Paged, searchable and filterable, because an audience of several thousand
+    scored customers is not a table anyone can read top to bottom — and the row
+    a marketer wants is usually a specific person, not the first fifty.
+    `total` is returned so the caller can say how much it is *not* showing.
+    """
     _require_site(site_id)
 
+    filters = ["a.site_id = :s"]
+    if q:
+        # Bound parameter, never interpolated.
+        filters.append("(v.email ILIKE :q OR v.visitor_uid ILIKE :q)")
+    if segment:
+        filters.append("s.segment_name = :segment")
+    if recommendation:
+        filters.append("a.recommendation = :rec")
+    where = " AND ".join(filters)
+    pattern = f"%{q.strip()}%" if q else None
+
+    params = {"s": site_id, "q": pattern, "segment": segment,
+              "rec": recommendation}
+
     rows = db.fetch_all(
-        """
-        SELECT a.visitor_id, v.email, s.segment_name,
+        f"""
+        SELECT a.visitor_id, v.email, v.visitor_uid, s.segment_name,
                a.predicted_conversion::float8 AS predicted_conversion,
                a.drop_off_risk::float8        AS drop_off_risk,
                a.recommendation, a.recommended_platform,
@@ -66,11 +94,22 @@ def recommendations(site_id: int, limit: int = Query(50, ge=1, le=500)) -> dict:
         FROM analytics_output a
         JOIN visitors v ON v.id = a.visitor_id
         LEFT JOIN user_segments s ON s.visitor_id = a.visitor_id
-        WHERE a.site_id = :s
-        ORDER BY a.predicted_conversion DESC
-        LIMIT :lim
+        WHERE {where}
+        ORDER BY a.predicted_conversion DESC, a.visitor_id
+        LIMIT :lim OFFSET :off
         """,
-        s=site_id, lim=limit,
+        **params, lim=limit, off=offset,
+    )
+
+    total = db.fetch_one(
+        f"""
+        SELECT count(*) AS n
+        FROM analytics_output a
+        JOIN visitors v ON v.id = a.visitor_id
+        LEFT JOIN user_segments s ON s.visitor_id = a.visitor_id
+        WHERE {where}
+        """,
+        **params,
     )
 
     mix = db.fetch_all(
@@ -83,6 +122,10 @@ def recommendations(site_id: int, limit: int = Query(50, ge=1, le=500)) -> dict:
     return {
         "recommendations": rows,
         "mix": mix,
+        "total": (total or {}).get("n", 0),
+        "limit": limit,
+        "offset": offset,
+        "query": q,
         "note": ("Ordered by predicted conversion. Probabilities come from models "
                  "fitted on simulated data, so treat the ranking as meaningful and "
                  "the absolute values as uncalibrated."),
