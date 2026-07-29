@@ -25,4 +25,5 @@ REGISTRY = {
     "E6": "research.experiments.e6_goal_tone",
     "E7": "research.experiments.e7_engagement",
     "E8": "research.experiments.e8_uplift",
+    "E9": "research.experiments.e9_offpolicy",
 }

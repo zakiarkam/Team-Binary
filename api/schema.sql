@@ -327,6 +327,57 @@ CREATE TABLE IF NOT EXISTS analytics_output (
 CREATE INDEX IF NOT EXISTS idx_analytics_site ON analytics_output (site_id, predicted_conversion DESC);
 
 -- ---------------------------------------------------------------------------
+-- action_log — every next-best-action decision, with the probability it was
+-- taken under, and the reward that followed.
+--
+-- Why this table exists, when analytics_output already holds a recommendation:
+-- `analytics_output` is UNIQUE (visitor_id) and is overwritten on every run, so
+-- it holds the system's *current opinion*, never the decision it actually took.
+-- Nothing recorded which action was chosen at the time, with what probability,
+-- or what happened afterwards — so the data needed to learn a better policy was
+-- being generated and then discarded.
+--
+-- This table is APPEND-ONLY. That is the point of it.
+--
+-- `propensity` is the crucial column. Without knowing how likely an action was
+-- to be chosen, logged data can only tell you what the current policy achieved,
+-- never what a different one would have. With it, an inverse-propensity
+-- estimator can answer "what would policy B have earned on this same data?"
+-- from decisions taken under policy A. That is what makes next-best-action
+-- learnable rather than merely assertable — see api/services/decisions.py.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS action_log (
+    id           BIGSERIAL PRIMARY KEY,
+    site_id      INTEGER     NOT NULL REFERENCES sites(id)    ON DELETE CASCADE,
+    visitor_id   BIGINT      NOT NULL REFERENCES visitors(id) ON DELETE CASCADE,
+    action       TEXT        NOT NULL,
+    -- 'exploit' — the ranking chose it; 'explore' — chosen at random on purpose.
+    -- The explore arm is what creates the counterfactual: without deliberately
+    -- taking actions the ranking would not have taken, no amount of data can
+    -- say whether the ranking was right.
+    policy       TEXT        NOT NULL,
+    -- P(this action | this customer) under the policy that was running.
+    propensity   NUMERIC(8,6) NOT NULL CHECK (propensity > 0 AND propensity <= 1),
+    -- The features the decision was made on, so a model can be refitted later
+    -- against what was actually known at the time rather than what is known now.
+    context      JSONB       NOT NULL DEFAULT '{}'::jsonb,
+    decided_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- Joined in afterwards from `interactions`; NULL until something happens or
+    -- the attribution window closes.
+    reward       NUMERIC(6,4),
+    reward_kind  TEXT,
+    rewarded_at  TIMESTAMPTZ,
+    -- Same provenance rule as everywhere else, derived from the visitor.
+    source       TEXT        NOT NULL DEFAULT 'live'
+                             CHECK (source IN ('live', 'dataset'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_action_log_site    ON action_log (site_id, decided_at DESC);
+CREATE INDEX IF NOT EXISTS idx_action_log_visitor ON action_log (visitor_id, decided_at DESC);
+CREATE INDEX IF NOT EXISTS idx_action_log_pending ON action_log (site_id, reward)
+    WHERE reward IS NULL;
+
+-- ---------------------------------------------------------------------------
 -- pipeline_runs — audit trail of every orchestration run (for the Research tab)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS pipeline_runs (

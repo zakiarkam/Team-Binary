@@ -484,6 +484,59 @@ def fig_uplift() -> list[str]:
     return _save(fig, "fig_e8_uplift")
 
 
+# ── E9 ───────────────────────────────────────────────────────────────────────
+def fig_offpolicy() -> list[str]:
+    accuracy = _table("e9_estimator_accuracy")
+    exploration = _table("e9_exploration")
+    if accuracy is None or exploration is None:
+        return []
+    import matplotlib.pyplot as plt
+
+    fig, (left, right) = plt.subplots(1, 2, figsize=(9.6, 3.7))
+
+    colours = {"ips": config.PALETTE["rose"],
+               "snips": config.PALETTE["green"],
+               "doubly_robust": config.PALETTE["blue"]}
+
+    for estimator, group in accuracy.groupby("estimator"):
+        group = group.sort_values("log_size")
+        left.plot(group["log_size"], group["rmse"], marker="o",
+                  label=str(estimator).replace("_", " "),
+                  color=colours.get(str(estimator), config.PALETTE["slate"]))
+    left.set_xscale("log")
+    left.set_xlabel("logged decisions")
+    left.set_ylabel("RMSE against the true policy value")
+    left.set_title("The estimate sharpens as the log grows")
+    left.legend(frameon=False, fontsize=8)
+
+    # Bias against exploration — the argument for exploring at all.
+    exploration = exploration.sort_values("exploration_rate")
+    x = np.arange(len(exploration))
+    bars = right.bar(x, exploration["bias"],
+                     color=[config.PALETTE["rose"] if abs(b) > 0.01
+                            else config.PALETTE["green"]
+                            for b in exploration["bias"]], width=0.6)
+    right.axhline(0, color=config.INK, linewidth=1)
+    for i, (bias, rmse) in enumerate(zip(exploration["bias"], exploration["rmse"])):
+        right.text(i, bias + (0.003 if bias >= 0 else -0.005),
+                   f"{bias:+.3f}", ha="center", fontsize=7.5,
+                   va="bottom" if bias >= 0 else "top")
+    right.set_xticks(x, [f"{r:.0%}" for r in exploration["exploration_rate"]])
+    right.set_xlabel("share of decisions made at random")
+    right.set_ylabel("bias of the estimate")
+    right.set_title("No exploration → confidently wrong")
+    right.set_ylim(min(exploration["bias"]) - 0.015,
+                   max(exploration["bias"]) + 0.015)
+
+    fig.suptitle("Module 3 — off-policy evaluation, and the price of exploring",
+                 fontsize=11, fontweight="bold")
+    fig.tight_layout()
+    _caption(left, "Simulated world with a known reward function, so the true "
+                   "policy value is computable and the estimator can be scored "
+                   "against it. 40 replications per point.")
+    return _save(fig, "fig_e9_offpolicy")
+
+
 BUILDERS = (
     fig_segmentation_ablation,
     fig_segment_profile,
@@ -495,6 +548,7 @@ BUILDERS = (
     fig_goal_tone,
     fig_engagement,
     fig_uplift,
+    fig_offpolicy,
 )
 
 

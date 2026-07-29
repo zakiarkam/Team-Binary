@@ -342,6 +342,26 @@ def build_predictions(site_id: int) -> dict[str, Any]:
             records,
         )
 
+    # Record what was decided, with the probability it was decided under. The
+    # recommendation in `analytics_output` is overwritten on every run and so
+    # cannot serve as evidence about anything; this log is append-only and is
+    # what makes the policy improvable later. See api/services/decisions.py.
+    from api.services import decisions as decision_log
+
+    segment_of = dict(zip(feature_df["user_id"].astype(str),
+                          feature_df.get("segment", pd.Series(dtype=str))))
+
+    logged = decision_log.log_decisions(site_id, [
+        {"visitor_id": r["visitor_id"], "greedy": r["rec"],
+         # The features as they were at the moment of the decision, so a model
+         # refitted later trains on what was known then, not on what is known
+         # now — the difference between learning a policy and reading the future.
+         "context": {"predicted_conversion": r["pc"], "drop_off_risk": r["dr"],
+                     "segment": segment_of.get(str(r["visitor_id"]))}}
+        for r in records
+    ])
+    rewards = decision_log.attach_rewards(site_id)
+
     mix: dict[str, int] = {}
     for r in records:
         mix[r["rec"]] = mix.get(r["rec"], 0) + 1
@@ -358,6 +378,7 @@ def build_predictions(site_id: int) -> dict[str, Any]:
         "high_intent_users": sum(1 for r in records if r["pc"] >= 0.5),
         "at_risk_users": sum(1 for r in records if r["dr"] >= 0.6),
         "calibration_warnings": _calibration_warnings(records),
+        "decision_log": {**logged, **rewards},
     }
 
 

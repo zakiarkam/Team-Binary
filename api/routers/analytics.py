@@ -130,3 +130,20 @@ def recommendations(
                  "fitted on simulated data, so treat the ranking as meaningful and "
                  "the absolute values as uncalibrated."),
     }
+
+
+@router.get("/sites/{site_id}/decisions")
+def decision_log(site_id: int) -> dict:
+    """The append-only record of what the recommender actually decided.
+
+    `analytics_output` holds the system's current opinion and is overwritten on
+    every run. This is the history: which action was taken for whom, with what
+    probability, and what followed. It is what makes the policy improvable from
+    this audience rather than borrowed from another one.
+    """
+    _require_site(site_id)
+
+    from api.services import decisions
+
+    summary = decisions.summary(site_id)
+    return {**summary, "off_policy": decisions.evaluate_policy(site_id)}

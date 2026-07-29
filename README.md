@@ -127,7 +127,7 @@ scripts/        setup, dataset import, training
 
 ## Results
 
-`make research` runs eight experiments and regenerates every figure from the
+`make research` runs nine experiments and regenerates every figure from the
 results it just wrote, so a chart cannot disagree with the number it plots.
 Full write-up in **[docs/research/](docs/research/)**.
 
@@ -182,6 +182,30 @@ different people, by a margin large enough to matter.
 
 This cannot be validated on the project's own audience at all: no action was
 ever randomised there, so no counterfactual exists.
+
+### Module 3 — and the mechanism that makes it fixable
+
+E8 showed the recommender asks the wrong question and that no borrowed dataset
+can answer the right one for *your* actions. So the system now records what it
+needs to answer it itself: an append-only `action_log` holding every decision,
+**the probability it was taken under**, and what followed — plus 10% of
+decisions made at random on purpose, because a deterministic policy assigns
+probability zero to every action it doesn't take, and you cannot learn from a
+denominator of zero.
+
+Validated against a known answer (E9): at 10,000 logged decisions the
+self-normalised estimator recovers a candidate policy's true value with a bias
+of −0.003, interval containing zero.
+
+**The finding worth remembering:** without exploration the estimate is biased
+**upwards** — it reports a candidate policy as better than it is — and the
+deterministic log looks *more* trustworthy, not less. Its effective sample size
+is 1,094 against 107, because every weight is 0 or 1 rather than spread out. The
+standard diagnostic points the wrong way. **Stability is not correctness.**
+
+Token exploration is worse than none: at 1% the estimator has the worst error of
+any setting tested. Exploration is a commitment, not a gesture — and it costs
+about 7.5% of achievable reward at a 10% rate.
 
 ### Module 4 — the simpler model wins, and macro-F1 is why we know
 

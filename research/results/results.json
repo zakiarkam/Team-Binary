@@ -221,7 +221,7 @@
         "Clustering alone barely separates conversion at all. It groups users by behavioural similarity, which is not the same thing as grouping them by commercial value \u2014 and this is the measurement that shows the difference rather than assuming it.",
         "Silhouette is 0.087: the clusters overlap heavily in feature space. The segments are commercially useful without being geometrically clean, and reporting only the separation would hide that."
       ],
-      "seconds": 108.0
+      "seconds": 108.8
     },
     "E2": {
       "id": "E2",
@@ -1483,7 +1483,7 @@
         "trigger leads fixed by 3.3 conversions per 1,000 sends for 3 extra decision rules \u2014 the trade the report has to argue.",
         "Messages per user differ sharply (fixed 4.00, trigger 1.32, hybrid 3.05). A policy that stops early is rewarded by a per-send metric and penalised by a per-user one; both are reported so the choice of metric is visible rather than decisive."
       ],
-      "seconds": 53.1
+      "seconds": 53.7
     },
     "E4": {
       "id": "E4",
@@ -1671,7 +1671,7 @@
         "first_touch and last_touch disagree over 68% of all attributed credit on the same journeys \u2014 the single clearest argument in this project against trusting one attribution model.",
         "Ground-truth scoring is only possible on simulated journeys, where the true channel influence is known by construction. No such column exists for a real audience, which is why the live half reports disagreement rather than accuracy."
       ],
-      "seconds": 2.6
+      "seconds": 2.7
     },
     "E5": {
       "id": "E5",
@@ -1808,7 +1808,7 @@
         "drop_off: xgboost (AUC 0.990) clears the baseline with no interval overlap.",
         "These models are fitted on Module 3's simulator. Applying them to the imported audience is a transfer across distributions: the ranking is usable, the absolute probabilities are not calibrated for it."
       ],
-      "seconds": 11.2
+      "seconds": 11.3
     },
     "E6": {
       "id": "E6",
@@ -2101,10 +2101,10 @@
         "`campaign_goal`: the two approaches are statistically indistinguishable on this corpus (McNemar p=1.000, 16 disagreements). Choosing TF-IDF is then a decision about cost and interpretability, not about accuracy \u2014 which is a stronger argument than claiming it is more accurate.",
         "`tone`: humorous has fewer than 2 examples \u2014 cannot be split, cannot be learned, and cannot be evaluated. Reported, not hidden.",
         "`tone`: the two approaches are statistically indistinguishable on this corpus (McNemar p=0.727, 8 disagreements). Choosing TF-IDF is then a decision about cost and interpretability, not about accuracy \u2014 which is a stronger argument than claiming it is more accurate.",
-        "`campaign_goal`: best macro-F1 0.500 (tfidf + logistic) against a majority baseline of 0.148; accuracy 0.772 against 0.588. The accuracy gap flatters the model far more than the macro-F1 gap does.",
-        "`tone`: best macro-F1 0.732 (tfidf + logistic) against a majority baseline of 0.112; accuracy 0.818 against 0.386. The accuracy gap flatters the model far more than the macro-F1 gap does."
+        "`tone`: best macro-F1 0.732 (tfidf + logistic) against a majority baseline of 0.112; accuracy 0.818 against 0.386. The accuracy gap flatters the model far more than the macro-F1 gap does.",
+        "`campaign_goal`: best macro-F1 0.500 (tfidf + logistic) against a majority baseline of 0.148; accuracy 0.772 against 0.588. The accuracy gap flatters the model far more than the macro-F1 gap does."
       ],
-      "seconds": 7.7
+      "seconds": 7.8
     },
     "E7": {
       "id": "E7",
@@ -2220,7 +2220,7 @@
         "None of the 8 text features correlates with engagement after Holm\u2013Bonferroni correction. This is a property of the dataset, not a modelling failure \u2014 no model can extract a signal that is not there, and the honest response is to reduce the weight this score carries in content ranking rather than to keep tuning.",
         "The corrected model's rank correlation is 0.012 [-0.028, 0.054] \u2014 the interval spans zero, so no ranking skill is demonstrated on held-out data."
       ],
-      "seconds": 15.1
+      "seconds": 15.4
     },
     "E8": {
       "id": "E8",
@@ -4313,10 +4313,189 @@
         "Hillstrom's actions are mens and womens email, not this project's four. The experiment establishes that ranking by response and ranking by uplift are different policies with different returns; it does not produce a policy deployable to the imported audience."
       ],
       "seconds": 4.2
+    },
+    "E9": {
+      "id": "E9",
+      "title": "Module 3 \u2014 off-policy evaluation, and why exploration is not optional",
+      "status": "ok",
+      "metrics": {
+        "replications": 40,
+        "largest_log": 10000,
+        "best_estimator": "snips",
+        "best_bias": -0.0029,
+        "best_rmse": 0.0166,
+        "bias_without_exploration": 0.0391,
+        "bias_with_exploration": -0.0015,
+        "ess_without_exploration": 1094.3,
+        "ess_with_exploration": 107.2,
+        "true_policy_gain": 0.0361,
+        "detected_gain": 0.0419
+      },
+      "tables": {
+        "e9_estimator_accuracy": [
+          {
+            "estimator": "ips",
+            "log_size": 500,
+            "true_value": 0.2728,
+            "mean_estimate": 0.243,
+            "bias": -0.0297,
+            "bias_ci_low": -0.0528,
+            "bias_ci_high": -0.0031,
+            "rmse": 0.0853,
+            "unbiased": false
+          },
+          {
+            "estimator": "snips",
+            "log_size": 500,
+            "true_value": 0.2728,
+            "mean_estimate": 0.2568,
+            "bias": -0.016,
+            "bias_ci_low": -0.0399,
+            "bias_ci_high": 0.0089,
+            "rmse": 0.0783,
+            "unbiased": true
+          },
+          {
+            "estimator": "doubly_robust",
+            "log_size": 500,
+            "true_value": 0.2728,
+            "mean_estimate": 0.2569,
+            "bias": -0.0159,
+            "bias_ci_low": -0.0401,
+            "bias_ci_high": 0.0094,
+            "rmse": 0.0788,
+            "unbiased": true
+          },
+          {
+            "estimator": "ips",
+            "log_size": 2000,
+            "true_value": 0.2732,
+            "mean_estimate": 0.2662,
+            "bias": -0.007,
+            "bias_ci_low": -0.0207,
+            "bias_ci_high": 0.0072,
+            "rmse": 0.0457,
+            "unbiased": true
+          },
+          {
+            "estimator": "snips",
+            "log_size": 2000,
+            "true_value": 0.2732,
+            "mean_estimate": 0.2703,
+            "bias": -0.0029,
+            "bias_ci_low": -0.0149,
+            "bias_ci_high": 0.0092,
+            "rmse": 0.0389,
+            "unbiased": true
+          },
+          {
+            "estimator": "doubly_robust",
+            "log_size": 2000,
+            "true_value": 0.2732,
+            "mean_estimate": 0.2696,
+            "bias": -0.0037,
+            "bias_ci_low": -0.0157,
+            "bias_ci_high": 0.0088,
+            "rmse": 0.0399,
+            "unbiased": true
+          },
+          {
+            "estimator": "ips",
+            "log_size": 10000,
+            "true_value": 0.2734,
+            "mean_estimate": 0.2728,
+            "bias": -0.0006,
+            "bias_ci_low": -0.0071,
+            "bias_ci_high": 0.0057,
+            "rmse": 0.0213,
+            "unbiased": true
+          },
+          {
+            "estimator": "snips",
+            "log_size": 10000,
+            "true_value": 0.2734,
+            "mean_estimate": 0.2705,
+            "bias": -0.0029,
+            "bias_ci_low": -0.008,
+            "bias_ci_high": 0.0019,
+            "rmse": 0.0166,
+            "unbiased": true
+          },
+          {
+            "estimator": "doubly_robust",
+            "log_size": 10000,
+            "true_value": 0.2734,
+            "mean_estimate": 0.2703,
+            "bias": -0.0031,
+            "bias_ci_low": -0.0084,
+            "bias_ci_high": 0.0018,
+            "rmse": 0.017,
+            "unbiased": true
+          }
+        ],
+        "e9_exploration": [
+          {
+            "exploration_rate": 0.0,
+            "true_value": 0.2735,
+            "mean_estimate": 0.3126,
+            "bias": 0.0391,
+            "rmse": 0.0423,
+            "effective_sample_size": 1094.3,
+            "cost_of_exploring": 0.0
+          },
+          {
+            "exploration_rate": 0.01,
+            "true_value": 0.2738,
+            "mean_estimate": 0.2843,
+            "bias": 0.0105,
+            "rmse": 0.1124,
+            "effective_sample_size": 63.8,
+            "cost_of_exploring": 0.0075
+          },
+          {
+            "exploration_rate": 0.05,
+            "true_value": 0.2737,
+            "mean_estimate": 0.2879,
+            "bias": 0.0142,
+            "rmse": 0.0655,
+            "effective_sample_size": 56.8,
+            "cost_of_exploring": 0.0375
+          },
+          {
+            "exploration_rate": 0.1,
+            "true_value": 0.2728,
+            "mean_estimate": 0.2713,
+            "bias": -0.0015,
+            "rmse": 0.0332,
+            "effective_sample_size": 107.2,
+            "cost_of_exploring": 0.075
+          },
+          {
+            "exploration_rate": 0.25,
+            "true_value": 0.2736,
+            "mean_estimate": 0.2626,
+            "bias": -0.011,
+            "rmse": 0.0242,
+            "effective_sample_size": 253.3,
+            "cost_of_exploring": 0.1875
+          }
+        ]
+      },
+      "notes": [
+        "At 10,000 logged decisions the best estimator (snips) recovers the candidate policy's true value with a bias of -0.0029 [-0.0080, +0.0019] \u2014 an interval containing zero. The estimate is trustworthy at that volume.",
+        "Without exploration the estimator is biased by +0.0391 against -0.0015 at a 10% exploration rate \u2014 and it is biased *upwards*, reporting the candidate policy as better than it truly is. That is the failure mode that matters: not a number that is obviously wrong, but a flattering one.",
+        "The trap is that the deterministic log looks *more* trustworthy, not less. Its effective sample size is 1094 against 107 with exploration, because every weight is 0 or 1 rather than spread out. The usual diagnostic for an unreliable importance-weighted estimate therefore points the wrong way here: the estimate is stable and wrong, because it is computed only over the customers where the candidate happens to agree with the logged policy. Stability is not correctness.",
+        "If you explore, explore enough. At a 1% rate the estimator has the worst error of any setting tested (RMSE 0.1124 against 0.0332 at 10%): too few random decisions to remove the bias, and weights large enough to wreck the variance. Token exploration is worse than none.",
+        "Exploring costs something real: at a 10% rate roughly 7.5% of the achievable reward is given up to random assignment. That is the price of being able to tell whether the policy is any good, and the report should quote it rather than present exploration as free.",
+        "Estimator choice matters at small volumes. At 500 decisions plain IPS is measurably biased while the self-normalised and doubly-robust variants are not, so SNIPS is the one to quote until the log is large.",
+        "This is a simulation, deliberately. The claim under test is a property of an estimator \u2014 unbiasedness \u2014 which is decided by mathematics and can therefore be checked exactly against a known answer. Nothing here claims anything about real customers.",
+        "The candidate policy is worth 0.0361 more reward per customer than the one generating the logs, and the mechanism detects that from logged data alone \u2014 without having deployed it to anybody."
+      ],
+      "seconds": 0.2
     }
   },
   "status_counts": {
-    "ok": 8,
+    "ok": 9,
     "skipped": 0,
     "failed": 0
   }

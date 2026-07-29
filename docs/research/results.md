@@ -220,3 +220,48 @@ Ranking by uplift and ranking by predicted response select substantially differe
 This is the next-best-action problem proper: not send or do not send, but which of several actions. Note that the policy assigns a share of customers to *no email at all* — an output the current rule cannot produce, because every customer is given some action regardless of whether acting helps.
 
 Hillstrom's actions are mens and womens email, not this project's premium, personalised, reactivation and reminder. The experiment demonstrates the method on real randomised data and shows that the current policy is answering a different question from the one it should. It does not produce a policy deployable to the imported audience, and nothing in this report should be read as claiming it does.
+
+
+## 3.9 Making the recommendation learnable
+
+E8 showed the recommender was answering the wrong question, and that no borrowed dataset can answer the right one for this project's actions. The response was to change what the system records. `analytics_output` is overwritten on every run and therefore holds only the current opinion; a new append-only `action_log` records the decision that was actually taken, **the probability it was taken under**, the features it was taken on, and what followed.
+
+The propensity is the column that matters. Without it, logged data can only report what the running policy achieved. With it, an inverse-propensity estimator can answer what a *different* policy would have achieved on the same customers — a counterfactual recovered from observational logs. And because a deterministic policy assigns probability zero to every action it does not take, a small share of decisions are made at random on purpose.
+
+That machinery is only worth having if it works, so this experiment checks it in the one setting where “works” is precisely defined: a simulated world with a known reward function, where the true value of any policy is computable and the estimate can be scored against it.
+
+**Table R15 — Estimator error against the true policy value, as the log grows. 40 replications per row.**
+
+| Estimator | Logged decisions | Bias | 95% CI | RMSE | Unbiased |
+|---|---|---|---|---|---|
+| ips | 500 | -0.0297 | [-0.0528, -0.0031] | 0.0853 | no |
+| snips | 500 | -0.016 | [-0.0399, 0.0089] | 0.0783 | yes |
+| doubly robust | 500 | -0.0159 | [-0.0401, 0.0094] | 0.0788 | yes |
+| ips | 2000 | -0.007 | [-0.0207, 0.0072] | 0.0457 | yes |
+| snips | 2000 | -0.0029 | [-0.0149, 0.0092] | 0.0389 | yes |
+| doubly robust | 2000 | -0.0037 | [-0.0157, 0.0088] | 0.0399 | yes |
+| ips | 10000 | -0.0006 | [-0.0071, 0.0057] | 0.0213 | yes |
+| snips | 10000 | -0.0029 | [-0.008, 0.0019] | 0.0166 | yes |
+| doubly robust | 10000 | -0.0031 | [-0.0084, 0.0018] | 0.017 | yes |
+
+**Table R16 — What exploration buys, and what it costs.**
+
+| Exploration rate | Bias | RMSE | Reward given up |
+|---|---|---|---|
+| 0% | 0.0391 | 0.0423 | 0.0% |
+| 1% | 0.0105 | 0.1124 | 0.8% |
+| 5% | 0.0142 | 0.0655 | 3.8% |
+| 10% | -0.0015 | 0.0332 | 7.5% |
+| 25% | -0.011 | 0.0242 | 18.8% |
+
+![Figure R11 — Estimator error against log size, and bias against exploration rate.](../../research/figures/fig_e9_offpolicy.png)
+
+*Figure R11 — Estimator error against log size, and bias against exploration rate.*
+
+At 10,000 logged decisions the self-normalised estimator recovers the candidate policy's true value with a bias of -0.0029 and an interval containing zero. The mechanism also detects that the candidate policy is worth 0.0361 more reward per customer than the one generating the logs — from logged data alone, without having deployed it to anybody.
+
+> **The finding worth carrying into the viva.** Without exploration the estimate is biased by +0.0391, and biased *upwards* — it reports the candidate policy as better than it is. Worse, the deterministic log looks more trustworthy: its effective sample size is 1094 against 107 with exploration, because every weight is 0 or 1 rather than spread out. The standard diagnostic for an unreliable importance-weighted estimate points the wrong way. The estimate is stable and wrong, computed only over the customers where the candidate happens to agree with the logged policy. **Stability is not correctness.**
+
+Token exploration is worse than none: at a 1% rate the estimator has the worst error of any setting tested — too few random decisions to remove the bias, and weights large enough to wreck the variance. Exploration is a commitment, not a gesture.
+
+This experiment is a simulation, deliberately and without apology. The claim under test is a property of an *estimator* — unbiasedness — which is settled by mathematics and can therefore be checked exactly against a known answer. It claims nothing about real customers. What it establishes is that the mechanism now in the system will produce a usable answer once enough decisions have been logged, which is the difference between a system that can improve and one that can only assert.

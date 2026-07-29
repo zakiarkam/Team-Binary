@@ -192,12 +192,14 @@ def setup(r: Results) -> list[Block]:
          "12,000-row engagement corpus", "R², Spearman, Holm–Bonferroni"],
         ["E8", "Targeting by uplift versus by predicted response",
          "Hillstrom, 64,000 randomised", "Qini, incremental response"],
+        ["E9", "Does the decision log make the policy learnable?",
+         "Simulated world, known rewards", "Estimator bias, RMSE"],
     ]
     return [
         ("h1", "EXPERIMENTAL SETUP"),
 
         ("h2", "2.1 The experiments"),
-        ("p", "Eight experiments cover the four modules. Each writes its tables "
+        ("p", "Nine experiments cover the four modules. Each writes its tables "
               "to `research/results/`, and every figure in the next chapter is "
               "drawn from those tables rather than plotted by hand, so a chart "
               "cannot drift away from the number it shows."),
@@ -627,6 +629,90 @@ def results_chapter(r: Results) -> list[Block]:
                   "different question from the one it should. It does not "
                   "produce a policy deployable to the imported audience, and "
                   "nothing in this report should be read as claiming it does."),
+        ]
+
+    # ── E9 ──────────────────────────────────────────────────────────────────
+    if r.ok("E9"):
+        accuracy = r.table("e9_estimator_accuracy")
+        exploration = r.table("e9_exploration")
+
+        blocks += [
+            ("h2", "3.9 Making the recommendation learnable"),
+            ("p", "E8 showed the recommender was answering the wrong question, "
+                  "and that no borrowed dataset can answer the right one for "
+                  "this project's actions. The response was to change what the "
+                  "system records. `analytics_output` is overwritten on every "
+                  "run and therefore holds only the current opinion; a new "
+                  "append-only `action_log` records the decision that was "
+                  "actually taken, **the probability it was taken under**, the "
+                  "features it was taken on, and what followed."),
+            ("p", "The propensity is the column that matters. Without it, logged "
+                  "data can only report what the running policy achieved. With "
+                  "it, an inverse-propensity estimator can answer what a "
+                  "*different* policy would have achieved on the same customers "
+                  "— a counterfactual recovered from observational logs. And "
+                  "because a deterministic policy assigns probability zero to "
+                  "every action it does not take, a small share of decisions are "
+                  "made at random on purpose."),
+            ("p", "That machinery is only worth having if it works, so this "
+                  "experiment checks it in the one setting where “works” is "
+                  "precisely defined: a simulated world with a known reward "
+                  "function, where the true value of any policy is computable "
+                  "and the estimate can be scored against it."),
+            _table_block(
+                "Table R15 — Estimator error against the true policy value, as "
+                "the log grows. 40 replications per row.",
+                ["Estimator", "Logged decisions", "Bias", "95% CI", "RMSE",
+                 "Unbiased"],
+                [[row["estimator"].replace("_", " "), row["log_size"],
+                  row["bias"], f"[{row['bias_ci_low']}, {row['bias_ci_high']}]",
+                  row["rmse"], "yes" if row["unbiased"] == "True" else "no"]
+                 for row in accuracy]),
+            _table_block(
+                "Table R16 — What exploration buys, and what it costs.",
+                ["Exploration rate", "Bias", "RMSE", "Reward given up"],
+                [[f"{float(row['exploration_rate']):.0%}", row["bias"],
+                  row["rmse"], f"{float(row['cost_of_exploring']):.1%}"]
+                 for row in exploration]),
+            _figure("fig_e9_offpolicy",
+                    "Figure R11 — Estimator error against log size, and bias "
+                    "against exploration rate."),
+            ("p", f"At {r.m('E9', 'largest_log'):,} logged decisions the "
+                  f"self-normalised estimator recovers the candidate policy's "
+                  f"true value with a bias of {r.m('E9', 'best_bias'):+.4f} and "
+                  f"an interval containing zero. The mechanism also detects that "
+                  f"the candidate policy is worth "
+                  f"{r.m('E9', 'true_policy_gain'):.4f} more reward per customer "
+                  f"than the one generating the logs — from logged data alone, "
+                  f"without having deployed it to anybody."),
+            ("note", "**The finding worth carrying into the viva.** Without "
+                     f"exploration the estimate is biased by "
+                     f"{r.m('E9', 'bias_without_exploration'):+.4f}, and biased "
+                     "*upwards* — it reports the candidate policy as better than "
+                     "it is. Worse, the deterministic log looks more trustworthy: "
+                     "its effective sample size is "
+                     f"{r.m('E9', 'ess_without_exploration'):.0f} against "
+                     f"{r.m('E9', 'ess_with_exploration'):.0f} with exploration, "
+                     "because every weight is 0 or 1 rather than spread out. The "
+                     "standard diagnostic for an unreliable importance-weighted "
+                     "estimate points the wrong way. The estimate is stable and "
+                     "wrong, computed only over the customers where the candidate "
+                     "happens to agree with the logged policy. **Stability is not "
+                     "correctness.**"),
+            ("p", "Token exploration is worse than none: at a 1% rate the "
+                  "estimator has the worst error of any setting tested — too few "
+                  "random decisions to remove the bias, and weights large enough "
+                  "to wreck the variance. Exploration is a commitment, not a "
+                  "gesture."),
+            ("p", "This experiment is a simulation, deliberately and without "
+                  "apology. The claim under test is a property of an *estimator* "
+                  "— unbiasedness — which is settled by mathematics and can "
+                  "therefore be checked exactly against a known answer. It claims "
+                  "nothing about real customers. What it establishes is that the "
+                  "mechanism now in the system will produce a usable answer once "
+                  "enough decisions have been logged, which is the difference "
+                  "between a system that can improve and one that can only "
+                  "assert."),
         ]
 
     return blocks
