@@ -13,9 +13,11 @@ import {
   Table,
   pct,
 } from "@/components/ui";
+import { ModuleResearch, ViewTabs } from "@/components/research";
 import type {
   AttributionResult,
   FunnelResult,
+  ModuleResearchResult,
   Recommendation,
 } from "@/lib/api";
 import { currentSite, safeGet } from "@/lib/site";
@@ -25,15 +27,43 @@ export const dynamic = "force-dynamic";
 /** Rows per page in the per-customer prediction table. */
 const PAGE_SIZE = 25;
 
+/** Module 3's experiments in the research layer: E4, E5, E8, E9, E11. */
+const MODULE = 3;
+
 export default async function AnalyticsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; segment?: string; offset?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    segment?: string;
+    offset?: string;
+    view?: string;
+  }>;
 }) {
   const params = await searchParams;
   const query = params.q?.trim() || undefined;
   const segment = params.segment?.trim() || undefined;
   const offset = Math.max(0, Number(params.offset ?? 0) || 0);
+  const view = params.view === "research" ? "research" : "live";
+
+  // Before the site lookup: the research tab reads the experiment layer's
+  // result files, not the database, so it renders without a registered site.
+  if (view === "research") {
+    const research = await safeGet<ModuleResearchResult>(
+      `/research/modules/${MODULE}/results`,
+    );
+    return (
+      <>
+        <PageHeader
+          crumb="Dashboard"
+          title="Analytics"
+          subtitle="Module 3 — attribution, prediction, uplift and off-policy evaluation."
+        />
+        <ViewTabs view={view} />
+        <ModuleResearch data={research} module={MODULE} />
+      </>
+    );
+  }
 
   const { site, error } = await currentSite();
   if (error) return <ErrorState error={error} />;
@@ -77,6 +107,8 @@ export default async function AnalyticsPage({
         title="Analytics"
         subtitle="Module 3 — funnel, attribution and prediction over observed data."
       />
+
+      <ViewTabs view={view} />
 
       {!hasCampaign ? (
         <EmptyState

@@ -274,3 +274,105 @@ def test_capabilities_are_independent_flags_not_a_site_type() -> None:
       <a href="/newsletter">Newsletter</a></body></html>"""
     caps = crawler.extract_page_data(html)["capabilities"]
     assert caps["donation"] and caps["commerce"] and caps["lead_capture"]
+
+
+# ── The dashboard's per-module research tabs ─────────────────────────────────
+# api/services/research_experiments.py reads results.json and groups it by
+# module so each module page can show what that module was measured to do.
+# These tests hold the grouping and the figure allowlist, not the numbers.
+
+
+def _client():
+    from fastapi.testclient import TestClient
+
+    from api.main import app
+
+    return TestClient(app)
+
+
+def test_every_experiment_lands_on_exactly_one_module_page() -> None:
+    """Grouping is parsed from the experiment's own title ("Module 4 — …").
+
+    An experiment whose title stops matching that shape would vanish from the
+    dashboard without failing anything — nothing else would notice.
+    """
+    from api.services import research_experiments as service
+
+    results = service._load()
+    if results is None:
+        pytest.skip("experiments have not been run — no results.json")
+
+    seen: dict[str, int] = {}
+    for module in service.MODULE_NAMES:
+        for exp in service.module_results(module)["experiments"]:
+            assert exp["id"] not in seen, f"{exp['id']} claimed by two modules"
+            seen[exp["id"]] = module
+
+    assert set(seen) == set(results["experiments"]), (
+        f"experiment(s) on no module page: "
+        f"{sorted(set(results['experiments']) - set(seen))}")
+
+
+def test_figures_are_matched_to_their_own_experiment() -> None:
+    """E1's `fig_e1_` prefix must not swallow E10's and E11's figures."""
+    from api.services import research_experiments as service
+
+    if service._load() is None:
+        pytest.skip("experiments have not been run — no results.json")
+
+    for module in service.MODULE_NAMES:
+        for exp in service.module_results(module)["experiments"]:
+            for name in exp["figures"]:
+                assert name.startswith(f"fig_{exp['id'].lower()}_"), (
+                    f"{name} was attached to {exp['id']}")
+
+
+def test_module_results_endpoint_serves_one_module() -> None:
+    response = _client().get("/research/modules/4/results")
+    assert response.status_code == 200
+
+    body = response.json()
+    assert body["module"] == 4
+    if not body["available"]:
+        pytest.skip("experiments have not been run — no results.json")
+
+    assert [e["id"] for e in body["experiments"]] == ["E6", "E7", "E10"]
+    # The caveats travel with the numbers: several of these results went
+    # against the hypothesis, and a tab without them would misreport them.
+    assert all(e["notes"] for e in body["experiments"])
+
+
+def test_unknown_module_is_rejected() -> None:
+    assert _client().get("/research/modules/9/results").status_code == 404
+
+
+def test_figure_route_serves_only_figures_the_run_produced() -> None:
+    from api.services import research_experiments as service
+
+    client = _client()
+    names = service._figure_names()
+    if not names:
+        pytest.skip("no figures on disk — run `make research`")
+
+    assert client.get(f"/research/figures/{sorted(names)[0]}").status_code == 200
+    assert client.get("/research/figures/not_a_figure.png").status_code == 404
+    # The route takes a filename, so a path must never resolve out of the
+    # figures directory and read something else.
+    assert client.get("/research/figures/../results/results.json").status_code == 404
+
+
+def test_long_tables_report_their_true_length() -> None:
+    """E8's qini curves are 400 rows. Cutting them is fine; implying the tab
+    shows all of them is not."""
+    from api.services import research_experiments as service
+
+    if service._load() is None:
+        pytest.skip("experiments have not been run — no results.json")
+
+    for module in service.MODULE_NAMES:
+        for exp in service.module_results(module)["experiments"]:
+            for table in exp["tables"]:
+                assert len(table["rows"]) <= service.MAX_TABLE_ROWS
+                assert table["truncated"] == (
+                    table["row_count"] > service.MAX_TABLE_ROWS)
+                assert table["row_count"] >= len(table["rows"])

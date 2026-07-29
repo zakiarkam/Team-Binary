@@ -236,6 +236,46 @@ export interface Module2ResearchResult {
   meta: { source: string; note: string } | null;
 }
 
+// ── The E1–E11 experiment layer, grouped per module ──────────────────────────
+// Mirrors api/services/research_experiments.py. A metric value is whatever the
+// experiment recorded: a number, a flag, a label, or a [low, high] interval.
+export type MetricValue = number | string | boolean | null | (number | string)[];
+
+export type ResearchRow = Record<string, number | string | boolean | null>;
+
+export interface ResearchTable {
+  name: string;
+  columns: string[];
+  rows: ResearchRow[];
+  row_count: number;
+  truncated: boolean;
+}
+
+export interface ResearchExperiment {
+  id: string;
+  title: string;
+  short_title: string;
+  status: string;
+  reason: string | null;
+  metrics: Record<string, MetricValue>;
+  tables: ResearchTable[];
+  notes: string[];
+  figures: string[];
+}
+
+export interface ModuleResearchResult {
+  available: boolean;
+  module: number;
+  module_name: string | null;
+  experiments: ResearchExperiment[];
+  meta: {
+    generated_by: string | null;
+    seed: number | null;
+    n_bootstrap: number | null;
+    n_seeds: number | null;
+  } | null;
+}
+
 export interface FunnelResult {
   funnel: { sent: number; open: number; click: number; convert: number };
   dropoffs: Record<string, number>;

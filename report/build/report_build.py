@@ -1,5 +1,6 @@
 """Build the Team Binary FYP Final Report as a .docx from structured blocks."""
 import copy
+import re
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
@@ -230,13 +231,27 @@ def add_table(doc, spec):
 
 
 def add_figure(doc, spec):
+    """Centre an image with real breathing room above it and its caption below.
+
+    The picture paragraph must NOT inherit Normal's 1.5 line spacing: Word
+    multiplies the line box by it, which is what makes a tall image sit on top
+    of the paragraph above with no visible gap.
+    """
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.paragraph_format.space_before = Pt(10)
-    p.paragraph_format.space_after = Pt(2)
-    p.paragraph_format.keep_with_next = True
+    pf = p.paragraph_format
+    pf.space_before = Pt(18)
+    pf.space_after = Pt(6)
+    pf.line_spacing = 1.0
+    pf.keep_with_next = True
+    pf.keep_together = True
     p.add_run().add_picture(spec["path"], width=Inches(spec.get("width", 6.0)))
-    para(doc, spec["caption"], style="Caption")
+
+    cap = para(doc, spec["caption"], style="Caption")
+    cap.paragraph_format.space_before = Pt(2)
+    cap.paragraph_format.space_after = Pt(20)
+    cap.paragraph_format.line_spacing = 1.0
+    cap.paragraph_format.keep_together = True
 
 
 def add_bullets(doc, items, numbered=False):
@@ -255,6 +270,108 @@ def add_code(doc, text):
         p.paragraph_format.space_before = Pt(0)
         p.paragraph_format.space_after = Pt(0)
     para(doc, "", space_after=8)
+
+
+# ------------------------------------------------- research chapter remap
+# `content_research.py` is GENERATED from the measured results and must not be
+# hand-edited — that is what guarantees its numbers match `results.json`. It is
+# authored as five standalone chapters numbered 1..5 with its own "Figure R1" /
+# "Table R1" sequence. The report needs them as Chapter 7 of the template, with
+# one continuous figure and table sequence. Both are presentation concerns, so
+# they are fixed here at render time rather than in the generated file.
+
+RESEARCH_CHAPTER_MAP = {
+    "RESEARCH METHODOLOGY": ("7.1", "Research Methodology"),
+    "EXPERIMENTAL SETUP": ("7.2", "Experimental Setup and Metrics Used"),
+    "RESULTS": ("7.3", "Results"),
+    "DISCUSSION": ("7.4", "Discussion"),
+    "THREATS TO VALIDITY": ("7.5", "Threats to Validity"),
+    "LIMITATIONS": ("7.6", "Limitations"),
+}
+
+
+def _renumber_section(text, top):
+    """'3.2.1 A segment deleted' -> '7.3.2.1 A segment deleted'."""
+    m = re.match(r"^(\d+)((?:\.\d+)+)\s+(.*)$", text)
+    if not m:
+        return text
+    return f"{top}{m.group(2)} {m.group(3)}"
+
+
+def remap_research(blocks, fig_start, tab_start):
+    """Fold the generated chapters into Chapter 7 and renumber their labels.
+
+    Returns (blocks, next_figure_number, next_table_number).
+    """
+    # Pass 1 — build the label maps in the order the captions appear.
+    fig_map, tab_map = {}, {}
+    fig_n, tab_n = fig_start, tab_start
+    for kind, payload in blocks:
+        if kind == "figure":
+            m = re.match(r"Figure (R\d+)", payload["caption"])
+            if m and m.group(1) not in fig_map:
+                fig_map[m.group(1)] = str(fig_n)
+                fig_n += 1
+        elif kind == "table":
+            m = re.match(r"Table (R\d+)", payload["caption"])
+            if m and m.group(1) not in tab_map:
+                tab_map[m.group(1)] = str(tab_n)
+                tab_n += 1
+
+    # Longest label first, so R1 never eats the front of R10.
+    subs = [(re.compile(rf"\bFigure {k}\b"), f"Figure {v}")
+            for k, v in sorted(fig_map.items(), key=lambda kv: -len(kv[0]))]
+    subs += [(re.compile(rf"\bTable {k}\b"), f"Table {v}")
+             for k, v in sorted(tab_map.items(), key=lambda kv: -len(kv[0]))]
+
+    def fix(s):
+        if not isinstance(s, str):
+            return s
+        for pat, rep in subs:
+            s = pat.sub(rep, s)
+        return s
+
+    def fix_deep(o):
+        if isinstance(o, str):
+            return fix(o)
+        if isinstance(o, list):
+            return [fix_deep(x) for x in o]
+        if isinstance(o, dict):
+            return {k: fix_deep(v) for k, v in o.items()}
+        return o
+
+    # Pass 2 — demote headings into Chapter 7 and rewrite every label.
+    out, top = [], "7"
+    for kind, payload in blocks:
+        if kind in ("h1", "h1_nobreak") and payload in RESEARCH_CHAPTER_MAP:
+            num, title = RESEARCH_CHAPTER_MAP[payload]
+            top = num.split(".")[0] + "." + num.split(".")[1]
+            out.append(("h2", f"{num} {title}"))
+            continue
+        if kind == "h1" or kind == "h1_nobreak":       # unmapped: keep as 7.x
+            out.append(("h2", payload))
+            continue
+        if kind in ("h2", "h3", "h4"):
+            demoted = {"h2": "h3", "h3": "h4", "h4": "h4"}[kind]
+            out.append((demoted, _renumber_section(fix(payload), top)))
+            continue
+        out.append((kind, fix_deep(payload)))
+    return out, fig_n, tab_n
+
+
+def count_labels(blocks):
+    """Highest Figure N / Table N already used by a hand-written chapter."""
+    fig = tab = 0
+    for kind, payload in blocks:
+        if kind == "figure":
+            m = re.match(r"Figure (\d+)", payload["caption"])
+            if m:
+                fig = max(fig, int(m.group(1)))
+        elif kind == "table":
+            m = re.match(r"Table (\d+)", payload["caption"])
+            if m:
+                tab = max(tab, int(m.group(1)))
+    return fig, tab
 
 
 # --------------------------------------------------------------- render
@@ -454,12 +571,34 @@ def main():
 
     render(doc, content_a.BODY_BLOCKS)
     render(doc, content_b.BLOCKS)
-    render(doc, content_c.BLOCKS)
+
+    # Chapter 7 is the generated research chapter, folded in and renumbered so
+    # the figure and table sequences stay continuous with the chapters above.
     if content_research is not None:
-        render(doc, content_research.BLOCKS)
+        fig_n, tab_n = count_labels(
+            list(content_a.BODY_BLOCKS) + list(content_b.BLOCKS))
+        render(doc, [("h1", "CHAPTER 7 \u2014 EVALUATION")])
+        render(doc, [
+            ("p", "This chapter is generated from the measured results. Every "
+                  "number, table and figure in it is produced by an experiment "
+                  "in `research/experiments/` and written to "
+                  "`research/results/results.json`; the prose is authored once "
+                  "in `research/chapters.py` and rendered into this report with "
+                  "the values interpolated. Re-running `make research` "
+                  "regenerates the whole chapter, so no figure here can drift "
+                  "away from the number it plots."),
+        ])
+        blocks, fig_n, tab_n = remap_research(
+            content_research.BLOCKS, fig_n + 1, tab_n + 1)
+        render(doc, blocks)
+        # remap returns the NEXT free number; content_c wants the last used.
+        content_c.set_label_offsets(fig_n - 1, tab_n - 1)
+
     else:
-        print("note: research chapters omitted — run `make research` then "
-              "`python -m research.chapters` to include them.")
+        print("note: Chapter 7 omitted — run `make research`, then "
+              "`python -m research.chapters`, to include it.")
+
+    render(doc, content_c.BLOCKS)
 
     doc.save(OUT)
     print("saved:", OUT)

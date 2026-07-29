@@ -11,12 +11,47 @@ import {
   SectionLabel,
   pct,
 } from "@/components/ui";
-import type { ContentAsset, ContentPriorities } from "@/lib/api";
+import { ModuleResearch, ViewTabs } from "@/components/research";
+import type {
+  ContentAsset,
+  ContentPriorities,
+  ModuleResearchResult,
+} from "@/lib/api";
 import { currentSite, safeGet } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
-export default async function ContentPage() {
+/** Module 4's experiments in the research layer: E6, E7, E10. */
+const MODULE = 4;
+
+export default async function ContentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const params = await searchParams;
+  const view = params.view === "research" ? "research" : "live";
+
+  // Handled before the site lookup on purpose: the research tab reads the
+  // experiment layer's result files, not the database, so it must render even
+  // when no site is registered and nothing has been crawled.
+  if (view === "research") {
+    const research = await safeGet<ModuleResearchResult>(
+      `/research/modules/${MODULE}/results`,
+    );
+    return (
+      <div className="mx-auto max-w-6xl">
+        <PageHeader
+          crumb="Dashboard"
+          title="Content"
+          subtitle="Module 4 — content refinery: goal and tone, engagement, capability detection."
+        />
+        <ViewTabs view={view} />
+        <ModuleResearch data={research} module={MODULE} />
+      </div>
+    );
+  }
+
   const { site, error } = await currentSite();
   if (error) return <ErrorState error={error} />;
   if (!site) {
@@ -45,6 +80,8 @@ export default async function ContentPage() {
         title="Content"
         subtitle={`Module 4 — platform-native copy written from ${site.url}`}
       />
+
+      <ViewTabs view={view} />
 
       <Card className="mb-4">
         <div className="flex items-center justify-between">

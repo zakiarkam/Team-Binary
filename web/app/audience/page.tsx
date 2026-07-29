@@ -14,8 +14,10 @@ import {
   Table,
   pct,
 } from "@/components/ui";
+import { ModuleResearch, ViewTabs } from "@/components/research";
 import type {
   AudienceSummary,
+  ModuleResearchResult,
   ReachableAudience,
   Visitor,
 } from "@/lib/api";
@@ -26,15 +28,43 @@ export const dynamic = "force-dynamic";
 /** Rows per page in the visitor table. */
 const PAGE_SIZE = 25;
 
+/** Module 1's experiments in the research layer: E1, E2. */
+const MODULE = 1;
+
 export default async function AudiencePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; segment?: string; offset?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    segment?: string;
+    offset?: string;
+    view?: string;
+  }>;
 }) {
   const params = await searchParams;
   const query = params.q?.trim() || undefined;
   const segment = params.segment?.trim() || undefined;
   const offset = Math.max(0, Number(params.offset ?? 0) || 0);
+  const view = params.view === "research" ? "research" : "live";
+
+  // Before the site lookup: the research tab reads the experiment layer's
+  // result files, not the database, so it renders without a registered site.
+  if (view === "research") {
+    const research = await safeGet<ModuleResearchResult>(
+      `/research/modules/${MODULE}/results`,
+    );
+    return (
+      <>
+        <PageHeader
+          crumb="Dashboard"
+          title="Audience"
+          subtitle="Module 1 — hybrid segmentation, measured against each component alone."
+        />
+        <ViewTabs view={view} />
+        <ModuleResearch data={research} module={MODULE} />
+      </>
+    );
+  }
 
   const { site, error } = await currentSite();
   if (error) return <ErrorState error={error} />;
@@ -76,6 +106,8 @@ export default async function AudiencePage({
         title="Audience"
         subtitle={`Visitors of ${site.name}, segmented by Module 1.`}
       />
+
+      <ViewTabs view={view} />
 
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kpi label="VISITORS" value={totals?.visitors.toLocaleString() ?? "0"}
