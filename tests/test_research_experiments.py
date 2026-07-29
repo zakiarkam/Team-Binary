@@ -227,3 +227,50 @@ def test_results_loader_refuses_to_invent_a_missing_metric() -> None:
     assert results.m("E1", "absent", default="fallback") == "fallback"
     with pytest.raises(KeyError):
         results.m("E1", "absent")
+
+
+# ── Capability detection ─────────────────────────────────────────────────────
+
+def test_url_matching_uses_whole_segments_not_substrings() -> None:
+    """Regression for the two faults E10 found on real websites.
+
+    Substring matching read `/categories/product-strategy` as a product page and
+    a `support.` customer-service subdomain as a donation page. Both invented a
+    capability the site did not have — the expensive direction of error, because
+    it makes the system recommend something the client cannot do.
+    """
+    import crawler
+
+    magazine = """<html><body><h1>Articles</h1>
+      <a href="/categories/product-strategy">Product strategy</a>
+      <a href="/articles/latest">Latest</a></body></html>"""
+    assert crawler.extract_page_data(magazine)["capabilities"]["commerce"] is False
+
+    retailer_support = """<html><body><h1>Help</h1>
+      <a href="https://support.example.com/article/delivery">Delivery info</a>
+      </body></html>"""
+    assert crawler.extract_page_data(
+        retailer_support)["capabilities"]["donation"] is False
+
+    # …while genuine evidence still registers, including in a subdomain.
+    charity_shop = """<html><body>
+      <a href="https://shop.example.org">Shop</a>
+      <a href="/donate">Donate</a></body></html>"""
+    caps = crawler.extract_page_data(charity_shop)["capabilities"]
+    assert caps["commerce"] is True and caps["donation"] is True
+
+
+def test_capabilities_are_independent_flags_not_a_site_type() -> None:
+    """What the E10 disagreements actually taught.
+
+    A charity that sells merchandise has both donation and commerce. Treating
+    capability as a category would have forced a choice and been wrong.
+    """
+    import crawler
+
+    html = """<html><body>
+      <a href="/donate">Donate now</a>
+      <a href="/shop">Shop</a>
+      <a href="/newsletter">Newsletter</a></body></html>"""
+    caps = crawler.extract_page_data(html)["capabilities"]
+    assert caps["donation"] and caps["commerce"] and caps["lead_capture"]

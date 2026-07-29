@@ -194,12 +194,16 @@ def setup(r: Results) -> list[Block]:
          "Hillstrom, 64,000 randomised", "Qini, incremental response"],
         ["E9", "Does the decision log make the policy learnable?",
          "Simulated world, known rewards", "Estimator bias, RMSE"],
+        ["E10", "Can the system read what a website can do?",
+         "15 real websites, hand-labelled", "Agreement, precision, recall"],
+        ["E11", "What a per-website action set costs in data",
+         "Simulated world, known rewards", "RMSE, decisions required"],
     ]
     return [
         ("h1", "EXPERIMENTAL SETUP"),
 
         ("h2", "2.1 The experiments"),
-        ("p", "Nine experiments cover the four modules. Each writes its tables "
+        ("p", "Eleven experiments cover the four modules. Each writes its tables "
               "to `research/results/`, and every figure in the next chapter is "
               "drawn from those tables rather than plotted by hand, so a chart "
               "cannot drift away from the number it shows."),
@@ -715,6 +719,100 @@ def results_chapter(r: Results) -> list[Block]:
                   "assert."),
         ]
 
+    # ── E10 + E11 ───────────────────────────────────────────────────────────
+    if r.ok("E10") or r.ok("E11"):
+        blocks += [
+            ("h2", "3.10 The action set is a property of the website"),
+            ("p", "Every result so far assumed a fixed vocabulary of four "
+                  "actions. That assumption does not survive contact with a "
+                  "second client. A news site has no checkout, so recommending "
+                  "a discount there is not a poor recommendation but a category "
+                  "error; a charity has no upgrade path; a subscription product "
+                  "has no basket to abandon. The action set is therefore not a "
+                  "constant but the intersection of two things — what the "
+                  "website can perform, and what the customer qualifies for."),
+            ("p", "It is tempting to learn this. There is no dataset of "
+                  "websites labelled with marketing actions, so the labels would "
+                  "have to be synthesised from a rule and the model would learn "
+                  "that rule back — the same circularity as the two defects in "
+                  "3.2 and 3.7. What a site can do is *evidence on its pages*, "
+                  "so it is detected; which of the available actions is best is "
+                  "genuinely unknown, so that is left to the decision log."),
+        ]
+
+    if r.ok("E10"):
+        per_capability = r.table("e10_per_capability")
+        blocks += [
+            ("h3", "3.10.1 Detecting what a website can do"),
+            _table_block(
+                "Table R17 — Capability detection against hand labels on real "
+                "websites.",
+                ["Capability", "Judgements", "Agreement", "95% CI",
+                 "False positives", "False negatives"],
+                [[row["capability"].replace("_", " "), row["judgements"],
+                  row["agreement"], f"[{row['ci_low']}, {row['ci_high']}]",
+                  row["false_positives"], row["false_negatives"]]
+                 for row in per_capability]),
+            _figure("fig_e10_capability_detection",
+                    "Figure R12 — Agreement per capability, with Wilson "
+                    "intervals. The width of the bars is the honest content."),
+            ("note", "**This is a development set and the figure is fitted.** "
+                     "The first run disagreed on four judgements. Two were "
+                     "detector faults, both caused by matching URLs as free "
+                     "text: `/product` fired on a magazine's "
+                     "`/categories/product-strategy`, and a retailer's "
+                     "`support.` subdomain was read as a donation page. Matching "
+                     "now works on whole path segments and host labels. The "
+                     "other two were faults in the *labels* — a charity with a "
+                     "shop and a publisher with a store had both been marked as "
+                     "having no commerce, and the detector was right. Code and "
+                     "labels both changed after seeing results, so a fresh "
+                     "sample would be needed to claim generalisation, and none "
+                     "is claimed here."),
+            ("p", "The finding that matters is not the percentage but what the "
+                  "disagreements taught: capability is not a site *type*. A "
+                  "charity that sells merchandise has donation and commerce "
+                  "both; a publisher running a store has commerce as well as "
+                  "content. Modelling capabilities as independent flags rather "
+                  "than as a category is what allowed the detector to be right "
+                  "where the human label was wrong."),
+        ]
+
+    if r.ok("E11"):
+        requirement = r.table("e11_data_requirement")
+        blocks += [
+            ("h3", "3.10.2 What a larger action set costs"),
+            ("p", "Letting each site use its own actions is not free. "
+                  "Exploration is a fixed budget, so the more actions on offer "
+                  "the less evidence each accumulates, and the longer before a "
+                  "logged policy comparison means anything."),
+            _table_block(
+                f"Table R18 — Logged decisions needed to reach an RMSE of "
+                f"{r.m('E11', 'usable_error_target')} against the true policy "
+                f"value.",
+                ["Actions on offer", "Decisions needed", "Per action"],
+                [[row["n_actions"], f"{int(row['decisions_needed']):,}"
+                  if row["decisions_needed"] else "not reached",
+                  row["per_action"] or "—"] for row in requirement]),
+            _figure("fig_e11_action_set_size",
+                    "Figure R13 — Estimator error against action-set size, and "
+                    "the data each size requires."),
+            ("p", f"Reaching a usable estimate takes "
+                  f"{r.m('E11', 'smallest_set_decisions_needed'):,} decisions "
+                  f"with {r.m('E11', 'smallest_set')} actions and "
+                  f"{r.m('E11', 'largest_set_decisions_needed'):,} with "
+                  f"{r.m('E11', 'largest_set')}. Raising the exploration rate "
+                  f"helps but does not substitute for volume, and every "
+                  f"explored decision is one deliberately not taken greedily."),
+            ("note", "**The design guidance this yields.** The catalogue should "
+                     "stay as small as honestly covers what a site can do. "
+                     "Adding an action nobody will choose is not free — it takes "
+                     "evidence away from every other action. A site offering "
+                     "twelve actions should not expect conclusions on the same "
+                     "timescale as one offering four, and the system should say "
+                     "so rather than present an early estimate as settled."),
+        ]
+
     return blocks
 
 
@@ -829,6 +927,15 @@ def discussion(r: Results) -> list[Block]:
             "so the next-best-action recommendation cannot be validated on it at "
             "all. E8 borrows a dataset where treatment *was* randomised, and the "
             "actions there are not this project's actions.",
+            "**Capability detection was evaluated on the sample used to develop "
+            "it.** Fifteen websites, with both the detector and two labels "
+            "corrected after seeing the results, so the reported agreement is "
+            "optimistic and a fresh sample is needed before it can be quoted as "
+            "accuracy.",
+            "**The action vocabulary is authored, not discovered.** Detection "
+            "decides which families of action a site can support; it does not "
+            "invent new ones. A client whose marketing needs an action outside "
+            "the catalogue must have it added by hand.",
         ]),
     ]
     return blocks

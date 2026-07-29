@@ -276,11 +276,28 @@ def current_plan(site_id: int, include_done: bool = False) -> dict[str, Any]:
     } for r in post_rows]
 
     actions = sorted(emails + posts, key=lambda a: a["priority"])
+
+    # What this website can actually do, and therefore which recommendations are
+    # even offerable. Shown rather than silently applied: "no premium offer
+    # because the site has no checkout" is useful for an operator to read, and
+    # it makes the capability detection auditable instead of invisible.
+    from api.services import actions_catalogue as catalogue
+    from api.services import content as content_svc
+
+    capabilities = content_svc.site_capabilities(site_id)
+    offerable = catalogue.site_actions(capabilities)
+
     return {
         "site_id": site_id,
         "actions": actions,
         "counts": {"email": len(emails), "post": len(posts),
                    "total": len(actions)},
+        "capabilities": capabilities,
+        "offerable_actions": [catalogue.describe(k) for k in offerable],
+        "withheld_actions": [
+            w for w in catalogue.withheld(capabilities, {})
+            if w["scope"] == "site"
+        ],
         "how_to_use": (
             "This platform advises, it does not publish. Copy each piece of "
             "content into your own email tool or social account. Keep the "

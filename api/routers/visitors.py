@@ -42,6 +42,10 @@ VISITOR_FEATURES_SQL = """
                  FILTER (WHERE e.event_type = 'click'), 0)::float8      AS clicks,
         COUNT(*) FILTER (WHERE e.event_type = 'form_submit') AS form_submits,
         COUNT(*) FILTER (WHERE e.event_type = 'purchase')    AS purchases,
+        -- Baskets started. Not a Module 1 segmentation feature; it decides
+        -- whether an abandoned-basket reminder is an eligible action for this
+        -- customer, which needs more baskets than purchases.
+        COUNT(*) FILTER (WHERE e.event_type = 'add_to_cart')  AS add_to_carts,
         COUNT(DISTINCT e.session_id)                         AS sessions,
         COUNT(DISTINCT e.path) FILTER (WHERE e.event_type = 'page_view') AS unique_pages,
         -- Cast every derived number to float8: NUMERIC serialises to a JSON

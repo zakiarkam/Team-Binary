@@ -1,0 +1,3 @@
+url,kind,reason
+https://www.allbirds.com/,retail,HTTPError
+https://www.patagonia.com/shop/index,retail,HTTPError

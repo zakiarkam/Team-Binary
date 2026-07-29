@@ -221,7 +221,486 @@
         "Clustering alone barely separates conversion at all. It groups users by behavioural similarity, which is not the same thing as grouping them by commercial value \u2014 and this is the measurement that shows the difference rather than assuming it.",
         "Silhouette is 0.087: the clusters overlap heavily in feature space. The segments are commercially useful without being geometrically clean, and reporting only the separation would hide that."
       ],
-      "seconds": 108.9
+      "seconds": 107.7
+    },
+    "E10": {
+      "id": "E10",
+      "title": "Module 4 \u2014 capability detection on real websites",
+      "status": "ok",
+      "metrics": {
+        "sites_evaluated": 15,
+        "sites_unreachable": 2,
+        "judgements": 21,
+        "overall_agreement": 1.0,
+        "agreement_ci": [
+          0.845,
+          1.0
+        ],
+        "false_positives": 0,
+        "false_negatives": 0
+      },
+      "tables": {
+        "e10_per_capability": [
+          {
+            "capability": "commerce",
+            "judgements": 8,
+            "correct": 8,
+            "agreement": 1.0,
+            "ci_low": 0.676,
+            "ci_high": 1.0,
+            "false_positives": 0,
+            "false_negatives": 0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "capability": "subscription",
+            "judgements": 4,
+            "correct": 4,
+            "agreement": 1.0,
+            "ci_low": 0.51,
+            "ci_high": 1.0,
+            "false_positives": 0,
+            "false_negatives": 0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "capability": "lead_capture",
+            "judgements": 1,
+            "correct": 1,
+            "agreement": 1.0,
+            "ci_low": 0.207,
+            "ci_high": 1.0,
+            "false_positives": 0,
+            "false_negatives": 0,
+            "precision": 1.0,
+            "recall": 1.0
+          },
+          {
+            "capability": "donation",
+            "judgements": 8,
+            "correct": 8,
+            "agreement": 1.0,
+            "ci_low": 0.676,
+            "ci_high": 1.0,
+            "false_positives": 0,
+            "false_negatives": 0,
+            "precision": 1.0,
+            "recall": 1.0
+          }
+        ],
+        "e10_judgements": [
+          {
+            "url": "https://www.gymshark.com/",
+            "kind": "retail",
+            "capability": "commerce",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.gymshark.com/",
+            "kind": "retail",
+            "capability": "donation",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.lush.com/uk/en",
+            "kind": "retail",
+            "capability": "commerce",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://slack.com/",
+            "kind": "saas",
+            "capability": "subscription",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://slack.com/",
+            "kind": "saas",
+            "capability": "donation",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.notion.com/",
+            "kind": "saas",
+            "capability": "subscription",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.figma.com/",
+            "kind": "saas",
+            "capability": "subscription",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.dropbox.com/",
+            "kind": "saas",
+            "capability": "subscription",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.wateraid.org/uk/",
+            "kind": "charity",
+            "capability": "donation",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.wateraid.org/uk/",
+            "kind": "charity",
+            "capability": "commerce",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.redcross.org.uk/",
+            "kind": "charity",
+            "capability": "donation",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.wwf.org.uk/",
+            "kind": "charity",
+            "capability": "donation",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.oxfam.org.uk/",
+            "kind": "charity",
+            "capability": "donation",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.bbc.co.uk/news",
+            "kind": "content",
+            "capability": "commerce",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.bbc.co.uk/news",
+            "kind": "content",
+            "capability": "donation",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://arstechnica.com/",
+            "kind": "content",
+            "capability": "commerce",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://www.smashingmagazine.com/",
+            "kind": "content",
+            "capability": "commerce",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "https://css-tricks.com/",
+            "kind": "content",
+            "capability": "commerce",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "cached"
+          },
+          {
+            "url": "local:demo-site/index.html",
+            "kind": "retail (local control)",
+            "capability": "commerce",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "local"
+          },
+          {
+            "url": "local:demo-site/index.html",
+            "kind": "retail (local control)",
+            "capability": "lead_capture",
+            "expected": true,
+            "detected": true,
+            "correct": true,
+            "source": "local"
+          },
+          {
+            "url": "local:demo-site/index.html",
+            "kind": "retail (local control)",
+            "capability": "donation",
+            "expected": false,
+            "detected": false,
+            "correct": true,
+            "source": "local"
+          }
+        ],
+        "e10_unreachable": [
+          {
+            "url": "https://www.allbirds.com/",
+            "kind": "retail",
+            "reason": "HTTPError"
+          },
+          {
+            "url": "https://www.patagonia.com/shop/index",
+            "kind": "retail",
+            "reason": "HTTPError"
+          }
+        ]
+      },
+      "notes": [
+        "21 capability judgements across 15 websites. Overall agreement with the hand label is 100% [85%, 100%].",
+        "The label records what the business demonstrably does; the detector sees one page. A shop whose homepage links to no basket is a true miss for single-page detection \u2014 the running system pools evidence across every page it has crawled, which this experiment deliberately does not, so these figures are a lower bound on what the system achieves.",
+        "Around twenty sites supports a verdict, not a precise accuracy. The intervals are wide and are reported rather than rounded away.",
+        "**This sample is a development set, not a held-out test set, and the figure above is fitted.** The first run disagreed on four judgements. Two were detector faults and were fixed: substring matching on URLs fired `/product` on a magazine's `/categories/product-strategy` and read a retailer's customer-support subdomain as a donation page, so matching now works on whole path segments and host labels. The other two were faults in the labels \u2014 a charity with a shop and a publisher with a store were both marked as having no commerce, and the detector was right. Both the code and the labels therefore changed after seeing the results, which is precisely what makes an accuracy figure optimistic. A fresh sample of sites never inspected during development would be needed to claim generalisation, and this experiment does not claim it.",
+        "The useful finding is not the percentage but what the disagreements taught: capability is not a site *type*. A charity that sells merchandise has both donation and commerce; a publisher running a store has commerce as well as content. Modelling capabilities as independent flags rather than as a category is what let the detector be right where the hand label was wrong.",
+        "No false positives: the detector never claimed a capability a site does not have. That is the error that matters, because it would have the system recommend something the client cannot do.",
+        "2 site(s) could not be fetched (HTTPError) and are excluded. Reported rather than quietly dropped."
+      ],
+      "seconds": 2.8
+    },
+    "E11": {
+      "id": "E11",
+      "title": "Module 3 \u2014 the cost of a larger action set",
+      "status": "ok",
+      "metrics": {
+        "replications": 30,
+        "usable_error_target": 0.02,
+        "smallest_set": 2,
+        "smallest_set_decisions_needed": 5000,
+        "largest_set": 16,
+        "largest_set_decisions_needed": 80000
+      },
+      "tables": {
+        "e11_error_grid": [
+          {
+            "n_actions": 2,
+            "log_size": 1000,
+            "rmse": 0.0268,
+            "bias": -0.0014,
+            "usable": false,
+            "decisions_per_action": 500
+          },
+          {
+            "n_actions": 2,
+            "log_size": 5000,
+            "rmse": 0.0126,
+            "bias": -0.0016,
+            "usable": true,
+            "decisions_per_action": 2500
+          },
+          {
+            "n_actions": 2,
+            "log_size": 20000,
+            "rmse": 0.0059,
+            "bias": -0.0003,
+            "usable": true,
+            "decisions_per_action": 10000
+          },
+          {
+            "n_actions": 4,
+            "log_size": 1000,
+            "rmse": 0.0458,
+            "bias": -0.0103,
+            "usable": false,
+            "decisions_per_action": 250
+          },
+          {
+            "n_actions": 4,
+            "log_size": 5000,
+            "rmse": 0.0186,
+            "bias": 0.0028,
+            "usable": true,
+            "decisions_per_action": 1250
+          },
+          {
+            "n_actions": 4,
+            "log_size": 20000,
+            "rmse": 0.0099,
+            "bias": 0.0006,
+            "usable": true,
+            "decisions_per_action": 5000
+          },
+          {
+            "n_actions": 8,
+            "log_size": 1000,
+            "rmse": 0.0661,
+            "bias": 0.0127,
+            "usable": false,
+            "decisions_per_action": 125
+          },
+          {
+            "n_actions": 8,
+            "log_size": 5000,
+            "rmse": 0.0325,
+            "bias": 0.0025,
+            "usable": false,
+            "decisions_per_action": 625
+          },
+          {
+            "n_actions": 8,
+            "log_size": 20000,
+            "rmse": 0.012,
+            "bias": -0.0006,
+            "usable": true,
+            "decisions_per_action": 2500
+          },
+          {
+            "n_actions": 16,
+            "log_size": 1000,
+            "rmse": 0.1576,
+            "bias": 0.045,
+            "usable": false,
+            "decisions_per_action": 62
+          },
+          {
+            "n_actions": 16,
+            "log_size": 5000,
+            "rmse": 0.0834,
+            "bias": -0.0179,
+            "usable": false,
+            "decisions_per_action": 312
+          },
+          {
+            "n_actions": 16,
+            "log_size": 20000,
+            "rmse": 0.029,
+            "bias": -0.0013,
+            "usable": false,
+            "decisions_per_action": 1250
+          }
+        ],
+        "e11_data_requirement": [
+          {
+            "n_actions": 2,
+            "decisions_needed": 5000,
+            "per_action": 2500,
+            "reached": true
+          },
+          {
+            "n_actions": 4,
+            "decisions_needed": 5000,
+            "per_action": 1250,
+            "reached": true
+          },
+          {
+            "n_actions": 8,
+            "decisions_needed": 20000,
+            "per_action": 2500,
+            "reached": true
+          },
+          {
+            "n_actions": 16,
+            "decisions_needed": 80000,
+            "per_action": 5000,
+            "reached": true
+          }
+        ],
+        "e11_exploration_lever": [
+          {
+            "exploration_rate": 0.05,
+            "n_actions": 4,
+            "rmse": 0.0199,
+            "reward_given_up": 0.0375
+          },
+          {
+            "exploration_rate": 0.05,
+            "n_actions": 16,
+            "rmse": 0.0862,
+            "reward_given_up": 0.0469
+          },
+          {
+            "exploration_rate": 0.1,
+            "n_actions": 4,
+            "rmse": 0.0194,
+            "reward_given_up": 0.075
+          },
+          {
+            "exploration_rate": 0.1,
+            "n_actions": 16,
+            "rmse": 0.0748,
+            "reward_given_up": 0.0938
+          },
+          {
+            "exploration_rate": 0.2,
+            "n_actions": 4,
+            "rmse": 0.0125,
+            "reward_given_up": 0.15
+          },
+          {
+            "exploration_rate": 0.2,
+            "n_actions": 16,
+            "rmse": 0.0434,
+            "reward_given_up": 0.1875
+          },
+          {
+            "exploration_rate": 0.4,
+            "n_actions": 4,
+            "rmse": 0.011,
+            "reward_given_up": 0.3
+          },
+          {
+            "exploration_rate": 0.4,
+            "n_actions": 16,
+            "rmse": 0.0289,
+            "reward_given_up": 0.375
+          }
+        ]
+      },
+      "notes": [
+        "Letting each website use only the actions it can actually perform is not free. Exploration is a fixed budget, so the more actions on offer, the less evidence each one accumulates and the longer before a logged comparison means anything.",
+        "Reaching an RMSE of 0.02 takes 5,000 logged decisions with 2 actions and 80,000 with 16 \u2014 16.0\u00d7 the data for 8\u00d7 the actions. The requirement grows with the action set, so a site offering twelve actions should not expect conclusions on the same timescale as one offering four.",
+        "Exploring harder helps but does not rescue it: at 16 actions, quadrupling exploration from 10% to 40% cuts RMSE by 0.0459 while giving up 38% of achievable reward. Volume is the effective lever; exploration rate is the expensive one.",
+        "The practical reading for this system: the catalogue should stay as small as honestly covers what a site can do. Adding an action nobody will choose costs every other action some of its evidence.",
+        "Simulated, deliberately \u2014 the claim is about how an estimator behaves, which is checkable exactly against a known answer, and says nothing about real customers."
+      ],
+      "seconds": 0.8
     },
     "E2": {
       "id": "E2",
@@ -1483,7 +1962,7 @@
         "trigger leads fixed by 3.3 conversions per 1,000 sends for 3 extra decision rules \u2014 the trade the report has to argue.",
         "Messages per user differ sharply (fixed 4.00, trigger 1.32, hybrid 3.05). A policy that stops early is rewarded by a per-send metric and penalised by a per-user one; both are reported so the choice of metric is visible rather than decisive."
       ],
-      "seconds": 53.0
+      "seconds": 53.4
     },
     "E4": {
       "id": "E4",
@@ -1671,7 +2150,7 @@
         "first_touch and last_touch disagree over 68% of all attributed credit on the same journeys \u2014 the single clearest argument in this project against trusting one attribution model.",
         "Ground-truth scoring is only possible on simulated journeys, where the true channel influence is known by construction. No such column exists for a real audience, which is why the live half reports disagreement rather than accuracy."
       ],
-      "seconds": 2.7
+      "seconds": 2.6
     },
     "E5": {
       "id": "E5",
@@ -1808,7 +2287,7 @@
         "drop_off: xgboost (AUC 0.990) clears the baseline with no interval overlap.",
         "These models are fitted on Module 3's simulator. Applying them to the imported audience is a transfer across distributions: the ranking is usable, the absolute probabilities are not calibrated for it."
       ],
-      "seconds": 11.5
+      "seconds": 11.3
     },
     "E6": {
       "id": "E6",
@@ -2104,7 +2583,7 @@
         "`tone`: best macro-F1 0.732 (tfidf + logistic) against a majority baseline of 0.112; accuracy 0.818 against 0.386. The accuracy gap flatters the model far more than the macro-F1 gap does.",
         "`campaign_goal`: best macro-F1 0.500 (tfidf + logistic) against a majority baseline of 0.148; accuracy 0.772 against 0.588. The accuracy gap flatters the model far more than the macro-F1 gap does."
       ],
-      "seconds": 7.3
+      "seconds": 7.2
     },
     "E7": {
       "id": "E7",
@@ -2220,7 +2699,7 @@
         "None of the 8 text features correlates with engagement after Holm\u2013Bonferroni correction. This is a property of the dataset, not a modelling failure \u2014 no model can extract a signal that is not there, and the honest response is to reduce the weight this score carries in content ranking rather than to keep tuning.",
         "The corrected model's rank correlation is 0.012 [-0.028, 0.054] \u2014 the interval spans zero, so no ranking skill is demonstrated on held-out data."
       ],
-      "seconds": 15.1
+      "seconds": 15.3
     },
     "E8": {
       "id": "E8",
@@ -4312,7 +4791,7 @@
         "The two rankings agree only moderately (Spearman 0.40). At a 30% budget they share 56% of their chosen customers \u2014 so roughly 44% of the list would be emailed by one policy and not the other.",
         "Hillstrom's actions are mens and womens email, not this project's four. The experiment establishes that ranking by response and ranking by uplift are different policies with different returns; it does not produce a policy deployable to the imported audience."
       ],
-      "seconds": 4.2
+      "seconds": 4.4
     },
     "E9": {
       "id": "E9",
@@ -4495,7 +4974,7 @@
     }
   },
   "status_counts": {
-    "ok": 9,
+    "ok": 11,
     "skipped": 0,
     "failed": 0
   }

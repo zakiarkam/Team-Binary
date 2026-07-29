@@ -51,6 +51,35 @@ def latest_crawl(site_id: int, max_age_hours: int = CRAWL_TTL_HOURS) -> dict | N
     return row["data"]
 
 
+def site_capabilities(site_id: int, max_age_hours: int = 24 * 30) -> dict[str, bool]:
+    """What this website can do, pooled across every page we have crawled.
+
+    Capability belongs to the *site*, not to a page. The basket page of a shop
+    does not itself link to a basket, so judging from one page under-reports —
+    a storefront looks transactional and its own checkout does not. Pooling with
+    OR across recent crawls means evidence accumulates and never disappears
+    because the last crawl happened to land somewhere quiet.
+
+    Asymmetric on purpose: seeing a checkout once is proof the site has one;
+    not seeing it on a given page proves nothing.
+    """
+    rows = db.fetch_all(
+        """
+        SELECT data FROM site_crawls
+        WHERE site_id = :s AND ok
+          AND crawled_at > now() - make_interval(hours => :h)
+        ORDER BY crawled_at DESC LIMIT 20
+        """,
+        s=site_id, h=max_age_hours,
+    )
+
+    pooled: dict[str, bool] = {}
+    for row in rows:
+        for name, present in ((row["data"] or {}).get("capabilities") or {}).items():
+            pooled[name] = pooled.get(name, False) or bool(present)
+    return pooled
+
+
 def crawl_site(site_id: int, force: bool = False) -> dict[str, Any]:
     """Fetch the site's marketing copy, caching the result.
 

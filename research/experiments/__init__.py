@@ -26,4 +26,6 @@ REGISTRY = {
     "E7": "research.experiments.e7_engagement",
     "E8": "research.experiments.e8_uplift",
     "E9": "research.experiments.e9_offpolicy",
+    "E10": "research.experiments.e10_capability_detection",
+    "E11": "research.experiments.e11_action_set_size",
 }

@@ -53,3 +53,5 @@ The goal corpus has 453 labelled rows and the tone corpus 174, with one tone cla
 - **Open-rate tracking under-reports** by design: most mail clients block the pixel, so click-through is the reliable engagement signal.
 - **Three real platform datasets ship unused** — they are comment-level scrapes that pair no post text with post engagement.
 - **No action was ever randomised on this project's own audience**, so the next-best-action recommendation cannot be validated on it at all. E8 borrows a dataset where treatment *was* randomised, and the actions there are not this project's actions.
+- **Capability detection was evaluated on the sample used to develop it.** Fifteen websites, with both the detector and two labels corrected after seeing the results, so the reported agreement is optimistic and a fresh sample is needed before it can be quoted as accuracy.
+- **The action vocabulary is authored, not discovered.** Detection decides which families of action a site can support; it does not invent new ones. A client whose marketing needs an action outside the catalogue must have it added by hand.

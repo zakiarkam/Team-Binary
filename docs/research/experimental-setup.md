@@ -3,7 +3,7 @@
 
 ## 2.1 The experiments
 
-Nine experiments cover the four modules. Each writes its tables to `research/results/`, and every figure in the next chapter is drawn from those tables rather than plotted by hand, so a chart cannot drift away from the number it shows.
+Eleven experiments cover the four modules. Each writes its tables to `research/results/`, and every figure in the next chapter is drawn from those tables rather than plotted by hand, so a chart cannot drift away from the number it shows.
 
 **Table R2 — The seven experiments.**
 
@@ -18,6 +18,8 @@ Nine experiments cover the four modules. Each writes its tables to `research/res
 | E7 | Engagement leakage and text signal | 12,000-row engagement corpus | R², Spearman, Holm–Bonferroni |
 | E8 | Targeting by uplift versus by predicted response | Hillstrom, 64,000 randomised | Qini, incremental response |
 | E9 | Does the decision log make the policy learnable? | Simulated world, known rewards | Estimator bias, RMSE |
+| E10 | Can the system read what a website can do? | 15 real websites, hand-labelled | Agreement, precision, recall |
+| E11 | What a per-website action set costs in data | Simulated world, known rewards | RMSE, decisions required |
 
 
 ## 2.2 Choice of statistics

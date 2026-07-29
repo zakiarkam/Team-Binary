@@ -537,6 +537,81 @@ def fig_offpolicy() -> list[str]:
     return _save(fig, "fig_e9_offpolicy")
 
 
+# ── E10 ──────────────────────────────────────────────────────────────────────
+def fig_capability_detection() -> list[str]:
+    data = _table("e10_per_capability")
+    if data is None:
+        return []
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(7.0, 3.4))
+    data = data.sort_values("judgements", ascending=True)
+    y = np.arange(len(data))
+
+    ax.barh(y, data["agreement"], height=0.6, color=config.PALETTE["green"])
+    ax.errorbar(data["agreement"], y,
+                xerr=[data["agreement"] - data["ci_low"],
+                      data["ci_high"] - data["agreement"]],
+                fmt="none", ecolor=config.INK, elinewidth=1.1, capsize=3)
+
+    for i, (value, n) in enumerate(zip(data["agreement"], data["judgements"])):
+        ax.text(1.02, i, f"{value:.0%}  (n={n})", va="center", fontsize=8)
+
+    ax.set_yticks(y, [c.replace("_", " ") for c in data["capability"]])
+    ax.set_xlim(0, 1.32)
+    ax.set_xlabel("agreement with the hand label")
+    ax.set_title("Module 4 — capability detection on real websites")
+    ax.grid(axis="y", visible=False)
+    _caption(ax, "Wilson intervals. The sample is small and was used during "
+                 "development, so the point estimates are optimistic — the "
+                 "width of these bars is the honest content of the figure.")
+    return _save(fig, "fig_e10_capability_detection")
+
+
+# ── E11 ──────────────────────────────────────────────────────────────────────
+def fig_action_set_size() -> list[str]:
+    grid = _table("e11_error_grid")
+    requirement = _table("e11_data_requirement")
+    if grid is None or requirement is None:
+        return []
+    import matplotlib.pyplot as plt
+
+    fig, (left, right) = plt.subplots(1, 2, figsize=(9.6, 3.7))
+
+    shades = [config.PALETTE["green"], config.PALETTE["blue"],
+              config.PALETTE["amber"], config.PALETTE["rose"]]
+    for colour, (k, group) in zip(shades, grid.groupby("n_actions")):
+        group = group.sort_values("log_size")
+        left.plot(group["log_size"], group["rmse"], marker="o",
+                  label=f"{k} actions", color=colour)
+
+    left.set_xscale("log")
+    left.set_yscale("log")
+    left.set_xlabel("logged decisions")
+    left.set_ylabel("RMSE against the true policy value")
+    left.set_title("More actions, thinner evidence")
+    left.legend(frameon=False, fontsize=8)
+
+    requirement = requirement.dropna(subset=["decisions_needed"])
+    x = np.arange(len(requirement))
+    right.bar(x, requirement["decisions_needed"], color=config.PALETTE["purple"],
+              width=0.6)
+    for i, value in enumerate(requirement["decisions_needed"]):
+        right.text(i, value * 1.05, f"{int(value):,}", ha="center", fontsize=8)
+    right.set_xticks(x, [f"{int(k)}" for k in requirement["n_actions"]])
+    right.set_yscale("log")
+    right.set_xlabel("actions on offer")
+    right.set_ylabel("decisions needed")
+    right.set_title("Data required before a comparison means anything")
+
+    fig.suptitle("Module 3 — what a per-website action set costs in data",
+                 fontsize=11, fontweight="bold")
+    fig.tight_layout()
+    _caption(left, "Simulated world with a known reward function. Exploration "
+                   "held at 10%; 30 replications per point.")
+    return _save(fig, "fig_e11_action_set_size")
+
+
 BUILDERS = (
     fig_segmentation_ablation,
     fig_segment_profile,
@@ -549,6 +624,8 @@ BUILDERS = (
     fig_engagement,
     fig_uplift,
     fig_offpolicy,
+    fig_capability_detection,
+    fig_action_set_size,
 )
 
 

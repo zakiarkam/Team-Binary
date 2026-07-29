@@ -88,27 +88,40 @@ REWARD_VALUES = {"convert": 1.0, "click": 0.25}
 
 
 def epsilon_greedy(greedy_action: str, rng: random.Random,
-                   epsilon: float = EXPLORATION_RATE) -> tuple[str, str, float]:
-    """Choose an action, and report how likely that choice was.
+                   epsilon: float = EXPLORATION_RATE,
+                   candidates: Sequence[str] | None = None
+                   ) -> tuple[str, str, float]:
+    """Choose an action from what is available, and report how likely that was.
 
-    Returns `(action, policy, propensity)` where propensity is
+    Returns `(action, policy, propensity)` where
 
-        P(a | x) = ε/K + (1 − ε)·1[a = greedy(x)]
+        P(a | x) = ε/|A(x)| + (1 − ε)·1[a = greedy(x)]
 
-    which sums to 1 over the action set, as a probability must. The greedy
-    action keeps most of the mass; every other action keeps a small, *known*
-    share — and it is that known share, not the exploration itself, that makes
-    the logs analysable later.
+    The denominator is the number of actions available *to this customer of
+    this site* — not a global constant. A shop with a basket, a subscription
+    product and a charity offer different things, and within one site a lapsed
+    buyer and a first-time reader qualify for different subsets. Dividing by a
+    fixed K when the real set varies is a silent bias in every off-policy
+    estimate computed afterwards, so |A(x)| travels with the decision.
+
+    This is the "varying action set" case in the contextual-bandit literature.
+    Nothing about it is exotic; it just has to be got right once.
     """
-    k = len(ACTIONS)
+    pool = tuple(candidates) if candidates else ACTIONS
+    if not pool:                       # never — available() guarantees non-empty
+        pool = (ACTIONS[-1],)
+
+    k = len(pool)
+    greedy = greedy_action if greedy_action in pool else pool[-1]
+
     if rng.random() < epsilon:
-        action = rng.choice(ACTIONS)
+        action = rng.choice(pool)
         policy = "explore"
     else:
-        action = greedy_action if greedy_action in ACTIONS else ACTIONS[-1]
+        action = greedy
         policy = "exploit"
 
-    propensity = epsilon / k + (1.0 - epsilon) * (1.0 if action == greedy_action else 0.0)
+    propensity = epsilon / k + (1.0 - epsilon) * (1.0 if action == greedy else 0.0)
     return action, policy, propensity
 
 
@@ -125,20 +138,34 @@ def log_decisions(site_id: int, decisions: Sequence[dict],
         return {"logged": 0, "explored": 0, "mix": {}}
 
     rng = random.Random(seed)
-    rows, mix, explored = [], {}, 0
+    rows, mix, explored, set_sizes = [], {}, 0, []
 
     for decision in decisions:
+        # Which actions this site can perform, narrowed to those this customer
+        # qualifies for. Falls back to the fixed set when a caller supplies no
+        # candidates, so older call sites keep working.
+        candidates = decision.get("candidates") or list(ACTIONS)
+
         action, policy, propensity = epsilon_greedy(
-            str(decision.get("greedy") or ACTIONS[-1]), rng, epsilon)
+            str(decision.get("greedy") or candidates[-1]), rng, epsilon,
+            candidates=candidates)
         explored += policy == "explore"
+        set_sizes.append(len(candidates))
         mix[action] = mix.get(action, 0) + 1
+
+        # The candidate set is stored with the decision, not just its size. An
+        # estimator reading this log months later cannot otherwise reconstruct
+        # what was on offer, and without that the propensity is unverifiable.
+        context = dict(decision.get("context") or {})
+        context["candidates"] = candidates
+
         rows.append({
             "site_id": site_id,
             "visitor_id": int(decision["visitor_id"]),
             "action": action,
             "policy": policy,
             "propensity": round(propensity, 6),
-            "context": json.dumps(decision.get("context") or {}, default=str),
+            "context": json.dumps(context, default=str),
         })
 
     db.execute_many(
@@ -153,8 +180,18 @@ def log_decisions(site_id: int, decisions: Sequence[dict],
         rows,
     )
     log.info("site %s: logged %s decisions (%s explored)", site_id, len(rows), explored)
-    return {"logged": len(rows), "explored": explored,
-            "exploration_rate": round(explored / len(rows), 4), "mix": mix}
+    return {
+        "logged": len(rows), "explored": explored,
+        "exploration_rate": round(explored / len(rows), 4),
+        "mix": mix,
+        # How many actions were on offer, on average. With a larger candidate
+        # set each action receives less exploration, so this is the number that
+        # says how long the log must grow before it can support a conclusion —
+        # see experiment E11.
+        "mean_candidates": round(sum(set_sizes) / len(set_sizes), 2),
+        "min_candidates": min(set_sizes),
+        "max_candidates": max(set_sizes),
+    }
 
 
 def attach_rewards(site_id: int, window_days: int = REWARD_WINDOW_DAYS) -> dict[str, Any]:

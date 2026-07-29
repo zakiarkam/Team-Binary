@@ -78,7 +78,7 @@ Accuracy is not what the defect corrupts. The confidence attached to every downs
 |---|---|---|---|---|---|
 | fixed | 500 | 144 | 36 | 72.0 | 1 |
 | trigger | 400 | 111 | 44 | 110.0 | 4 |
-| hybrid | 400 | 108 | 39 | 97.5 | 8 |
+| hybrid | 400 | 109 | 42 | 105.0 | 8 |
 
 > **The simulation and the live build disagree about which policy wins.** Both metrics are volume-controlled, so the difference lies in how response is modelled — the simulator's segment-level propensities against per-customer rates drawn from each customer's own recorded email history. Neither is an observation of real people reacting. The ranking is evidently not robust to that choice, and that instability is the result. Quoting whichever run supports the preferred conclusion would be the one genuinely dishonest option available here.
 
@@ -265,3 +265,52 @@ At 10,000 logged decisions the self-normalised estimator recovers the candidate 
 Token exploration is worse than none: at a 1% rate the estimator has the worst error of any setting tested — too few random decisions to remove the bias, and weights large enough to wreck the variance. Exploration is a commitment, not a gesture.
 
 This experiment is a simulation, deliberately and without apology. The claim under test is a property of an *estimator* — unbiasedness — which is settled by mathematics and can therefore be checked exactly against a known answer. It claims nothing about real customers. What it establishes is that the mechanism now in the system will produce a usable answer once enough decisions have been logged, which is the difference between a system that can improve and one that can only assert.
+
+
+## 3.10 The action set is a property of the website
+
+Every result so far assumed a fixed vocabulary of four actions. That assumption does not survive contact with a second client. A news site has no checkout, so recommending a discount there is not a poor recommendation but a category error; a charity has no upgrade path; a subscription product has no basket to abandon. The action set is therefore not a constant but the intersection of two things — what the website can perform, and what the customer qualifies for.
+
+It is tempting to learn this. There is no dataset of websites labelled with marketing actions, so the labels would have to be synthesised from a rule and the model would learn that rule back — the same circularity as the two defects in 3.2 and 3.7. What a site can do is *evidence on its pages*, so it is detected; which of the available actions is best is genuinely unknown, so that is left to the decision log.
+
+
+### 3.10.1 Detecting what a website can do
+
+**Table R17 — Capability detection against hand labels on real websites.**
+
+| Capability | Judgements | Agreement | 95% CI | False positives | False negatives |
+|---|---|---|---|---|---|
+| commerce | 8 | 1.0 | [0.676, 1.0] | 0 | 0 |
+| subscription | 4 | 1.0 | [0.51, 1.0] | 0 | 0 |
+| lead capture | 1 | 1.0 | [0.207, 1.0] | 0 | 0 |
+| donation | 8 | 1.0 | [0.676, 1.0] | 0 | 0 |
+
+![Figure R12 — Agreement per capability, with Wilson intervals. The width of the bars is the honest content.](../../research/figures/fig_e10_capability_detection.png)
+
+*Figure R12 — Agreement per capability, with Wilson intervals. The width of the bars is the honest content.*
+
+> **This is a development set and the figure is fitted.** The first run disagreed on four judgements. Two were detector faults, both caused by matching URLs as free text: `/product` fired on a magazine's `/categories/product-strategy`, and a retailer's `support.` subdomain was read as a donation page. Matching now works on whole path segments and host labels. The other two were faults in the *labels* — a charity with a shop and a publisher with a store had both been marked as having no commerce, and the detector was right. Code and labels both changed after seeing results, so a fresh sample would be needed to claim generalisation, and none is claimed here.
+
+The finding that matters is not the percentage but what the disagreements taught: capability is not a site *type*. A charity that sells merchandise has donation and commerce both; a publisher running a store has commerce as well as content. Modelling capabilities as independent flags rather than as a category is what allowed the detector to be right where the human label was wrong.
+
+
+### 3.10.2 What a larger action set costs
+
+Letting each site use its own actions is not free. Exploration is a fixed budget, so the more actions on offer the less evidence each accumulates, and the longer before a logged policy comparison means anything.
+
+**Table R18 — Logged decisions needed to reach an RMSE of 0.02 against the true policy value.**
+
+| Actions on offer | Decisions needed | Per action |
+|---|---|---|
+| 2 | 5,000 | 2500 |
+| 4 | 5,000 | 1250 |
+| 8 | 20,000 | 2500 |
+| 16 | 80,000 | 5000 |
+
+![Figure R13 — Estimator error against action-set size, and the data each size requires.](../../research/figures/fig_e11_action_set_size.png)
+
+*Figure R13 — Estimator error against action-set size, and the data each size requires.*
+
+Reaching a usable estimate takes 5,000 decisions with 2 actions and 80,000 with 16. Raising the exploration rate helps but does not substitute for volume, and every explored decision is one deliberately not taken greedily.
+
+> **The design guidance this yields.** The catalogue should stay as small as honestly covers what a site can do. Adding an action nobody will choose is not free — it takes evidence away from every other action. A site offering twelve actions should not expect conclusions on the same timescale as one offering four, and the system should say so rather than present an early estimate as settled.
