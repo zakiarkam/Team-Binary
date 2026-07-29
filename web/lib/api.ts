@@ -206,6 +206,36 @@ export interface CampaignMetrics {
   caveat: string;
 }
 
+/** Module 2's real controlled-simulation output, read from the pipeline's
+ * committed result files — see api/services/research_m2.py. Distinct from
+ * CampaignMetrics, which is the live operational re-simulation. */
+export interface Module2StrategyRow {
+  strategy: string;
+  sends: number;
+  open_rate: number;
+  ctr: number;
+  conv_rate: number;
+  conv_per_1000: number;
+  days_to_convert: number;
+  complexity: number;
+}
+
+export interface Module2MultiseedRow {
+  strategy: string;
+  conv_per_1k_mean: number;
+  conv_per_1k_std: number;
+  conv_rate_mean: number;
+  conv_rate_std: number;
+}
+
+export interface Module2ResearchResult {
+  available: boolean;
+  strategy_comparison: Module2StrategyRow[];
+  multiseed_summary: Module2MultiseedRow[];
+  figures: string[];
+  meta: { source: string; note: string } | null;
+}
+
 export interface FunnelResult {
   funnel: { sent: number; open: number; click: number; convert: number };
   dropoffs: Record<string, number>;
