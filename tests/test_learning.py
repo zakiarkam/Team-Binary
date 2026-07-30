@@ -146,6 +146,158 @@ def test_importer_reports_unrecognized(tmp_path, db):
 
 
 # --------------------------------------------------------------------------
+# importer — per-platform export layouts
+#
+# One case per platform, using that platform's export headers rather than the
+# store's canonical names. The previous synthetic fixture wrote canonical
+# headers, so every layout passed while real TikTok/Facebook/YouTube exports
+# imported zero rows: the mapping layer was never exercised. These cases feed
+# the header spellings the alias lists claim to support, so a change that
+# breaks one is caught here.
+#
+# NOTE: passing these does NOT prove the aliases match what a platform really
+# ships today — export schemas change and none of this is verified against a
+# real file. It proves the mapping and detection machinery works for the
+# spellings we claim. Real files are checked with `importer.inspect_csv`.
+# --------------------------------------------------------------------------
+
+PLATFORM_EXPORTS = {
+    "instagram": {
+        # Account username and Saves are what distinguish an Instagram export
+        # from a Facebook one — both otherwise carry Post ID / Description /
+        # Reach / Likes / Comments / Shares. See the ambiguity test below for
+        # what happens when a trimmed export has neither.
+        "Post ID": "IG-1", "Account username": "brand",
+        "Description": "Sip sustainably every morning",
+        "Publish time": "2026-02-01", "Views": 4000, "Reach": 3200,
+        "Likes": 210, "Comments": 14, "Shares": 6, "Saves": 30,
+    },
+    "facebook": {
+        "Post ID": "FB-1", "Page ID": "PAGE-9", "Title": "Launch",
+        "Description": "Meet the new insulated bottle", "Reach": 2800,
+        "Impressions": 3500, "Reactions": 180, "Comments": 11, "Shares": 5,
+    },
+    "linkedin": {
+        "Post link": "https://linkedin.com/feed/update/1",
+        "Post title": "Why we rebuilt our scheduling tool",
+        "Date": "2026-02-01", "Impressions": 5200, "Clicks": 140,
+        "Likes": 96, "Comments": 7, "Reposts": 3,
+    },
+    "tiktok": {
+        "Video link": "https://tiktok.com/@x/video/1",
+        "Video title": "POV: your morning just got easier",
+        "Post time": "2026-02-01", "Video views": 22000,
+        "Likes": 1400, "Comments": 62, "Shares": 88,
+    },
+    "youtube": {
+        "Content": "YT-1", "Video title": "The 30-second setup",
+        "Video publish time": "2026-02-01", "Impressions": 9000, "Views": 3100,
+        "Likes": 240, "Comments added": 18, "Shares": 12,
+    },
+    "email": {
+        "Campaign ID": "EM-1", "Subject line": "Your next small upgrade",
+        "Send date": "2026-02-01", "Delivered": 12000, "Unique opens": 3400,
+        "Unique clicks": 410, "Unsubscribes": 9,
+    },
+}
+
+
+@pytest.mark.parametrize("platform", sorted(PLATFORM_EXPORTS))
+def test_importer_handles_real_export_headers(platform, tmp_path, db):
+    """Each platform's export layout maps and stores, detected from headers.
+
+    The file is named neutrally so detection must work off the header
+    signature — naming it `<platform>.csv` would let the filename shortcut hide
+    a broken signature.
+    """
+    csv = tmp_path / "export_download.csv"
+    pd.DataFrame([PLATFORM_EXPORTS[platform]]).to_csv(csv, index=False)
+
+    report = importer.import_csv(csv, account_id="acct1", db_path=db)
+
+    assert report["platform"] == platform, report
+    assert "error" not in report, report
+    # Caption is what makes a row storable at all; without it the store drops it.
+    assert "caption" in report["mapped_columns"], report
+    assert "external_post_id" in report["mapped_columns"], report
+    assert report["inserted"] == 1, report
+
+    labeled = feedback_store.load_labeled(db_path=db)
+    assert len(labeled) == 1
+    assert labeled.iloc[0]["caption"]
+    assert labeled.iloc[0]["actual_engagement_rate"] > 0
+
+
+def test_importer_refuses_metrics_without_text(tmp_path, db):
+    """Engagement columns but no caption and no id must error, not report zero.
+
+    This is the failure that looked like success: every row is discarded by the
+    store, and the old report said `inserted: 0` with no error at all.
+    """
+    csv = tmp_path / "metrics_only.csv"
+    pd.DataFrame({"likes": [50], "impressions": [1000]}).to_csv(csv, index=False)
+
+    report = importer.import_csv(csv, db_path=db)
+    assert report["rows"] == 0
+    assert "error" in report
+    assert "caption" in report["error"]
+    assert feedback_store.summary(db_path=db)["total_posts"] == 0
+
+
+def test_facebook_not_detected_as_linkedin(tmp_path, db):
+    """Meta writes 'Reactions' too, so detection must not key on it alone."""
+    csv = tmp_path / "download.csv"
+    pd.DataFrame([PLATFORM_EXPORTS["facebook"]]).to_csv(csv, index=False)
+    assert importer.import_csv(csv, db_path=db)["platform"] == "facebook"
+
+
+def test_ambiguous_export_still_imports_under_generic(tmp_path, db):
+    """A layout no signature claims must still map, not fail.
+
+    Meta's Instagram and Facebook exports share most of their columns, so an
+    export trimmed of the distinguishing ones is genuinely ambiguous. Falling
+    back to `generic` is the correct outcome: the platform label is unknown,
+    but the row still carries its caption and metrics and is worth keeping.
+    Detection accuracy is a convenience; losing the row would not be.
+    """
+    csv = tmp_path / "download.csv"
+    pd.DataFrame([{
+        "Post ID": "X-1", "Description": "Ambiguous but perfectly usable",
+        "Reach": 900, "Likes": 40, "Comments": 3, "Shares": 1,
+    }]).to_csv(csv, index=False)
+
+    report = importer.import_csv(csv, account_id="acct1", db_path=db)
+    assert report["platform"] == "generic"
+    assert report["inserted"] == 1
+    assert feedback_store.load_labeled(db_path=db).iloc[0]["caption"]
+
+
+def test_inspect_csv_is_a_dry_run(tmp_path, db):
+    """inspect_csv reports the mapping and writes nothing."""
+    csv = tmp_path / "download.csv"
+    pd.DataFrame([PLATFORM_EXPORTS["tiktok"]]).to_csv(csv, index=False)
+
+    report = importer.inspect_csv(csv)
+    assert report["detected_platform"] == "tiktok"
+    assert report["would_import"] is True
+    assert not report["missing_required"]
+    assert feedback_store.summary(db_path=db)["total_posts"] == 0
+
+
+def test_inspect_csv_names_the_missing_field(tmp_path):
+    """An unknown layout tells the operator which alias list to extend."""
+    csv = tmp_path / "download.csv"
+    pd.DataFrame({"Clip headline": ["hi"], "Hearts": [5],
+                  "Plays": [100]}).to_csv(csv, index=False)
+
+    report = importer.inspect_csv(csv)
+    assert report["would_import"] is False
+    assert "caption" in report["missing_required"]
+    assert "Clip headline" in report["unmapped_columns"]
+    assert "_COLUMN_MAPS" in report["hint"]
+
+
+# --------------------------------------------------------------------------
 # personalize (end-to-end on synthetic data, no torch)
 # --------------------------------------------------------------------------
 
