@@ -254,6 +254,20 @@ export default async function AnalyticsPage({
               rows={recs?.recommendations ?? []}
               columns={[
                 {
+                  // The order of this table is itself the result, so the
+                  // position is worth stating. It comes from the API rather
+                  // than the row index: this table is searchable and paged, and
+                  // a counted row would tell someone who searched for one
+                  // customer that they are the top prospect.
+                  key: "rank",
+                  header: "#",
+                  render: (r) => (
+                    <span className="font-mono text-xs tabular-nums text-slate-400">
+                      {r.rank}
+                    </span>
+                  ),
+                },
+                {
                   key: "email",
                   header: "Visitor",
                   render: (r) => (

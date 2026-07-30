@@ -346,6 +346,45 @@ def test_recommendations_are_searchable_and_paged(
     assert everyone["mix"] == page_two["mix"]
 
 
+def test_rank_is_the_position_in_the_audience_not_in_the_page(
+    site, client: TestClient
+) -> None:
+    """The number beside a customer must mean one thing everywhere.
+
+    The table it feeds is paged and searchable, so numbering the returned rows
+    would restart at 1 on page two and label the single hit of any search as
+    the top prospect. The rank is computed across the whole scored audience
+    before filtering, which is the only reading that survives both.
+    """
+    cid = _campaign(site["id"])
+    for i in range(6):
+        _journey(site["id"], cid, f"rank-{i}", utm="linkedin", convert=i % 2 == 0)
+
+    client.post(f"/sites/{site['id']}/analytics/run")
+
+    rows = client.get(
+        f"/sites/{site['id']}/analytics/recommendations?limit=100"
+    ).json()["recommendations"]
+    assert len(rows) >= 6
+    assert [r["rank"] for r in rows] == list(range(1, len(rows) + 1)), \
+        "unfiltered, the ranking is the row order"
+
+    page_two = client.get(
+        f"/sites/{site['id']}/analytics/recommendations?limit=2&offset=2"
+    ).json()["recommendations"]
+    assert [r["rank"] for r in page_two] == [3, 4], \
+        "page two must continue the ranking, not restart it"
+
+    # The last customer in the audience keeps their standing when searched for
+    # directly — being the only row on screen does not make them the best one.
+    last = rows[-1]
+    found = client.get(
+        f"/sites/{site['id']}/analytics/recommendations?q={last['visitor_uid']}"
+    ).json()["recommendations"]
+    assert len(found) == 1
+    assert found[0]["rank"] == last["rank"] > 1
+
+
 # ── The recommender ──────────────────────────────────────────────────────────
 
 def test_segment_labels_reach_module_three_intact(site) -> None:

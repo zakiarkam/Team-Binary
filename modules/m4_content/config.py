@@ -210,6 +210,127 @@ PLATFORM_SPECS = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Platform tone register
+# ---------------------------------------------------------------------------
+# The tone classifier predicts ONE tone for the business, from the business's
+# own text. It cannot predict a per-platform tone: its training corpus
+# (data/processed/goal_tone_dataset_training.csv) is text -> goal/tone with no
+# platform column, so there is no platform signal in it to learn from.
+#
+# What varies per platform is therefore the *register* — how the same brand
+# voice is spoken on that channel — not the brand voice itself. Keeping the
+# brand voice constant across channels is deliberate: a company that reads as
+# luxury on its own site should still read as luxury on TikTok, just at TikTok's
+# energy. Swapping in a generic per-platform tone would discard the one thing
+# the model actually measured.
+#
+# So: brand_tone (model, per business) x platform -> platform_tone (rule, per
+# asset).
+#
+# PROVENANCE OF THE VALUES BELOW — read this before citing them.
+#
+# The *principle* is established: integrated marketing communications holds that
+# a brand keeps one voice across touchpoints and varies only how it is expressed
+# per channel. That is why this adapts the measured tone instead of replacing it.
+#
+# The *individual cells* are an editorial heuristic. They are not taken from a
+# published table, not tuned, and not measured. They are declared operating
+# points in the same sense as TONE_PHI3_TRIGGER_CONFIDENCE below.
+#
+# Learning them instead was tested and is not possible with the data here.
+# scripts/probe_platform_tone_signal.py runs the trained tone classifier over
+# the only corpus carrying both a platform label and post text
+# (data/raw/datasets/Social Media Engagement Dataset.csv, 12k rows) and tests
+# the platform x tone table for independence:
+#
+#     chi2 = 9.63, dof = 8, p = 0.292   ->  independent
+#
+# Predicted tone is within a few points of identical on all five platforms.
+# The corpus is templated consumer chatter rather than brand copy, and its
+# platforms barely overlap M4's, so there is no platform-voice signal in it to
+# learn. As with the engagement model above, that is a property of the available
+# data, not a modelling failure.
+#
+# To replace this heuristic with a learned mapping you need a corpus of real
+# brand posts labelled by platform. Re-run the probe against it: if p < 0.05,
+# derive the map from the measured distribution instead of this table.
+#
+# A platform absent from the map, or a brand tone absent from its inner map,
+# falls through to the brand tone unchanged.
+
+PLATFORM_TONE_REGISTER = {
+    "linkedin": {
+        "friendly": "professional",
+        "persuasive": "professional",
+        "informative": "professional",
+        "luxury": "luxury",          # already the right register for LinkedIn
+        "professional": "professional",
+        "emotional": "professional",
+    },
+    "instagram": {
+        "professional": "friendly",
+        "informative": "friendly",
+        "persuasive": "persuasive",
+        "luxury": "luxury",
+        "friendly": "friendly",
+        "emotional": "emotional",
+    },
+    "tiktok": {
+        "professional": "friendly",
+        "informative": "friendly",
+        "luxury": "persuasive",      # luxury restraint does not survive TikTok
+        "persuasive": "persuasive",
+        "friendly": "friendly",
+        "emotional": "emotional",
+    },
+    "email": {
+        "friendly": "persuasive",    # a mailing list is opted-in: ask for the click
+        "informative": "informative",
+        "professional": "professional",
+        "luxury": "luxury",
+        "persuasive": "persuasive",
+        "emotional": "persuasive",
+    },
+}
+
+# How each platform's register is described in a Phi-3 prompt, so the slow
+# engine adapts the same way the fast engine does instead of relying on the
+# free-text `guidance` string alone.
+PLATFORM_REGISTER_NOTE = {
+    "linkedin": "Speak to a professional peer audience: measured, credible, "
+                "no slang and no hype.",
+    "instagram": "Speak warmly and visually, in the first person, as if to one "
+                 "person scrolling.",
+    "tiktok": "Speak fast and casually, high energy, plain spoken words only.",
+    "email": "Speak directly to a subscriber who already opted in: personal, "
+             "specific, and to the point.",
+}
+
+
+def platform_tone(platform: str, brand_tone: str) -> str:
+    """Adapt the model-predicted brand tone into this platform's register.
+
+    The brand voice is what the classifier measured, so it is the input and the
+    fallback; only its register shifts. Unknown platform or unknown tone returns
+    the brand tone unchanged rather than guessing.
+    """
+    register = PLATFORM_TONE_REGISTER.get(
+        str(platform).strip().lower(),
+        {},
+    )
+    brand_tone = str(brand_tone or "").strip().lower()
+    return register.get(brand_tone, brand_tone)
+
+
+def register_note(platform: str) -> str:
+    """One-line description of how this platform is spoken, for the LLM prompt."""
+    return PLATFORM_REGISTER_NOTE.get(
+        str(platform).strip().lower(),
+        "",
+    )
+
+
 # def platform_spec(platform: str) -> dict:
 #     """Return the capability spec for a platform, falling back to the default."""
 #     return PLATFORM_SPECS.get(

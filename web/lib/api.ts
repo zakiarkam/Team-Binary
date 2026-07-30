@@ -307,6 +307,14 @@ export interface AttributionResult {
 }
 
 export interface Recommendation {
+  /**
+   * Position in the ranking across the whole scored audience.
+   *
+   * Computed by the API before filtering and paging, so #14 means the 14th
+   * best prospect of everyone scored — the same number whether the row was
+   * reached by scrolling, searching or filtering to one segment.
+   */
+  rank: number;
   visitor_id: number;
   email: string | null;
   visitor_uid: string;
@@ -330,7 +338,12 @@ export interface ContentAsset {
   /** Which medium the brief is for — adaptive platforms vary per asset. */
   visual_kind: "image" | "video" | null;
   campaign_goal: string | null;
+  /** The tone this asset was written in: the brand voice in this platform's
+   *  register. Differs from `brand_tone` wherever the channel demanded it. */
   tone: string | null;
+  /** The unadapted voice the classifier predicted for the business — the same
+   *  for every asset in a campaign. */
+  brand_tone: string | null;
   engagement_score: number | null;
   semantic_score: number | null;
   platform_suitability_score: number | null;

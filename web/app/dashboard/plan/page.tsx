@@ -1,6 +1,7 @@
 import {
   ActionPlan,
   GeneratePlanButton,
+  type DoneAction,
   type PlanAction,
 } from "@/components/ActionPlan";
 import { Card, ErrorState, Kpi, PageHeader } from "@/components/ui";
@@ -14,13 +15,27 @@ interface Plan {
   how_to_use: string;
 }
 
+interface PlanHistory {
+  history: DoneAction[];
+  counts: { email: number; post: number; executed: number; skipped: number;
+            total: number };
+  note: string;
+}
+
 export default async function PlanPage() {
   const { site, error } = await currentSite();
   if (error) return <ErrorState error={error} />;
   if (!site) return null; // currentSite redirects to onboarding
 
-  const plan = await safeGet<Plan>(`/sites/${site.id}/plan`);
+  // Outstanding work and finished work are separate reads: the plan endpoint
+  // shows only what is still waiting, which is what makes "what did I already
+  // send?" a question the history has to answer.
+  const [plan, done] = await Promise.all([
+    safeGet<Plan>(`/sites/${site.id}/plan`),
+    safeGet<PlanHistory>(`/sites/${site.id}/plan/history`),
+  ]);
   const actions = plan?.actions ?? [];
+  const history = done?.history ?? [];
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -41,7 +56,7 @@ export default async function PlanPage() {
         </p>
       </Card>
 
-      <section className="mb-4 grid grid-cols-3 gap-4">
+      <section className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Kpi label="ACTIONS WAITING" value={plan?.counts.total ?? 0} />
         <Kpi
           label="EMAILS TO SEND"
@@ -53,11 +68,20 @@ export default async function PlanPage() {
           value={plan?.counts.post ?? 0}
           tone="accent"
         />
+        <Kpi
+          label="ALREADY DONE"
+          value={done?.counts.executed ?? 0}
+          tone="ok"
+        />
       </section>
 
       <GeneratePlanButton siteId={site.id} />
 
-      <ActionPlan actions={actions} />
+      <ActionPlan
+        actions={actions}
+        history={history}
+        historyNote={done?.note}
+      />
     </div>
   );
 }

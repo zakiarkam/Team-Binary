@@ -151,6 +151,16 @@ def _build_prompt(row, marketing_summary, rule):
 
     fields = required_fields(spec)
 
+    # Re-prompting has to target the same register the asset was generated in,
+    # or optimization quietly rewrites a TikTok caption back into the brand's
+    # LinkedIn voice. Same rule as generator.build_prompt.
+    brand_tone = marketing_summary.get("tone", "")
+
+    tone_for_platform = config.platform_tone(
+        platform,
+        brand_tone,
+    )
+
 
     return f"""
 
@@ -178,8 +188,16 @@ Campaign Goal:
 {marketing_summary.get("campaign_goal","")}
 
 
-Tone:
-{marketing_summary.get("tone","")}
+Brand Voice:
+{brand_tone}
+
+
+Tone for this platform:
+{tone_for_platform}
+
+
+How this platform is spoken:
+{config.register_note(platform)}
 
 
 Platform:
@@ -216,7 +234,7 @@ Return only JSON:
 
 Rules:
 
-{_rules_block(spec)}
+{_rules_block(spec, tone_for_platform)}
 
 """
 

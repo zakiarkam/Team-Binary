@@ -307,6 +307,123 @@ def current_plan(site_id: int, include_done: bool = False) -> dict[str, Any]:
     }
 
 
+def action_history(site_id: int, limit: int = 200) -> dict[str, Any]:
+    """The completed half of the plan — what the company already did, and what
+    it produced.
+
+    `current_plan` deliberately hides anything marked done, which leaves the
+    marketer without an answer to "did I already send this?". This is that
+    record: every executed or skipped action, newest first, carrying the result
+    that followed it — opens, clicks and conversions for an email, tracked
+    clicks for a post.
+
+    Those results are what make the history worth keeping rather than a
+    checklist of ticks: the same evidence that fed the recommendation is now
+    attached to the recommendation's outcome, which is what a policy can later
+    be evaluated against (see `services.decisions`).
+
+    Status is reported as stored, not collapsed into done/not-done. Besides the
+    self-reported `executed` and `skipped`, the optional connected-SMTP path
+    leaves `dry_run` and `failed` rows behind, and a rehearsal that is displayed
+    as a completed send would make this record worse than not having one.
+    """
+    email_rows = db.fetch_all(
+        """
+        SELECT cs.campaign_id, cs.step, cs.subject, cs.status, c.strategy,
+               count(DISTINCT cs.id)   AS audience_size,
+               max(cs.executed_at)     AS executed_at,
+               -- DISTINCT cs.id, not count(*): the interactions join fans each
+               -- send out into one row per event, and the audience must not
+               -- grow because someone opened the message twice.
+               count(DISTINCT CASE WHEN i.event_type = 'open'
+                                   THEN cs.id END) AS opened,
+               count(DISTINCT CASE WHEN i.event_type = 'click'
+                                   THEN cs.id END) AS clicked,
+               count(DISTINCT CASE WHEN i.event_type = 'convert'
+                                   THEN cs.id END) AS converted
+        FROM campaign_sends cs
+        JOIN campaigns c            ON c.id = cs.campaign_id
+        LEFT JOIN interactions i    ON i.send_id = cs.id
+        WHERE c.site_id = :s AND cs.status <> 'scheduled'
+        GROUP BY cs.campaign_id, cs.step, cs.subject, cs.status, c.strategy
+        ORDER BY max(cs.executed_at) DESC NULLS LAST,
+                 cs.campaign_id DESC, cs.step
+        LIMIT :lim
+        """,
+        s=site_id, lim=limit,
+    )
+
+    emails = [{
+        "kind": "email",
+        "campaign_id": r["campaign_id"],
+        "step": r["step"],
+        "strategy": r["strategy"],
+        "subject": r["subject"],
+        "status": r["status"],
+        "executed_at": r["executed_at"],
+        "audience_size": r["audience_size"],
+        "opened": r["opened"],
+        "clicked": r["clicked"],
+        "converted": r["converted"],
+    } for r in email_rows]
+
+    post_rows = db.fetch_all(
+        """
+        SELECT a.id, a.platform, a.status, a.executed_at, a.outcome,
+               ca.caption, ca.target_segment
+        FROM content_actions a
+        LEFT JOIN content_assets ca ON ca.id = a.content_asset_id
+        WHERE a.site_id = :s AND a.status <> 'suggested'
+        ORDER BY a.executed_at DESC NULLS LAST, a.id DESC
+        LIMIT :lim
+        """,
+        s=site_id, lim=limit,
+    )
+
+    posts = [{
+        "kind": "post",
+        "id": r["id"],
+        "platform": r["platform"],
+        "caption": r["caption"],
+        "target_segment": r["target_segment"],
+        "status": r["status"],
+        "executed_at": r["executed_at"],
+        # Clicks on the short link the company pasted into the post. This is
+        # the only thing observable about a post we never published.
+        "clicks": int((r["outcome"] or {}).get("clicks") or 0),
+        "notes": (r["outcome"] or {}).get("notes"),
+    } for r in post_rows]
+
+    # Newest first across both kinds. An action marked done before the
+    # `executed_at` column existed sorts last rather than being dropped.
+    items = sorted(
+        emails + posts,
+        key=lambda a: (a["executed_at"] is not None, a["executed_at"]),
+        reverse=True,
+    )[:limit]
+
+    done = [a for a in items if a["status"] == "executed"]
+    return {
+        "site_id": site_id,
+        "history": items,
+        "counts": {
+            "email": sum(1 for a in items if a["kind"] == "email"),
+            "post": sum(1 for a in items if a["kind"] == "post"),
+            "executed": len(done),
+            "skipped": sum(1 for a in items if a["status"] == "skipped"),
+            "total": len(items),
+        },
+        "note": ("Execution is self-reported; the results after it are "
+                 "observed. This platform neither sent nor published anything, "
+                 "so the timing is the company's word, while the opens, clicks "
+                 "and conversions come from the tracking pixel and the tracked "
+                 "links and are counted only where the event can be tied to "
+                 "that exact message. Rehearsals and failures from the "
+                 "optional connected-SMTP path are kept under their own status "
+                 "rather than counted as done."),
+    }
+
+
 # ── Marking work done ────────────────────────────────────────────────────────
 
 def mark_post_executed(action_id: int, executed: bool = True,

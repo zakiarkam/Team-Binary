@@ -254,7 +254,11 @@ def generate_for_site(site_id: int, platforms: list[str] | None = None,
         "image_prompt": a.get("image_prompt") or a.get("shorts_prompt") or "",
         "visual_kind": "video" if (a.get("shorts_prompt") or "").strip() else "image",
         "campaign_goal": summary.get("campaign_goal"),
-        "tone": summary.get("tone"),
+        # The tone this asset was actually written in — the brand voice adapted
+        # to the platform's register. Falls back to the campaign-wide brand tone
+        # for assets generated before the register layer existed.
+        "tone": a.get("platform_tone") or summary.get("tone"),
+        "brand_tone": a.get("brand_tone") or summary.get("tone"),
         "engagement": _f(a.get("engagement_score")),
         "semantic": _f(a.get("semantic_score")),
         "platform_fit": _f(a.get("platform_suitability_score")),
@@ -268,12 +272,14 @@ def generate_for_site(site_id: int, platforms: list[str] | None = None,
             INSERT INTO content_assets (site_id, campaign_id, platform, subject,
                                         caption, hashtags, cta, image_prompt,
                                         visual_kind, campaign_goal, tone,
+                                        brand_tone,
                                         engagement_score, semantic_score,
                                         platform_suitability_score,
                                         final_score, engine)
             VALUES (:site_id, :campaign_id, :platform, :subject, :caption,
                     CAST(:hashtags AS jsonb), :cta, :image_prompt,
-                    :visual_kind, :campaign_goal, :tone, :engagement, :semantic,
+                    :visual_kind, :campaign_goal, :tone, :brand_tone,
+                    :engagement, :semantic,
                     :platform_fit, :final, :engine)
             """,
             rows,
@@ -295,7 +301,10 @@ def generate_for_site(site_id: int, platforms: list[str] | None = None,
         "content_source": result["content_source"],
         "crawl": crawl_status,
         "campaign_goal": summary.get("campaign_goal"),
+        # Campaign-level, so this is the brand voice. The per-platform register
+        # it was spoken in rides on each asset's `platform_tone`.
         "tone": summary.get("tone"),
+        "brand_tone": summary.get("tone"),
         "site_keywords": summary.get("site_keywords", []),
         "platform_order": ordered,
         "priorities": priorities,
@@ -365,7 +374,7 @@ def list_assets(site_id: int, platform: str | None = None,
     rows = db.fetch_all(
         f"""
         SELECT id, platform, subject, caption, hashtags, cta, image_prompt,
-               visual_kind, campaign_goal, tone,
+               visual_kind, campaign_goal, tone, brand_tone,
                engagement_score::float8          AS engagement_score,
                semantic_score::float8            AS semantic_score,
                platform_suitability_score::float8 AS platform_suitability_score,

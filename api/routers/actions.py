@@ -7,7 +7,7 @@ and marks them done.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from api import db
@@ -48,6 +48,14 @@ def get_plan(site_id: int, include_done: bool = False) -> dict:
     """The outstanding actions, each with copy-paste-ready content."""
     _require_site(site_id)
     return svc.current_plan(site_id, include_done=include_done)
+
+
+@router.get("/sites/{site_id}/plan/history")
+def get_plan_history(site_id: int,
+                     limit: int = Query(200, ge=1, le=1000)) -> dict:
+    """What has already been executed or skipped, and what it produced."""
+    _require_site(site_id)
+    return svc.action_history(site_id, limit)
 
 
 @router.get("/actions/emails/{campaign_id}/{step}/recipients")

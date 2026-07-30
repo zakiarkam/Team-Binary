@@ -20,6 +20,11 @@ ASSET_COLUMNS = [
     "cta",
     "image_prompt",
     "shorts_prompt",
+    # The brand voice the classifier predicted, and the register it was spoken
+    # in on this platform. Both travel with the asset so a stored asset records
+    # which voice produced it rather than only the campaign-wide one.
+    "brand_tone",
+    "platform_tone",
 ]
 
 
@@ -95,12 +100,24 @@ def _schema_block(
 
 def _rules_block(
     spec: dict,
+    tone: str = "",
 ) -> str:
     """
     Build platform-specific generation rules.
+
+    `tone` is the platform-adapted tone (config.platform_tone), not the raw
+    brand tone. Naming it in the rules is what stops the model from defaulting
+    to one house voice on every channel; omitting it keeps the older, generic
+    wording so callers that have no tone to pass still get valid rules.
     """
 
     low, high = spec["caption_words"]
+
+    tone_rule = (
+        f"- Caption must be written in a {tone} tone."
+        if str(tone).strip()
+        else "- Caption must follow the marketing tone."
+    )
 
     rules = [
 
@@ -113,7 +130,7 @@ def _rules_block(
 
         "- Caption must align with the campaign goal.",
 
-        "- Caption must follow the marketing tone.",
+        tone_rule,
 
     ]
 
@@ -183,6 +200,21 @@ def build_prompt(
 
     fields = required_fields(spec)
 
+    # The classifier predicts one tone for the business. The platform shifts the
+    # register that tone is spoken in, not the brand voice itself — the same
+    # brand_tone -> platform_tone rule the fast engine applies, so the two
+    # engines cannot drift apart. See config.PLATFORM_TONE_REGISTER.
+    brand_tone = marketing_summary.get("tone", "")
+
+    tone_for_platform = config.platform_tone(
+        platform,
+        brand_tone,
+    )
+
+    register_note = config.register_note(
+        platform,
+    )
+
     return f"""
 You are an expert digital marketing content creator.
 
@@ -203,8 +235,14 @@ Customer Segment:
 Campaign Goal:
 {marketing_summary.get("campaign_goal", "")}
 
-Tone:
-{marketing_summary.get("tone", "")}
+Brand Voice:
+{brand_tone}
+
+Tone for this platform:
+{tone_for_platform}
+
+How this platform is spoken:
+{register_note}
 
 Business Summary:
 {marketing_summary.get("summary", "")}
@@ -218,7 +256,7 @@ Return ONLY valid JSON.
 
 Rules:
 
-{_rules_block(spec)}
+{_rules_block(spec, tone_for_platform)}
 """
 
 
@@ -251,6 +289,15 @@ def standardize(
     row["platform"] = (
         parsed.get("platform")
         or platform
+    )
+
+    row["brand_tone"] = str(
+        marketing_summary.get("tone", "")
+    )
+
+    row["platform_tone"] = config.platform_tone(
+        platform,
+        row["brand_tone"],
     )
 
     row["caption"] = str(

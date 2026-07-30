@@ -206,6 +206,11 @@ function AssetCard({ asset }: { asset: ContentAsset }) {
         {asset.tone && (
           <span>
             <span className="text-slate-400">tone</span> {asset.tone}
+            {/* Only worth showing when the channel actually shifted the voice —
+                otherwise it reads as two labels for the same thing. */}
+            {asset.brand_tone && asset.brand_tone !== asset.tone && (
+              <span className="text-slate-400"> · brand {asset.brand_tone}</span>
+            )}
           </span>
         )}
       </div>

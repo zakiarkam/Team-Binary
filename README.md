@@ -297,3 +297,6 @@ Here's the command for each part, in the order you'd start them. Run each in its
 2 FastAPI backend → :8000 make api
 3 Dashboard (Next.js) → :3000 make web
 4 Demo client store → :4000 make site
+
+username - demo@innov8smart.example
+password -demo1234

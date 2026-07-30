@@ -5,13 +5,14 @@ import { useState } from "react";
 import {
   ChevronDown,
   ChevronUp,
+  History,
   Loader2,
   Mail,
   Megaphone,
   Users,
 } from "lucide-react";
 
-import { Card, Pill, SectionLabel } from "@/components/ui";
+import { Card, Caveat, Pill, SectionLabel } from "@/components/ui";
 
 /**
  * The Action Plan — the thing a marketer actually works from.
@@ -43,6 +44,35 @@ export interface PlanAction {
   image_brief?: string | null;
   tracked_link?: string;
   status?: string;
+}
+
+/**
+ * One action the company already dealt with.
+ *
+ * The plan hides anything done, which leaves "did I already send this?"
+ * unanswered — this is the record that answers it, and it carries what the
+ * action produced rather than just a tick.
+ */
+export interface DoneAction {
+  kind: "email" | "post";
+  status: string;
+  executed_at: string | null;
+  // email
+  campaign_id?: number;
+  step?: number;
+  strategy?: string;
+  subject?: string | null;
+  audience_size?: number;
+  opened?: number;
+  clicked?: number;
+  converted?: number;
+  // post
+  id?: number;
+  platform?: string;
+  caption?: string | null;
+  target_segment?: string | null;
+  clicks?: number;
+  notes?: string | null;
 }
 
 interface Recipient {
@@ -348,6 +378,146 @@ function ActionCard({
   );
 }
 
+/**
+ * When an action was marked done, formatted from the ISO string.
+ *
+ * Deliberately not `toLocaleString()`: this component renders on the server
+ * first, and a locale-formatted timestamp would not match what the browser
+ * produces on hydration.
+ */
+function when(iso: string | null): string {
+  if (!iso) return "date not recorded";
+  return `${iso.slice(0, 10)} · ${iso.slice(11, 16)}`;
+}
+
+/**
+ * How each recorded status reads to a marketer.
+ *
+ * `executed` and `skipped` are the two the company reports itself. The rest
+ * come from the optional connected-SMTP path, and they must not be flattened
+ * into "Done": a dry run rehearsed the send, and a failure is not a send at
+ * all. The history is only useful if it can be trusted on this point.
+ */
+const STATUS_LABEL: Record<
+  string,
+  { label: string; tone: "ok" | "muted" | "warn" | "bad" }
+> = {
+  executed: { label: "Done", tone: "ok" },
+  sent: { label: "Sent", tone: "ok" },
+  skipped: { label: "Skipped", tone: "muted" },
+  dry_run: { label: "Dry run", tone: "warn" },
+  failed: { label: "Failed", tone: "bad" },
+};
+
+const statusBadge = (status: string) =>
+  STATUS_LABEL[status] ?? { label: status.replace(/_/g, " "), tone: "muted" as const };
+
+/** One result of a completed action — "63 opened", "12 link clicks". */
+function Result({ n, label }: { n: number; label: string }) {
+  return (
+    <span className="text-xs text-slate-500">
+      <b className="text-slate-700">{n.toLocaleString()}</b> {label}
+    </span>
+  );
+}
+
+/**
+ * The history: everything already executed or skipped, newest first.
+ *
+ * Each entry keeps the outcome next to the action, which is what makes this a
+ * record rather than a checklist — the opens, clicks and conversions were
+ * observed by the tracking pixel and short links even though the company sent
+ * and published the work itself.
+ */
+function HistoryList({
+  history,
+  note,
+}: {
+  history: DoneAction[];
+  note?: string;
+}) {
+  if (!history.length) {
+    return (
+      <Card>
+        <p className="text-sm text-slate-500">
+          Nothing marked done yet. Once you send an email or publish a post and
+          mark it done, it moves out of the list above and appears here with
+          whatever it produced.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {history.map((h, i) => {
+        const badge = statusBadge(h.status);
+        const platform = h.kind === "email" ? "email" : (h.platform ?? "");
+        return (
+          <Card
+            key={
+              h.kind === "post"
+                ? `hp${h.id}-${i}`
+                : `he${h.campaign_id}-${h.step}-${i}`
+            }
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <Pill tone={h.kind === "email" ? "brand" : "accent"}>
+                {platformLabel(platform)}
+              </Pill>
+              <Pill tone={badge.tone}>{badge.label}</Pill>
+              <span className="ml-auto text-xs text-slate-400">
+                {when(h.executed_at)}
+              </span>
+            </div>
+
+            {/* Clamped: a history entry identifies the work, it does not
+                reproduce it — the full caption is on the asset. */}
+            <p className="mt-2 line-clamp-2 text-sm font-semibold text-slate-800">
+              {h.kind === "email"
+                ? (h.subject || "Email with no subject")
+                : (h.caption || "Post with no caption")}
+            </p>
+
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+              {h.kind === "email" ? (
+                <>
+                  <Result n={h.audience_size ?? 0} label="contacts" />
+                  <Result n={h.opened ?? 0} label="opened" />
+                  <Result n={h.clicked ?? 0} label="clicked" />
+                  <Result n={h.converted ?? 0} label="converted" />
+                  {h.strategy && (
+                    <span className="text-xs text-slate-400">
+                      {h.strategy} policy
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Result n={h.clicks ?? 0} label="link clicks" />
+                  {h.target_segment && (
+                    <span className="text-xs text-slate-400">
+                      for {h.target_segment}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+
+            {h.notes && (
+              <p className="mt-2 text-xs italic text-slate-500">{h.notes}</p>
+            )}
+          </Card>
+        );
+      })}
+
+      {/* What these numbers are and are not — the same caveat the API states,
+          kept next to the figures rather than in the docs. */}
+      {note && <Caveat>{note}</Caveat>}
+    </div>
+  );
+}
+
 const tabClass = (active: boolean) =>
   `inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
     active
@@ -362,7 +532,15 @@ const subTabClass = (active: boolean) =>
       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
   }`;
 
-export function ActionPlan({ actions }: { actions: PlanAction[] }) {
+export function ActionPlan({
+  actions,
+  history = [],
+  historyNote,
+}: {
+  actions: PlanAction[];
+  history?: DoneAction[];
+  historyNote?: string;
+}) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -370,8 +548,10 @@ export function ActionPlan({ actions }: { actions: PlanAction[] }) {
   const posts = actions.filter((a) => a.kind === "post");
   const platforms = [...new Set(posts.map((p) => p.platform ?? "other"))];
 
-  const [tab, setTab] = useState<"email" | "post">(
-    emails.length > 0 ? "email" : "post",
+  // A plan whose actions are all done opens on the history — that is the only
+  // thing left to look at.
+  const [tab, setTab] = useState<"email" | "post" | "history">(
+    emails.length > 0 ? "email" : posts.length > 0 ? "post" : "history",
   );
   const [platformTab, setPlatformTab] = useState<string>("all");
 
@@ -391,7 +571,7 @@ export function ActionPlan({ actions }: { actions: PlanAction[] }) {
     router.refresh();
   }
 
-  if (!actions.length) {
+  if (!actions.length && !history.length) {
     return (
       <Card>
         <p className="text-sm text-slate-500">
@@ -418,6 +598,14 @@ export function ActionPlan({ actions }: { actions: PlanAction[] }) {
           <Megaphone size={14} />
           Posts ({posts.length})
         </button>
+        {/* Done work does not disappear — it moves here, with its results. */}
+        <button
+          onClick={() => setTab("history")}
+          className={tabClass(tab === "history")}
+        >
+          <History size={14} />
+          History ({history.length})
+        </button>
       </div>
 
       {/* Platform sub-tabs, only for posts */}
@@ -443,7 +631,9 @@ export function ActionPlan({ actions }: { actions: PlanAction[] }) {
       )}
 
       <div className="space-y-4">
-        {tab === "email" ? (
+        {tab === "history" ? (
+          <HistoryList history={history} note={historyNote} />
+        ) : tab === "email" ? (
           emails.length ? (
             emails.map((a, i) => (
               <ActionCard

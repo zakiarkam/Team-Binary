@@ -328,3 +328,127 @@ def test_a_video_platform_is_not_given_an_image_brief(site) -> None:
 
     assert by_platform["shorts"]["visual_kind"] == "video"
     assert by_platform["linkedin"]["visual_kind"] == "image"
+
+
+# ── Platform tone register ───────────────────────────────────────────────────
+# The tone classifier predicts one tone for the business. It has no platform
+# input and its training corpus has no platform column, so a per-platform tone
+# cannot come from the model. What varies per platform is the register the brand
+# voice is spoken in. These tests pin that split.
+
+def test_brand_voice_is_constant_across_platforms(site) -> None:
+    """One campaign has one brand voice.
+
+    The register shifts per channel, but the voice the classifier measured from
+    the business's own site must not. If this fails, each platform is being
+    given a different brand, which is the thing brand consistency forbids.
+    """
+    _cache_crawl(site["id"])
+    result = svc.generate_for_site(site["id"])
+
+    brand_tones = {a["brand_tone"] for a in result["assets"]}
+    assert len(brand_tones) == 1, f"brand voice split across platforms: {brand_tones}"
+    assert brand_tones == {result["brand_tone"]}
+
+
+def test_linkedin_and_instagram_do_not_share_an_opening_line() -> None:
+    """Regression: the fast engine keyed its hook on the brand tone alone.
+
+    Every platform therefore opened with a byte-identical sentence — LinkedIn
+    and Instagram included — and only the surrounding body differed. That is
+    format adaptation dressed up as voice adaptation.
+    """
+    from modules.m4_content import content_service as cs
+
+    summary = {
+        "product_name": "Acme", "target_audience": "founders",
+        "customer_segment": "SMB", "campaign_goal": "conversion",
+        "tone": "professional", "summary": "Acme automates invoicing.",
+    }
+    captions = {
+        platform: cs._template_asset(platform, summary, ["Acme"], 0)["caption"]
+        for platform in ("linkedin", "instagram")
+    }
+    # LinkedIn puts the hook on its own line; Instagram runs it into the body.
+    # Comparing whole first lines would pass even under the old behaviour, so
+    # the check is that Instagram does not *open with* LinkedIn's hook.
+    linkedin_hook = captions["linkedin"].splitlines()[0]
+    assert not captions["instagram"].startswith(linkedin_hook), (
+        f"both platforms open with: {linkedin_hook!r}")
+
+
+def test_platform_register_adapts_the_brand_voice_without_discarding_it() -> None:
+    """A luxury brand stays luxury where the register allows it.
+
+    The point of adapting rather than replacing: TikTok cannot carry luxury
+    restraint, so it shifts — but LinkedIn and email can, so they must not.
+    Replacing the tone outright would throw away the only tone signal that was
+    actually measured.
+    """
+    from modules.m4_content import config as m4_config
+
+    assert m4_config.platform_tone("linkedin", "luxury") == "luxury"
+    assert m4_config.platform_tone("email", "luxury") == "luxury"
+    assert m4_config.platform_tone("tiktok", "luxury") != "luxury"
+
+    # A professional brand relaxes on the visual/short-form channels.
+    assert m4_config.platform_tone("linkedin", "professional") == "professional"
+    assert m4_config.platform_tone("instagram", "professional") == "friendly"
+
+
+def test_unknown_platform_or_tone_falls_back_to_the_brand_voice() -> None:
+    """The register map is a heuristic, so it must never invent a tone.
+
+    An unmapped platform or an unseen classifier label returns the brand voice
+    unchanged rather than guessing at a register for it.
+    """
+    from modules.m4_content import config as m4_config
+
+    assert m4_config.platform_tone("mastodon", "luxury") == "luxury"
+    assert m4_config.platform_tone("tiktok", "sarcastic") == "sarcastic"
+    assert m4_config.platform_tone("tiktok", "") == ""
+
+
+def test_stored_asset_records_the_tone_it_was_written_in(site) -> None:
+    """`tone` on a stored asset is the platform tone, not the campaign tone.
+
+    The column is per-asset, so storing the campaign-wide value in it made every
+    row claim a voice the caption was not necessarily written in.
+    """
+    _cache_crawl(site["id"])
+    svc.generate_for_site(site["id"])
+
+    assets = svc.list_assets(site["id"])["assets"]
+    assert assets
+
+    from modules.m4_content import config as m4_config
+
+    for asset in assets:
+        assert (asset["tone"] or "").strip(), f"{asset['platform']} stored no tone"
+        assert asset["tone"] == m4_config.platform_tone(
+            asset["platform"], asset["brand_tone"]
+        ), f"{asset['platform']} stored a tone its register does not produce"
+
+
+def test_both_engines_adapt_the_tone_the_same_way() -> None:
+    """The Phi-3 prompt and the fast template must not drift apart.
+
+    They previously encoded platform voice in two unrelated places: the fast
+    engine in `_HOOK_BY_TONE`, the slow one in free-text `guidance`. Both now
+    resolve through the same rule, so the prompt names the adapted tone.
+    """
+    from modules.m4_content import config as m4_config
+    from modules.m4_content import generator
+
+    summary = {
+        "product_name": "Acme", "target_audience": "founders",
+        "customer_segment": "SMB", "campaign_goal": "conversion",
+        "tone": "professional", "summary": "Acme automates invoicing.",
+        "website_url": "https://acme.example",
+    }
+    prompt = generator.build_prompt(summary, "instagram")
+    adapted = m4_config.platform_tone("instagram", "professional")
+
+    assert adapted == "friendly"
+    assert f"in a {adapted} tone" in prompt
+    assert "Brand Voice:\nprofessional" in prompt

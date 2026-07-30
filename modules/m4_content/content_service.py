@@ -44,13 +44,16 @@ _CTA_BY_GOAL = {
     "retention": "Come back to {name} — there's more waiting.",
 }
 
-# Opening hook per tone.
+# Opening hook per tone. Keyed on the *platform* tone (config.platform_tone),
+# not the brand tone, so the same business does not open a LinkedIn post and an
+# Instagram post with a byte-identical sentence.
 _HOOK_BY_TONE = {
     "persuasive": "Here's why {aud} are switching to {name}.",
     "professional": "{name}: a smarter way for {aud} to get results.",
     "luxury": "Elevate your workflow with {name}.",
     "friendly": "Meet {name} — made for {aud}.",
     "informative": "What {aud} should know about {name}.",
+    "emotional": "The difference {name} makes for {aud} is the kind you feel.",
 }
 
 
@@ -222,12 +225,16 @@ def _template_asset(platform: str, summary: dict, keywords: list[str],
     spec = config.platform_spec(platform)
     visual = config.select_visual(platform, summary)
     name = summary["product_name"]; aud = _aud_short(summary["target_audience"])
-    goal = summary["campaign_goal"]; tone = summary["tone"]
+    goal = summary["campaign_goal"]
+    # The brand voice is what the model measured; the platform only shifts how
+    # it is spoken. Both travel with the asset so the UI can show the difference.
+    brand_tone = summary["tone"]
+    tone = config.platform_tone(platform, brand_tone)
     lo, hi = spec["caption_words"]
 
     hook = _HOOK_BY_TONE.get(tone, _HOOK_BY_TONE["professional"]).format(name=name, aud=aud)
     # Different hooks create alternatives but keep the model-selected campaign
-    # goal and tone fixed; business intent must not change to chase a score.
+    # goal and brand tone fixed; business intent must not change to chase a score.
     alternatives = [
         hook,
         f"What could {aud} achieve with less busywork?",
@@ -263,6 +270,8 @@ def _template_asset(platform: str, summary: dict, keywords: list[str],
     row["caption"] = caption
     row["hashtags"] = tags
     row["cta"] = cta
+    row["brand_tone"] = brand_tone
+    row["platform_tone"] = tone
     row["candidate_index"] = candidate_index
     if visual == "video":
         row["shorts_prompt"] = (f"Open on a scene that shows {aud} using {name}; "

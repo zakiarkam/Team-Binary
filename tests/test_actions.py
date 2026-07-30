@@ -224,6 +224,107 @@ def test_dataset_visitors_never_produce_a_live_self_reported_send(site) -> None:
     assert leaked["n"] == 0
 
 
+# ── The history: what was done, and what came of it ──────────────────────────
+
+def test_history_is_empty_until_something_is_actually_done(site) -> None:
+    _contactable(site["id"], "act-h0")
+    _asset(site["id"], "instagram")
+    svc.build_plan(site["id"], "hybrid")
+
+    hist = svc.action_history(site["id"])
+    assert hist["history"] == [], \
+        "a planned action has not happened; the history must not claim it did"
+    assert hist["counts"]["executed"] == 0
+
+
+def test_history_keeps_each_done_action_with_the_result_it_produced(
+        site) -> None:
+    """The record is the action *and* its outcome.
+
+    A tick-list would answer "did I send this?" but not "was it worth
+    sending?". The opens and clicks are observed by the pixel and the tracked
+    links even though the company sent and published the work itself.
+    """
+    visitor = _contactable(site["id"], "act-h1")
+    _asset(site["id"], "linkedin")
+    built = svc.build_plan(site["id"], "hybrid")
+
+    step = db.fetch_one(
+        "SELECT min(step) AS s FROM campaign_sends WHERE campaign_id = :c",
+        c=built["plan_id"])["s"]
+    svc.mark_email_executed(built["plan_id"], step)
+
+    # One recipient opened it, in the same shape the tracking pixel writes.
+    send = db.fetch_one(
+        """SELECT id FROM campaign_sends
+           WHERE campaign_id = :c AND step = :st AND visitor_id = :v""",
+        c=built["plan_id"], st=step, v=visitor)
+    db.execute(
+        """INSERT INTO interactions (site_id, visitor_id, campaign_id, send_id,
+                                     event_type)
+           VALUES (:s, :v, :c, :sd, 'open')""",
+        s=site["id"], v=visitor, c=built["plan_id"], sd=send["id"])
+
+    post = next(a for a in svc.current_plan(site["id"])["actions"]
+                if a["kind"] == "post")
+    svc.mark_post_executed(post["id"], notes="Published at 9am")
+
+    hist = svc.action_history(site["id"])
+    assert hist["counts"]["executed"] == 2
+    assert {h["kind"] for h in hist["history"]} == {"email", "post"}
+
+    email = next(h for h in hist["history"] if h["kind"] == "email")
+    assert email["status"] == "executed" and email["executed_at"] is not None
+    assert email["audience_size"] >= 1
+    assert email["opened"] == 1, "the observed open must survive into the record"
+    # The audience is people, not events — the interactions join must not
+    # inflate it by counting the open as a second contact.
+    assert email["audience_size"] == 1
+    assert email["clicked"] == 0 and email["converted"] == 0
+
+    done_post = next(h for h in hist["history"] if h["kind"] == "post")
+    assert done_post["id"] == post["id"]
+    assert done_post["notes"] == "Published at 9am"
+    assert done_post["clicks"] == 0  # nobody has followed the link yet
+
+    # And none of it is still on the to-do list.
+    assert svc.current_plan(site["id"])["counts"]["total"] == 0
+
+
+def test_a_skipped_action_is_recorded_as_skipped_not_as_done(site) -> None:
+    _contactable(site["id"], "act-h2")
+    _asset(site["id"], "facebook")
+    svc.build_plan(site["id"], "hybrid")
+
+    post = next(a for a in svc.current_plan(site["id"])["actions"]
+                if a["kind"] == "post")
+    svc.mark_post_executed(post["id"], executed=False)
+
+    hist = svc.action_history(site["id"])
+    entry = next(h for h in hist["history"] if h.get("id") == post["id"])
+    assert entry["status"] == "skipped"
+    assert entry["executed_at"] is None
+    assert hist["counts"]["skipped"] == 1 and hist["counts"]["executed"] == 0
+
+
+def test_history_endpoint_returns_the_record(site, client: TestClient) -> None:
+    _contactable(site["id"], "act-h3")
+    _asset(site["id"], "instagram")
+    svc.build_plan(site["id"], "hybrid")
+    post = next(a for a in svc.current_plan(site["id"])["actions"]
+                if a["kind"] == "post")
+    svc.mark_post_executed(post["id"])
+
+    res = client.get(f"/sites/{site['id']}/plan/history")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["counts"]["executed"] == 1
+    assert body["history"][0]["kind"] == "post"
+    assert "self-reported" in body["note"]
+
+    assert client.get("/sites/999999/plan/history").status_code == 404
+
+
 # ── API surface ──────────────────────────────────────────────────────────────
 
 def test_plan_endpoints_round_trip(site, client: TestClient) -> None:

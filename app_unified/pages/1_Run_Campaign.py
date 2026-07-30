@@ -242,8 +242,10 @@ with tabs[3]:
     summ = content.get("summary", {})
     with st.container(border=True):
         lib.section("Generated posts",
-                    f"Inferred goal `{summ.get('campaign_goal','?')}` · tone "
-                    f"`{summ.get('tone','?')}` · engine `{content.get('engine','?')}`")
+                    f"Inferred goal `{summ.get('campaign_goal','?')}` · brand voice "
+                    f"`{summ.get('tone','?')}` · engine `{content.get('engine','?')}`"
+                    "  \nOne goal and one brand voice for the campaign; each "
+                    "platform speaks it in its own register.")
         assets = content.get("assets", [])
         for a in assets:
             plat = str(a["platform"]).lower()
@@ -266,6 +268,7 @@ with tabs[3]:
                   <div class="post-tags">{' '.join(tags)}</div>
                   <div class="post-meta">
                     <span><span class="metak">CTA</span> {a.get('cta','')}</span>
+                    <span><span class="metak">tone</span> {a.get('platform_tone') or summ.get('tone','?')}</span>
                     <span><span class="metak">engagement</span> {a.get('engagement_score',0):.2f}</span>
                     <span><span class="metak">platform-fit</span> {a.get('platform_suitability_score',0):.2f}</span>
                     <span><span class="metak">semantic</span> {a.get('semantic_score',0):.2f}</span>

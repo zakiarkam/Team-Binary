@@ -199,7 +199,13 @@ CREATE TABLE IF NOT EXISTS content_assets (
     image_prompt              TEXT,
     visual_kind               TEXT,                   -- image | video
     campaign_goal             TEXT,
+    -- `tone` is the tone this asset was written in — the brand voice adapted to
+    -- the platform's register (config.platform_tone). `brand_tone` is the
+    -- unadapted voice the classifier predicted for the business. Both are kept:
+    -- the campaign has one brand voice, but a LinkedIn post and a TikTok post
+    -- do not speak in it the same way, and the report needs to show both.
     tone                      TEXT,
+    brand_tone                TEXT,
     target_segment            TEXT,
     engagement_score          NUMERIC(6,4),
     semantic_score            NUMERIC(6,4),
@@ -213,6 +219,10 @@ CREATE INDEX IF NOT EXISTS idx_content_assets_site ON content_assets (site_id, c
 
 -- Existing databases predate visual_kind.
 ALTER TABLE content_assets ADD COLUMN IF NOT EXISTS visual_kind TEXT;
+
+-- Existing databases predate the platform tone register, when `tone` held the
+-- campaign-wide brand voice for every asset.
+ALTER TABLE content_assets ADD COLUMN IF NOT EXISTS brand_tone TEXT;
 
 -- ---------------------------------------------------------------------------
 -- MODULE 2 — campaigns and campaign_sends

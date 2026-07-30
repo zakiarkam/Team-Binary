@@ -85,14 +85,26 @@ def recommendations(
 
     rows = db.fetch_all(
         f"""
+        -- `rank` is the customer's position among EVERYONE scored for this
+        -- site, computed before the filters and paging are applied. Numbering
+        -- the returned rows instead would make the first hit of any search
+        -- read as the top prospect, and page two restart at 1.
+        WITH ranked AS (
+            SELECT visitor_id,
+                   row_number() OVER (ORDER BY predicted_conversion DESC,
+                                               visitor_id) AS rank
+            FROM analytics_output
+            WHERE site_id = :s
+        )
         SELECT a.visitor_id, v.email, v.visitor_uid, s.segment_name,
                a.predicted_conversion::float8 AS predicted_conversion,
                a.drop_off_risk::float8        AS drop_off_risk,
                a.recommendation, a.recommended_platform,
                a.confidence::float8           AS confidence,
-               v.source
+               v.source, r.rank
         FROM analytics_output a
         JOIN visitors v ON v.id = a.visitor_id
+        JOIN ranked   r ON r.visitor_id = a.visitor_id
         LEFT JOIN user_segments s ON s.visitor_id = a.visitor_id
         WHERE {where}
         ORDER BY a.predicted_conversion DESC, a.visitor_id
@@ -126,9 +138,11 @@ def recommendations(
         "limit": limit,
         "offset": offset,
         "query": q,
-        "note": ("Ordered by predicted conversion. Probabilities come from models "
-                 "fitted on simulated data, so treat the ranking as meaningful and "
-                 "the absolute values as uncalibrated."),
+        "note": ("Ordered by predicted conversion, and `rank` is the position in "
+                 "that order across the whole scored audience — not within this "
+                 "page or this search. Probabilities come from models fitted on "
+                 "simulated data, so treat the ranking as meaningful and the "
+                 "absolute values as uncalibrated."),
     }
 
 
