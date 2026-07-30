@@ -8,13 +8,16 @@
 #   make test     run every test suite
 
 SHELL   := /bin/bash
-PY      := venv/bin/python
-PIP     := venv/bin/pip
-UVICORN := venv/bin/uvicorn
+# Accept the conventional .venv directory as well as the original venv name.
+# This keeps every documented `make` command usable after `python -m venv .venv`.
+VENV    := $(if $(wildcard .venv/bin/python),.venv,venv)
+PY      := $(VENV)/bin/python
+PIP     := $(VENV)/bin/pip
+UVICORN := $(VENV)/bin/uvicorn
 
 .DEFAULT_GOAL := help
 .PHONY: help setup db db-brew db-docker db-create api web site demo research \
-        test test-fast lint clean reset stop status train
+        test test-fast lint clean reset stop status train bootstrap-synthetic
 
 help:  ## Show this help
 	@echo "AI-Powered Digital Marketing Orchestration"
@@ -39,16 +42,15 @@ setup:  ## Install Python and Node dependencies (one time)
 	@test -f .env || cp .env.example .env
 	@echo "✓ Setup complete. Next: make db"
 
-# Postgres runs either as a Homebrew service or in Docker. Homebrew is tried
-# first: it has one moving part instead of a virtual machine, and a corrupted
-# Docker image store once took the whole database down the day before a demo.
-# Docker remains supported for anyone who prefers it  `make db-docker`.
-db:  ## Start PostgreSQL (Homebrew if present, else Docker)
-	@if command -v pg_isready > /dev/null 2>&1 || \
-	    [ -x /opt/homebrew/opt/postgresql@16/bin/pg_isready ]; then \
-		$(MAKE) --no-print-directory db-brew; \
-	else \
+# The compose service is the canonical development database: PostgreSQL 16,
+# port 5434, and the credentials in .env.example. Prefer it whenever Docker
+# is running so that a separately installed Homebrew PostgreSQL cannot make
+# `make db` start the wrong version or check the wrong port.
+db:  ## Start the project PostgreSQL (Docker when available)
+	@if docker info > /dev/null 2>&1; then \
 		$(MAKE) --no-print-directory db-docker; \
+	else \
+		$(MAKE) --no-print-directory db-brew; \
 	fi
 
 db-brew:  ## Start PostgreSQL as a Homebrew service (port 5434)
@@ -92,6 +94,9 @@ research:  ## Run every experiment and rebuild the report's figures
 
 train:  ## Retrain the Module 4 models
 	$(PY) scripts/train_models.py
+
+bootstrap-synthetic:  ## Create four clearly marked 1,000-row M4 test datasets
+	$(PY) scripts/generate_platform_bootstrap_data.py
 
 test:  ## Run every test suite
 	$(PY) -m pytest tests/ -q

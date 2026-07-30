@@ -1,4 +1,4 @@
 {
   "best_goal_model_type": "sentencebert_xgboost",
-  "best_tone_model_type": "sentencebert_xgboost"
+  "best_tone_model_type": "tfidf_logistic"
 }
