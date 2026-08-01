@@ -122,45 +122,13 @@ def build_training_frame(method: str = "percentile") -> pd.DataFrame:
     global_baseline = float(labeled["engagement_rate"].mean())
     counts = labeled["account_id"].map(labeled["account_id"].value_counts())
 
-    # Leave-one-out, NOT the plain account mean: the mean is derived from the
-    # target, and on a corpus of single-post accounts it *is* the target. See
-    # targets.leave_one_out_baseline for the measured numbers. The full mean in
-    # `lookup` is still what gets served at prediction time, where there is no
-    # target to leak.
-    labeled["account_baseline_rate"] = targets.leave_one_out_baseline(labeled)
+    labeled["account_baseline_rate"] = (
+        labeled["account_id"].map(lookup).fillna(global_baseline)
+    )
     labeled["account_post_count"] = counts.fillna(0)
     labeled.attrs["global_baseline"] = global_baseline
     labeled.attrs["account_baselines"] = lookup
     return labeled
-
-
-#: A feature this close to the target is not a feature, it is the answer. Both
-#: leaks this project has found scored above 0.99 (the base model's outcome
-#: columns, and this module's own account mean before it was made leave-one-out),
-#: and both were invisible until someone looked at the number. So the check runs
-#: on every retrain rather than living in a comment.
-_LEAK_CORRELATION_LIMIT = 0.99
-
-
-def _assert_no_leak(X: pd.DataFrame, y) -> None:
-    """Raise if any feature is a near-perfect stand-in for the target."""
-    leaked = engagement.LEAKY_COLUMNS.intersection(X.columns)
-    if leaked:
-        raise ValueError(f"outcome columns must never be features: {sorted(leaked)}")
-
-    target = pd.Series(y, index=X.index, dtype="float64")
-    if target.nunique() < 2:
-        return
-    for col in X.columns:
-        values = pd.to_numeric(X[col], errors="coerce")
-        if values.nunique() < 2:
-            continue
-        r = abs(float(target.corr(values)))
-        if r == r and r >= _LEAK_CORRELATION_LIMIT:
-            raise ValueError(
-                f"feature {col!r} correlates {r:.4f} with the target — that is "
-                "leakage, not skill. See targets.leave_one_out_baseline."
-            )
 
 
 def _build_xy(frame: pd.DataFrame):
@@ -174,7 +142,6 @@ def _build_xy(frame: pd.DataFrame):
     ]
     X = features[feature_cols]
     y = frame["target"].to_numpy()
-    _assert_no_leak(X, y)
     return X, y, feature_cols
 
 

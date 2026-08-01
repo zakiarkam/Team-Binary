@@ -2580,10 +2580,10 @@
         "`campaign_goal`: the two approaches are statistically indistinguishable on this corpus (McNemar p=1.000, 16 disagreements). Choosing TF-IDF is then a decision about cost and interpretability, not about accuracy \u2014 which is a stronger argument than claiming it is more accurate.",
         "`tone`: humorous has fewer than 2 examples \u2014 cannot be split, cannot be learned, and cannot be evaluated. Reported, not hidden.",
         "`tone`: the two approaches are statistically indistinguishable on this corpus (McNemar p=0.727, 8 disagreements). Choosing TF-IDF is then a decision about cost and interpretability, not about accuracy \u2014 which is a stronger argument than claiming it is more accurate.",
-        "`campaign_goal`: best macro-F1 0.500 (tfidf + logistic) against a majority baseline of 0.148; accuracy 0.772 against 0.588. The accuracy gap flatters the model far more than the macro-F1 gap does.",
-        "`tone`: best macro-F1 0.732 (tfidf + logistic) against a majority baseline of 0.112; accuracy 0.818 against 0.386. The accuracy gap flatters the model far more than the macro-F1 gap does."
+        "`tone`: best macro-F1 0.732 (tfidf + logistic) against a majority baseline of 0.112; accuracy 0.818 against 0.386. The accuracy gap flatters the model far more than the macro-F1 gap does.",
+        "`campaign_goal`: best macro-F1 0.500 (tfidf + logistic) against a majority baseline of 0.148; accuracy 0.772 against 0.588. The accuracy gap flatters the model far more than the macro-F1 gap does."
       ],
-      "seconds": 9.2
+      "seconds": 7.2
     },
     "E7": {
       "id": "E7",
