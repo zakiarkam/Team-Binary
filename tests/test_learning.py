@@ -64,6 +64,46 @@ def test_relative_target_small_account_uses_raw_rate():
     assert solo["target"] == pytest.approx(0.5)   # raw rate, not normalized
 
 
+def test_leave_one_out_baseline_excludes_the_row_itself():
+    df = pd.DataFrame({
+        "account_id": ["a", "a", "a", "solo"],
+        "engagement_rate": [0.1, 0.2, 0.6, 0.9],
+    })
+    loo = targets.leave_one_out_baseline(df)
+    assert list(loo[:3]) == pytest.approx([0.4, 0.35, 0.15])
+    # a single-post account gets the constant global mean, never a value that
+    # varies with its own rate
+    assert loo.iloc[3] == pytest.approx(0.45)
+
+
+def test_single_post_corpus_baseline_carries_no_row_information():
+    """The leak this guards: on a corpus of one-post accounts the plain account
+    mean IS the target (corr 1.000, R² 0.995 against -0.17 without it), and the
+    leave-one-out *global* mean is the same leak with the sign flipped."""
+    df = pd.DataFrame({
+        "account_id": [f"acct{i}" for i in range(6)],
+        "engagement_rate": [0.1, 0.25, 0.4, 0.55, 0.7, 0.9],
+    })
+    loo = targets.leave_one_out_baseline(df)
+    assert loo.nunique() == 1, "must be constant when no account has history"
+    assert loo.std(ddof=0) == pytest.approx(0.0)
+
+
+def test_build_xy_refuses_a_feature_that_is_the_target():
+    from learning import personalize
+
+    frame = pd.DataFrame({
+        "text": [f"caption number {i} about a product" for i in range(12)],
+        "platform": ["instagram"] * 12,
+        "target": [i / 12 for i in range(12)],
+        "target_is_relative": [False] * 12,
+        "account_baseline_rate": [i / 12 for i in range(12)],   # the leak
+        "account_post_count": [1] * 12,
+    })
+    with pytest.raises(ValueError, match="leakage, not skill"):
+        personalize._build_xy(frame)
+
+
 # --------------------------------------------------------------------------
 # feedback_store
 # --------------------------------------------------------------------------

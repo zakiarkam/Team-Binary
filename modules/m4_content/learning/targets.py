@@ -159,6 +159,53 @@ def relative_target(
     return out
 
 
+def leave_one_out_baseline(
+    df: pd.DataFrame,
+    account_col: str = "account_id",
+    rate_col: str = "engagement_rate",
+) -> pd.Series:
+    """Each row's account baseline, computed WITHOUT that row's own rate.
+
+    An account's mean rate is a *target-derived aggregate*, so using it as a
+    training feature leaks. It is not a subtle leak either: where an account has
+    a single post its mean IS that post's rate, and `relative_target` falls back
+    to the raw rate for exactly those accounts — so feature and target become the
+    same number. Measured on this project's base corpus (`Social Media Engagement
+    Dataset.csv`, 12,000 accounts with one post each) the correlation was 1.000
+    on 100% of rows, and a RandomForest scored R² = 0.995 / Spearman = 1.000 with
+    the feature against R² = -0.172 / Spearman = 0.010 without it. That is the
+    same failure the base engagement model was already fixed for, in the same
+    module, so it is fixed the same way: the aggregate never sees its own row.
+
+    A row whose account has no *other* post has no usable baseline, so it falls
+    back to the **plain global mean — a constant**. Note that the leave-one-out
+    global mean, (total - rate_i) / (n - 1), would be the wrong choice here and
+    is a leak in its own right: it is a strictly decreasing function of the row's
+    own rate, so it correlates -1.000 with the target instead of +1.000. A
+    constant is the only fallback that genuinely says "nothing is known about
+    this account", and a constant column cannot carry information at all.
+
+    This is for TRAINING. At prediction time there is no target to leak, so the
+    full account mean from `account_baseline` is the right value to serve.
+    """
+    frame = df.reset_index(drop=True)
+    rate = pd.to_numeric(frame[rate_col], errors="coerce").fillna(0.0)
+
+    global_mean = float(rate.mean()) if len(rate) else 0.0
+
+    if account_col not in frame.columns:
+        return pd.Series(global_mean, index=rate.index, dtype="float64")
+
+    account = frame[account_col].fillna("__unknown__").astype(str)
+    group_sum = account.map(rate.groupby(account).sum())
+    group_n = account.map(account.value_counts())
+
+    # NaN denominator where the account has a single post, so no divide-by-zero
+    # warning and no inf; those rows take the constant global mean below.
+    loo = (group_sum - rate) / (group_n - 1).where(group_n > 1)
+    return loo.where(group_n > 1, global_mean).astype("float64")
+
+
 def account_baseline(
     df: pd.DataFrame,
     account_col: str = "account_id",
