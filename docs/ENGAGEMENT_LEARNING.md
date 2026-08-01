@@ -71,6 +71,41 @@ Measured on the corpora in this repo:
 This is the honest story to tell: _general model now, personalized model as each
 business's own history accumulates._ It is also the cold-start contribution.
 
+### The leak this created, and how it is fixed
+
+Singleton-per-account has a consequence that is easy to miss. `account_baseline`
+is the account's **mean** engagement rate, and it was used directly as a training
+feature. Where an account has one post its mean *is* that post's rate — and
+`relative_target` falls back to the raw rate for exactly those accounts. So the
+feature and the target were the same number:
+
+| | corr with target | rows identical | R² | Spearman |
+|---|---:|---:|---:|---:|
+| account mean as a feature | 1.000 | 100% | **0.995** | **1.000** |
+| account features removed | — | — | -0.172 | 0.010 |
+
+That is the same failure `engagement.py` was already fixed for — an
+outcome-derived quantity handed to the model as an input, invisible in training
+and fatal at prediction, where `personalize.score` supplies a stored or global
+baseline instead. It never reached an artifact: the stage is opt-in and had not
+been run.
+
+The fix is `targets.leave_one_out_baseline` — the aggregate never sees its own
+row. Two details matter:
+
+- For an account **with** history, the baseline is the mean of its *other* posts.
+- For an account **without**, the fallback is the **plain global mean, a
+  constant**. The leave-one-out global mean is wrong here and is the same leak
+  with the sign flipped: `(total - rate_i) / (n - 1)` strictly decreases in the
+  row's own rate, so it correlates **-1.000** with the target. Only a constant
+  genuinely says "nothing is known about this account".
+
+After the fix the personalized model scores R² = -0.176, Spearman = 0.017 — which
+matches the honest base-model number, as it should, since on this corpus there is
+no per-account history to add anything. `personalize._assert_no_leak` now runs on
+every retrain and refuses any feature correlating ≥ 0.99 with the target, so this
+class of bug fails loudly rather than reporting a near-perfect score.
+
 ---
 
 ## 3. How the model "learns new patterns" without retraining Phi-3
@@ -203,6 +238,10 @@ it adds two things reviewers ask for:
 - The public base corpus is singleton-per-account, so the personalized tier is
   only demonstrated on collected feedback — report base and personalized results
   separately.
+- That same singleton structure produced a target leak through the account-mean
+  feature (R² 0.995 → -0.176 once fixed, section 2). Report the corrected number,
+  and treat any per-account feature as guilty until it is computed
+  leave-one-out.
 - Best-of-N against a proxy is over-optimization-prone; report the random-pick
   control.
 - Caption-text matching for actuals is heuristic; `external_post_id` is exact and

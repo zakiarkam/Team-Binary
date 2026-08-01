@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Group 01 · Team Binary — AI-Powered Digital Marketing Orchestration</title>
+<style>
+/* ============================================================
+   A2 PORTRAIT EXHIBITION POSTER — 420 mm x 594 mm
+   Group 01 · Team Binary · University of Moratuwa · 2026
+
+   Layout follows the departmental reference poster: title band,
+   intro strip (problem / aim / system design), one column per
+   module repeating the same six sub-sections, conclusion +
+   integration, credits footer.
+
+   Row heights are fixed in mm so the canvas cannot silently clip.
+   `build_poster.py` reports, per band, the box it has and the
+   height its content needs. Keep every band out of CLIPPED.
+   ============================================================ */
+
+@page { size: 420mm 594mm; margin: 0; }
+
+:root{
+  --ink:#12213a;          /* headings */
+  --body:#1c2b42;         /* running text */
+  --muted:#5d6b80;
+  --rule:#b9c4d2;         /* section borders */
+  --hair:#dde4ec;         /* inner dividers */
+  --tint:#f4f7fb;
+
+  --m1:#1d4ed8; --m2:#15803d; --m3:#c2410c; --m4:#6d28d9;
+  --box:#eef2f8; --box-b:#c3cfdf;
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ -webkit-print-color-adjust:exact; print-color-adjust:exact; background:#8d99ab; }
+body{
+  font-family:"Times New Roman", Times, "Liberation Serif", serif;
+  color:var(--body); font-size:9.9pt; line-height:1.24;
+}
+
+/* diagrams stay sans — a schematic label is read at a glance */
+.fc, .loop{ font-family:"Helvetica Neue", Helvetica, Arial, sans-serif; }
+
+.poster{
+  width:420mm; height:594mm; background:#fff;
+  margin:0 auto; display:flex; flex-direction:column; overflow:hidden;
+}
+.pad{ padding:0 9mm; display:flex; flex-direction:column; flex:1; gap:2.9mm; }
+
+/* ───────────────────────────────────────────── TITLE BAND */
+.band{
+  background:var(--ink); color:#fff;
+  padding:5.1mm 12mm; text-align:center;
+}
+.band h1{
+  font-size:25.5pt; font-weight:700; line-height:1.16; letter-spacing:.005em;
+}
+.band .sub{
+  margin-top:2.2mm; font-size:13pt; color:#b9c9e2; font-style:italic;
+}
+
+/* ───────────────────────────────────────────── SECTION FRAMES */
+.frame{
+  border:0.4mm solid var(--rule); background:#fff;
+  display:grid; overflow:hidden;
+}
+.frame > .col{ padding:3.2mm 3.6mm; border-left:0.35mm solid var(--hair); min-width:0; }
+.frame > .col:first-child{ border-left:none; }
+
+h2{
+  font-size:15pt; font-weight:700; color:var(--ink);
+  margin-bottom:2mm; line-height:1.1;
+}
+h3{
+  font-size:13.2pt; font-weight:700; color:var(--ink);
+  line-height:1.12; padding-bottom:1.6mm; margin-bottom:2.2mm;
+  border-bottom:0.6mm solid var(--ink);
+}
+h3 .own{ display:block; font-size:9pt; font-weight:400; color:var(--muted); margin-top:0.9mm; font-style:italic; }
+h4{
+  font-size:11.4pt; font-weight:700; color:var(--ink);
+  margin:2.6mm 0 1.3mm; line-height:1.1;
+}
+h4:first-child{ margin-top:0; }
+
+p{ margin-bottom:1.6mm; } p:last-child{ margin-bottom:0; }
+.mut{ color:var(--muted); }
+.tiny{ font-size:8.6pt; color:var(--muted); line-height:1.26; }
+b,strong{ font-weight:700; color:var(--ink); }
+.num{ font-variant-numeric:tabular-nums; }
+
+ul{ list-style:none; }
+ul li{ position:relative; padding-left:3.4mm; margin-bottom:1.2mm; }
+ul li:last-child{ margin-bottom:0; }
+ul li::before{
+  content:"•"; position:absolute; left:0; top:-0.15mm;
+  color:var(--muted); font-size:11pt; line-height:1.15;
+}
+
+/* ───────────────────────────────────────────── INTRO STRIP */
+.intro{ grid-template-columns:1fr 1.32fr 1.56fr; }
+
+/* the closed loop, compact */
+.loop{ display:grid; grid-template-columns:1fr 9mm 1fr 9mm 1fr 9mm 1fr; }
+.node{
+  border:0.4mm solid var(--box-b); background:var(--box); border-radius:1.4mm;
+  padding:1.5mm 1.2mm; text-align:center; font-size:7.6pt; line-height:1.18;
+  display:flex; flex-direction:column; justify-content:center; min-height:12mm;
+}
+.node .t{ font-weight:700; font-size:8.4pt; margin-bottom:0.5mm; color:var(--ink); }
+.node.a1{ border-color:var(--m1); background:#e5edfd; }
+.node.a2{ border-color:var(--m2); background:#e6f6ec; }
+.node.a3{ border-color:var(--m3); background:#fdeee4; }
+.node.a4{ border-color:var(--m4); background:#efe9fb; }
+.node.key{ border-color:#0f766e; background:#e0f5f2; }
+.node.out{ border-color:#be123c; background:#fdeaef; }
+
+.hl{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.3mm; }
+.hl .l{ font-size:6.8pt; font-style:italic; color:var(--muted); line-height:1.1; text-align:center; }
+.hl .n{ width:100%; height:0.4mm; background:#8b98aa; position:relative; }
+.hl .n::after{
+  content:""; position:absolute; right:-0.2mm; top:-1.05mm;
+  border-left:1.9mm solid #8b98aa;
+  border-top:1.25mm solid transparent; border-bottom:1.25mm solid transparent;
+}
+.hl.rev .n::after{ right:auto; left:-0.2mm; border-left:none; border-right:1.9mm solid #8b98aa; }
+.vl{ display:flex; align-items:center; justify-content:center; gap:1.3mm; padding:1mm 0; min-height:7.5mm; }
+.vl .b{ width:0.4mm; background:#8b98aa; height:100%; position:relative; }
+.vl .b::after{
+  content:""; position:absolute; left:-1.05mm; bottom:-0.2mm;
+  border-top:1.9mm solid #8b98aa;
+  border-left:1.25mm solid transparent; border-right:1.25mm solid transparent;
+}
+.vl.up .b::after{ bottom:auto; top:-0.2mm; border-top:none; border-bottom:1.9mm solid #8b98aa; }
+.vl .l{ font-size:6.8pt; font-style:italic; color:var(--muted); line-height:1.1; }
+
+/* ───────────────────────────────────────────── MODULE BAND */
+.mods{ grid-template-columns:repeat(4,1fr); flex:1; }
+.mods > .col{ display:flex; flex-direction:column; }
+.mods > .col::before{ content:""; display:block; height:1.1mm; margin:-3.2mm -3.6mm 2.6mm; }
+.mods > .col.k1::before{ background:var(--m1); }
+.mods > .col.k2::before{ background:var(--m2); }
+.mods > .col.k3::before{ background:var(--m3); }
+.mods > .col.k4::before{ background:var(--m4); }
+.mods .desc{ font-size:9.6pt; }
+
+/* flowchart */
+.fc{ display:flex; flex-direction:column; gap:0; }
+.fb{
+  border:0.35mm solid var(--box-b); background:var(--box); border-radius:1.2mm;
+  padding:1.25mm 1.4mm; font-size:7.5pt; line-height:1.16; text-align:center;
+  color:var(--ink);
+}
+.fb b{ font-size:7.9pt; }
+.fb.hi{ background:#e5edfd; border-color:#8fb0ee; }
+.fb.par{ display:grid; grid-template-columns:repeat(3,1fr); gap:1.1mm; border:none; background:none; padding:0; }
+.fb.par > span{
+  border:0.35mm solid var(--box-b); background:#fff; border-radius:1.2mm;
+  padding:1.25mm 0.8mm; display:flex; align-items:center; justify-content:center;
+}
+.fa{ text-align:center; color:#8b98aa; font-size:6.6pt; line-height:1; padding:0.85mm 0; }
+
+/* results */
+.res img{ width:100%; height:auto; display:block; margin-bottom:1.4mm; }
+.res .cp{ font-size:8.6pt; line-height:1.24; }
+.res .cav{ font-size:7.8pt; line-height:1.2; color:#4a5768; font-style:italic; margin-top:1.0mm; }
+
+/* ───────────────────────────────────────────── CLOSING BAND */
+.close{ grid-template-columns:1.05fr 2fr; }
+.arch{ display:flex; flex-direction:column; gap:0.9mm; }
+.layer{ border:0.35mm solid var(--hair); border-radius:1.2mm; background:#fbfcfe; padding:1mm 1.2mm; }
+.layer .ln{
+  font-size:7.2pt; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--muted); margin-bottom:1mm; display:flex; align-items:baseline; gap:2mm;
+}
+.layer .ln em{ font-style:normal; color:var(--body); font-weight:400; letter-spacing:0; text-transform:none; }
+.layer .ln .e{ margin-left:auto; font-weight:400; letter-spacing:0; text-transform:none; font-style:italic; color:#8b98aa; }
+.lrow{ display:grid; gap:1mm; }
+.g4{ grid-template-columns:repeat(4,1fr) } .g5{ grid-template-columns:repeat(5,1fr) }
+.lc{
+  border:0.35mm solid var(--box-b); background:var(--box); border-radius:1mm;
+  padding:0.85mm 0.7mm; font-size:7.1pt; line-height:1.12; text-align:center;
+  display:flex; flex-direction:column; justify-content:center; min-height:6.5mm;
+}
+.lc b{ font-size:7.6pt; }
+.lc.c1{border-color:var(--m1);background:#e5edfd} .lc.c2{border-color:var(--m2);background:#e6f6ec}
+.lc.c3{border-color:var(--m3);background:#fdeee4} .lc.c4{border-color:var(--m4);background:#efe9fb}
+.lc.ck{border-color:#0f766e;background:#e0f5f2}
+
+.stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:1.6mm; margin-top:1.6mm; }
+.st{ border:0.35mm solid var(--hair); background:var(--tint); border-radius:1.2mm; padding:0.9mm 1mm; text-align:center; }
+.st .v{ font-size:14pt; font-weight:700; color:var(--m1); line-height:1; font-variant-numeric:tabular-nums; }
+.st .l{ font-size:7.6pt; color:var(--muted); margin-top:0.8mm; line-height:1.18; }
+
+/* ───────────────────────────────────────────── FOOTER */
+.ftr{
+  border-top:1.1mm solid var(--ink); margin-top:auto;
+  padding:3.2mm 9mm 3.8mm;
+  display:grid; grid-template-columns:20mm 1fr 1fr 1.55fr 24mm;
+  gap:5mm; align-items:center;
+}
+.crest{
+  width:19mm; height:19mm; border:0.5mm solid var(--ink); border-radius:50%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; line-height:1.05;
+}
+.crest .a{ font-size:12pt; font-weight:700; color:var(--ink); }
+.crest .b2{ font-size:6.2pt; letter-spacing:.08em; color:var(--muted); margin-top:0.6mm; }
+.ftr .inst .u{ font-size:12.4pt; font-weight:700; color:var(--ink); }
+.ftr .inst div{ font-size:9.6pt; }
+.ftr .grp div{ font-size:9.8pt; margin-bottom:0.7mm; }
+.ftr .grp b{ font-weight:700; }
+.mems{ font-size:9.6pt; }
+.mems .h{ font-size:9.8pt; font-weight:700; color:var(--ink); margin-bottom:0.9mm; }
+.mems .m{ margin-bottom:0.5mm; }
+.mems .m .i{ font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
+.wordmark{
+  border:0.5mm solid var(--ink); border-radius:1.6mm; padding:2mm 1mm;
+  text-align:center; line-height:1.05;
+}
+.wordmark .w1{ font-size:12.6pt; font-weight:700; color:var(--ink); letter-spacing:.02em; }
+.wordmark .w2{ font-size:6.6pt; letter-spacing:.16em; color:var(--muted); margin-top:0.7mm; }
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <!-- ══════════════════════════════════════ TITLE -->
+  <header class="band">
+    <h1>AI-Powered Digital Marketing Orchestration:<br>
+        An Integrated, Closed-Loop Framework for Cold-Start Digital Marketing</h1>
+    <div class="sub">Segmentation · Campaign Automation · Attribution-Aware Analytics · AI Content Refinement</div>
+  </header>
+
+  <div class="pad">
+
+    <!-- ══════════════════════════════════════ INTRO STRIP -->
+    <section class="frame intro" style="height:88.7mm">
+
+      <div class="col">
+        <h2>Problem in Brief</h2>
+        <ul>
+          <li>Digital marketing is executed as <b>disconnected actions, not as a learning process</b> — one tool segments, another automates, a third reports, a fourth writes, and none exchange information.</li>
+          <li>The difficulty is sharpest for a <b>newly launched product</b>, where almost no behavioural history exists and data-hungry models are least effective.</li>
+          <li><b>Segmentation collapses under low data</b> — clustering cannot express “there is not enough evidence about this person.”</li>
+          <li><b>Policies are asserted, not compared</b>, and attribution models are only ever compared against each other.</li>
+          <li><b>The system records no basis for its own improvement</b> — a deterministic policy assigns probability zero to actions it never takes.</li>
+        </ul>
+      </div>
+
+      <div class="col">
+        <h2>Aim</h2>
+        <p>To design, implement and experimentally evaluate an integrated, closed-loop AI marketing
+          framework unifying segmentation, automation, attribution-aware analytics and content
+          refinement — effective under cold start, and <b>whose every reported claim is reproducible
+          from the system itself.</b></p>
+        <h2 style="margin-top:2.6mm">Objectives</h2>
+        <ul>
+          <li>Build a hybrid segmentation engine and <b>ablate it against its own components.</b></li>
+          <li>Compare three automation policies over paired trials, <b>cost beside outcome.</b></li>
+          <li>Compare four attribution models against ground truth where one exists, and quantify disagreement where it does not.</li>
+          <li>State what prediction quality <b>transfers</b> to another audience.</li>
+          <li>Test whether simpler models are competitive, and whether the engagement corpus holds signal.</li>
+          <li>Make recommendations <b>evaluable</b> by logging every decision with its propensity.</li>
+          <li>Integrate the four modules, and make overstating structurally difficult.</li>
+        </ul>
+      </div>
+
+      <div class="col">
+        <h2>Overall System Design</h2>
+        <div class="loop">
+          <div class="node"><span class="t">Demo e-commerce store</span>8 000 imported customers<br>+ live browser sessions</div>
+          <div class="hl"><span class="l">customers</span><span class="n"></span></div>
+          <div class="node a1"><span class="t">Module 01</span>Audience Targeting<br>&amp; Personalization</div>
+          <div class="hl"><span class="l">segments</span><span class="n"></span></div>
+          <div class="node a2"><span class="t">Module 02</span>Campaign Automation<br>fixed · trigger · hybrid</div>
+          <div class="hl"><span class="l">plan</span><span class="n"></span></div>
+          <div class="node"><span class="t">Action executed</span>in the company’s<br>own tools</div>
+
+          <div class="vl up"><span class="b"></span><span class="l">re-targeting</span></div>
+          <div></div><div></div><div></div>
+          <div class="vl up"><span class="b"></span><span class="l">off-policy<br>evaluation</span></div>
+          <div></div>
+          <div class="vl"><span class="l">outcome</span><span class="b"></span></div>
+
+          <div class="node out"><span class="t">Action Plan</span>who · what · why<br>delivered to the marketer</div>
+          <div class="hl rev"><span class="l">assets</span><span class="n"></span></div>
+          <div class="node a4"><span class="t">Module 04</span>AI Content Refinery<br>&amp; Distribution</div>
+          <div class="hl rev"><span class="l">platform priority</span><span class="n"></span></div>
+          <div class="node a3"><span class="t">Module 03</span>Analytics &amp;<br>Decision Support</div>
+          <div class="hl rev"><span class="l">logged decisions</span><span class="n"></span></div>
+          <div class="node key"><span class="t">action_log</span>action · propensity<br>· outcome</div>
+        </div>
+        <p class="tiny" style="margin-top:2.4mm"><b>The loop closes twice</b> — once through analytics
+          feedback into segmentation, automation and content, and once through the propensity-logged
+          decision record, which is what makes the policy itself evaluable. The system is an
+          <b>advisor, not a sender</b>: it hands over an Action Plan a company executes in its own tools.</p>
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════ MODULES -->
+    <section class="frame mods">
+
+      <!-- ─────────────────────────── MODULE 01 -->
+      <div class="col k1">
+        <h3>Module 01 — Audience Targeting and Personalization
+          <span class="own">215110N · Sarah M. M. F.</span></h3>
+        <p class="desc">This module segments a cold-start audience by combining a rule-based segmenter
+          with k-means and Ward-linkage hierarchical clustering over one feature matrix. An agreement
+          vote across the three yields both a segment and a <b>calibrated confidence</b>, and preserves
+          a <i>New Cold User</i> segment that clustering alone cannot represent.</p>
+
+        <h4>Literature Review</h4>
+        <ul>
+          <li>Segmentation moved from demographic rules to behavioural clustering; k-means and hierarchical methods are the standard treatment (Han et al.; Aggarwal).</li>
+          <li>Reviews of e-commerce personalisation find cluster-quality metrics dominate evaluation, while downstream marketing outcomes are rarely reported (Alves Gomes &amp; Meisen).</li>
+          <li>Hybrid rule-plus-clustering approaches are proposed to keep interpretability while gaining adaptability.</li>
+          <li>Cold start is characterised for recommending items to users (Schein et al.), but not for segmenting users who have none.</li>
+        </ul>
+
+        <h4>Research Gaps</h4>
+        <ul>
+          <li>Hybrids are rarely measured <b>against their own components</b> — the ablation is not run.</li>
+          <li>Arbitration is unspecified: when the rule and the cluster disagree, which one wins?</li>
+          <li>Cold start is treated as a data problem, not as something a method must be able to <i>represent.</i></li>
+          <li>Evaluation stops at cluster quality and never reaches a marketing outcome.</li>
+        </ul>
+
+        <h4>Methodology</h4>
+        <div class="fc">
+          <div class="fb">Imported audience + live sessions</div>
+          <div class="fa">▼</div>
+          <div class="fb">Behavioural feature matrix</div>
+          <div class="fa">▼</div>
+          <div class="fb par"><span>Rule<br>segmenter</span><span>k-means</span><span>Ward<br>hierarchical</span></div>
+          <div class="fa">▼</div>
+          <div class="fb hi"><b>Agreement vote</b><br>cold-start rule tested first</div>
+          <div class="fa">▼</div>
+          <div class="fb">Calibrated confidence · Random Forest</div>
+          <div class="fa">▼</div>
+          <div class="fb">Five segments → <b>user_segments</b></div>
+        </div>
+
+        <h4>Evaluation &amp; Results</h4>
+        <div class="res">
+          <img src="figures/poster_e1.png" alt="Module 1 — segmentation ablation">
+          <p class="cp">Separation <b>0.3838</b> (hybrid) against <b>0.3837</b> (rules alone);
+            k-means 0.069, hierarchical 0.034. <b>A negative result, reported as the headline</b> —
+            the clustering contributes nothing to separation, and the hybrid earns its place on
+            calibrated confidence and explicit cold start instead.</p>
+        </div>
+
+        <h4>Future work</h4>
+        <ul>
+          <li>Re-fit segment thresholds on a live audience rather than an imported one.</li>
+          <li>Extend the vote beyond three methods, with weighted agreement.</li>
+          <li>Test the cold-start rule on a second product category.</li>
+        </ul>
+      </div>
+
+      <!-- ─────────────────────────── MODULE 02 -->
+      <div class="col k2">
+        <h3>Module 02 — Marketing Automation and Campaign Management
+          <span class="own">215129F · Zanar M. H. M. R. A.</span></h3>
+        <p class="desc">Three campaign policies — fixed workflow, behavioural trigger and hybrid — run
+          behind a <b>single policy engine that is the only component differing between arms.</b>
+          Thirty paired seeds put the same 8 000 customers through all three, so any measured
+          difference is attributable to the policy alone.</p>
+
+        <h4>Literature Review</h4>
+        <ul>
+          <li>Fixed-workflow campaign management delivers identical sequences regardless of behaviour, producing low engagement (Chaffey &amp; Ellis-Chadwick).</li>
+          <li>Behaviour-triggered automation improves relevance at the cost of growing rule complexity (Davenport et al.).</li>
+          <li>Blended approaches modulate a stable base workflow by predicted engagement probability (Kumar &amp; Reinartz).</li>
+          <li>Reinforcement learning suits sequential campaign decisions but needs extensive interaction history, restricting it to warm start (Sutton &amp; Barto).</li>
+        </ul>
+
+        <h4>Research Gaps</h4>
+        <ul>
+          <li>Controlled comparison is rare — policies are seldom run on the same users, so reported differences <b>confound policy with population.</b></li>
+          <li>Operational cost is almost never measured alongside effectiveness, although it decides the engineering choice.</li>
+          <li>Per-customer conversion rate rewards sending <i>more</i>, not sending <i>better.</i></li>
+        </ul>
+
+        <h4>Methodology</h4>
+        <div class="fc">
+          <div class="fb">Segments + confidence (M1)</div>
+          <div class="fa">▼</div>
+          <div class="fb">Shared profile builder</div>
+          <div class="fa">▼</div>
+          <div class="fb hi"><b>Policy engine</b> — the only arm that differs</div>
+          <div class="fa">▼</div>
+          <div class="fb par"><span>fixed<br>1 rule</span><span>trigger<br>4 rules</span><span>hybrid<br>9 rules</span></div>
+          <div class="fa">▼</div>
+          <div class="fb">Shared response simulator · 30 paired seeds</div>
+          <div class="fa">▼</div>
+          <div class="fb">Evaluator — conversions / 1 000 sends</div>
+        </div>
+
+        <h4>Evaluation &amp; Results</h4>
+        <div class="res">
+          <img src="figures/poster_e3.png" alt="Module 2 — policy comparison">
+          <p class="cp">Trigger <b>10.45</b> against fixed 7.15 — paired difference
+            <b>+3.299</b> [3.146, 3.447], Wilcoxon <span class="num">p = 1.9 × 10⁻⁹</span>,
+            Cliff’s δ = 1.0, bought with three extra decision rules. <b>The live build ranks the
+            policies differently, and that instability is the result.</b></p>
+        </div>
+
+        <h4>Future work</h4>
+        <ul>
+          <li>A contextual-bandit layer choosing the policy per segment online.</li>
+          <li>Response fitted on observed opens rather than simulated propensities.</li>
+          <li>Cost extended beyond rule count to send cost and staff time.</li>
+        </ul>
+      </div>
+
+      <!-- ─────────────────────────── MODULE 03 -->
+      <div class="col k3">
+        <h3>Module 03 — Marketing Analytics and Decision Support
+          <span class="own">215015D · Arqam Z. H.</span></h3>
+        <p class="desc">Funnel analytics, four attribution models, conversion and drop-off prediction,
+          uplift modelling and off-policy evaluation over an append-only decision log. The module
+          turns description into a recommendation — and then makes that recommendation
+          <b>evaluable from the system’s own logs.</b></p>
+
+        <h4>Literature Review</h4>
+        <ul>
+          <li>Funnel analysis locates loss in the journey but is descriptive — it identifies the leak without prescribing the repair (Court et al.).</li>
+          <li>First- and last-touch attribution are causally unsound, assigning all credit on position alone (Dalessandro et al.).</li>
+          <li>Data-driven multi-touch attribution learns weights from sequences; Markov and Shapley formulations need journey volume (Shao &amp; Li).</li>
+          <li>Uplift modelling separates predicting <i>response</i> from predicting the <i>incremental effect</i> of an intervention (Radcliffe &amp; Surry).</li>
+        </ul>
+
+        <h4>Research Gaps</h4>
+        <ul>
+          <li>Attribution models are compared with one another, <b>never against known ground truth</b> — observational data has none.</li>
+          <li>Analytics prescribes by ranking predicted response — which is not the question a campaign asks.</li>
+          <li>A deterministic policy assigns probability zero to every action it never takes, so its own logs cannot evaluate an alternative.</li>
+        </ul>
+
+        <h4>Methodology</h4>
+        <div class="fc">
+          <div class="fb">Campaign events (M2) + segments (M1)</div>
+          <div class="fa">▼</div>
+          <div class="fb">Journey-level feature builder</div>
+          <div class="fa">▼</div>
+          <div class="fb par"><span>Funnel &amp;<br>drop-off</span><span>Attribution<br>×4</span><span>Uplift<br>S / T</span></div>
+          <div class="fa">▼</div>
+          <div class="fb hi"><b>Recommendation generator</b><br>+ 10% exploration on purpose</div>
+          <div class="fa">▼</div>
+          <div class="fb">Off-policy evaluation · IPS · SNIPS · DR</div>
+          <div class="fa">▼</div>
+          <div class="fb"><b>action_log</b> → Modules 02 and 04</div>
+        </div>
+
+        <h4>Evaluation &amp; Results</h4>
+        <div class="res">
+          <img src="figures/poster_e4.png" alt="Module 3 — attribution disagreement">
+          <p class="cp">The four models disagree over <b>68%</b> of all attributed credit across
+            7 811 journeys — last-touch credits email 89%, first-touch spreads it evenly.
+            <b>The disagreement is the finding, not a defect in one model.</b></p>
+        </div>
+
+        <h4>Future work</h4>
+        <ul>
+          <li>Run the log long enough to close the loop with real decisions — the mechanism is built.</li>
+          <li>Doubly-robust estimation once a reward model is trained on the log.</li>
+          <li>Live-audience re-fitting so thresholds, not only rankings, transfer.</li>
+        </ul>
+      </div>
+
+      <!-- ─────────────────────────── MODULE 04 -->
+      <div class="col k4">
+        <h3>Module 04 — AI Content Refinery and Multi-Platform Distribution
+          <span class="own">215001G · Aadhil M. H. M.</span></h3>
+        <p class="desc">The client’s own site becomes platform-specific assets — classified for goal
+          and tone, scored on meaning, platform fit and engagement, and checked against
+          <b>what the site can actually do.</b></p>
+
+        <h4>Literature Review</h4>
+        <ul>
+          <li>Large pre-trained language models made fluent, controllable generation practical (Vaswani et al.; Brown et al.); sentence embeddings check that meaning survives.</li>
+          <li>Platforms differ in length, hashtag norms and formality, so one message republished everywhere underperforms.</li>
+          <li>Engagement prediction is the weakest link — reported successes are frequently inflated by leakage.</li>
+        </ul>
+
+        <h4>Research Gaps</h4>
+        <ul>
+          <li>Generated content is judged on linguistic quality <b>in isolation</b>, disconnected from campaign analytics.</li>
+          <li>No check that a recommended action is one the client’s site can perform.</li>
+          <li>Engagement models are rarely tested for whether the corpus carries any text signal.</li>
+        </ul>
+
+        <h4>Methodology</h4>
+        <div class="fc">
+          <div class="fb">Client site + brief + Module 03 platform priority<br>crawler → knowledge base + site capability detection</div>
+          <div class="fa">▼</div>
+          <div class="fb hi"><b>Campaign goal + brand tone</b> from the knowledge-base text<br>TF-IDF + logistic vs SBERT + XGBoost → platform register<br>from the 689-row weak-labelled RafaM97 corpus</div>
+          <div class="fa">▼</div>
+          <div class="fb">BART summary → Phi-3-mini candidates, four platforms</div>
+          <div class="fa">▼</div>
+          <div class="fb par"><span>semantic<br>0.40</span><span>platform fit<br>0.40</span><span>engagement<br>0.20</span></div>
+          <div class="fa">▼</div>
+          <div class="fb">best &lt; 0.75 → regenerate, <b>goal and tone held fixed</b><br>optimisation re-prompt + paired significance test</div>
+        </div>
+
+        <h4>Evaluation &amp; Results</h4>
+        <div class="res">
+          <img src="figures/poster_e6_e7.png" alt="Module 4 — goal and tone classification, and the engagement leak">
+          <p class="cp">TF-IDF + logistic reached higher macro-F1 than SBERT + XGBoost on goal
+            (<b>0.500</b> vs 0.404, against a 0.148 majority baseline) and tone (<b>0.732</b> vs 0.591) —
+            accuracy <b>0.772</b> and <b>0.818</b>. Exact McNemar found
+            <b>no significant difference</b> in errors (<span class="num">p = 1.000</span> and
+            <span class="num">0.727</span>), which is not proof they are equal; TF-IDF is deployed
+            for both, for cost and interpretability. Removing the leaked
+            outcome columns drops engagement from R² 0.990 to <b>−0.168</b>, with <b>0 of 8 text
+            features surviving Holm–Bonferroni</b>; its weight was cut 0.45 → 0.20. Capability detection
+            matches hand labels <b>21 / 21</b> on a development set.</p>
+          <p class="cav">Preliminary: the held-out sets are small, so these comparisons
+            are underpowered; larger human-reviewed platform-labelled data is needed.</p>
+        </div>
+
+        <h4>Future work</h4>
+        <ul>
+          <li>A corpus carrying genuine engagement signal; active learning to grow the goal/tone corpora.</li>
+          <li>Held-out capability and goal/tone samples rather than development sets.</li>
+          <li>A learned platform-suitability classifier replacing the rule checklist.</li>
+        </ul>
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════ CONCLUSION + INTEGRATION -->
+    <section class="frame close" style="height:91.6mm">
+
+      <div class="col">
+        <h2>Conclusion</h2>
+        <p>This research delivers an integrated, closed-loop AI marketing framework in which
+          segmentation, automation, analytics and content generation operate over <b>one audience,
+          with feedback</b>, under cold-start conditions. Eleven experiments are reproducible with a
+          single command, and every table and figure is regenerated from the results they write.</p>
+        <p>Four findings stand on their own: a hybrid must be measured against its own components;
+          <b>accuracy is not what a leak corrupts</b> (0.0013 of accuracy, 150× of certainty, every
+          test green); attribution models disagree enough to reverse a spending decision; and a
+          recommender ranking by predicted response answers a different question — so the system logs
+          propensities and explores on purpose. <b>Stability is not correctness.</b></p>
+        <p><b>Seven defects were found in the team’s own research code</b> — a leaked confidence
+          model, a cold-start segment deleted by its own vote, an engagement regressor trained on its
+          own target. <b>Every one made a result look better than it was, and none produced an error
+          message.</b> That is why provenance is derived at write time, propensity is a mandatory
+          column, and there is one regression test per defect.</p>
+        <p class="tiny"><b>Not supported by the evidence:</b> that the hybrid separates conversion
+          better than rules alone; that any one automation policy is best; that engagement is
+          predictable from caption text on this corpus. Event ordering is reconstructed, and campaign
+          response is modelled in both simulator and live build.</p>
+      </div>
+
+      <div class="col">
+        <h2>Final Integration of Modules</h2>
+        <div class="arch">
+          <div class="layer">
+            <div class="ln">Presentation <em>— Next.js 16 · React · TypeScript · Recharts</em></div>
+            <div class="lrow g4">
+              <div class="lc"><b>Marketer dashboard</b>7 pages</div>
+              <div class="lc"><b>Auth</b>login · onboarding</div>
+              <div class="lc"><b>Demo store</b>site under study</div>
+              <div class="lc"><b>Visitor</b>first-party · DNT</div>
+            </div>
+          </div>
+          <div class="layer">
+            <div class="ln">Application <em>— FastAPI · Uvicorn · Pydantic</em><span class="e">↑ HTTPS / JSON · tracking beacon</span></div>
+            <div class="lrow g5">
+              <div class="lc"><b>Routers</b>segments · campaigns · analytics</div>
+              <div class="lc"><b>Tracking</b>/collect · mos.js</div>
+              <div class="lc"><b>Ownership</b>tenant isolation</div>
+              <div class="lc ck"><b>Decisions</b>catalogue + propensity</div>
+              <div class="lc"><b>Provenance</b>source derived</div>
+            </div>
+          </div>
+          <div class="layer">
+            <div class="ln">Research modules <em>— Python · scikit-learn · XGBoost · Phi-3 · BART</em><span class="e">↑ invoke</span></div>
+            <div class="lrow g4">
+              <div class="lc c1"><b>Module 01</b>rules + k-means + hierarchical → vote</div>
+              <div class="lc c2"><b>Module 02</b>policy engine + shared simulator</div>
+              <div class="lc c3"><b>Module 03</b>funnel · attribution · uplift · OPE</div>
+              <div class="lc c4"><b>Module 04</b>crawl · goal/tone · generate · score</div>
+            </div>
+          </div>
+          <div class="layer">
+            <div class="ln">Data <em>— PostgreSQL 16</em><span class="e">↑ read / write</span></div>
+            <div class="lrow g5">
+              <div class="lc"><b>visitors</b>source derived</div>
+              <div class="lc"><b>user_segments</b>+ confidence</div>
+              <div class="lc"><b>interactions</b>source derived</div>
+              <div class="lc ck"><b>action_log</b>propensity · reward</div>
+              <div class="lc"><b>content_assets</b>scored assets</div>
+            </div>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="st"><div class="v">11/11</div><div class="l">experiments, one command</div></div>
+          <div class="st"><div class="v">8 000</div><div class="l">customers, four modules</div></div>
+          <div class="st"><div class="v">177</div><div class="l">tests, one per defect</div></div>
+          <div class="st"><div class="v">7</div><div class="l">defects found in our own code</div></div>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- ══════════════════════════════════════ FOOTER -->
+  <footer class="ftr">
+    <div class="crest"><div class="a">UoM</div><div class="b2">EST. 1972</div></div>
+    <div class="inst">
+      <div class="u">University of Moratuwa</div>
+      <div>Faculty of Information Technology</div>
+      <div>Department of Interdisciplinary Studies</div>
+      <div>BSc (Hons) in Information Technology</div>
+    </div>
+    <div class="grp">
+      <div><b>Supervisors :</b> Dr. A. L. A. Romesh R. Thanuja</div>
+      <div style="margin-left:19mm">Ms. M. A. N. Perera</div>
+      <div><b>Group Name :</b> Team Binary</div>
+      <div><b>Group Number :</b> 01</div>
+    </div>
+    <div class="mems">
+      <div class="h">Group Members</div>
+      <div class="m"><span class="i">215001G</span> — Aadhil M. H. M.</div>
+      <div class="m"><span class="i">215015D</span> — Arqam Z. H.</div>
+      <div class="m"><span class="i">215110N</span> — Sarah M. M. F.</div>
+      <div class="m"><span class="i">215129F</span> — Zanar M. H. M. R. A.</div>
+    </div>
+    <div class="wordmark"><div class="w1">BINARY</div><div class="w2">TEAM</div></div>
+  </footer>
+
+</div>
+</body>
+</html>
