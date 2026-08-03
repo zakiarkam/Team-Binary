@@ -42,6 +42,7 @@ export interface PlanAction {
   hashtags?: string[];
   cta?: string | null;
   image_brief?: string | null;
+  visual_kind?: "image" | "video" | null;
   tracked_link?: string;
   status?: string;
 }
@@ -342,7 +343,7 @@ function ActionCard({
           {a.image_brief && (
             <div className="border-t border-slate-200 px-4 py-2">
               <span className="text-xs font-bold uppercase tracking-wide text-slate-400">
-                Visual brief
+                {a.visual_kind === "video" ? "Video brief" : "Image brief"}
               </span>
               <p className="text-sm text-slate-600">{a.image_brief}</p>
             </div>

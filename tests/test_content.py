@@ -173,16 +173,45 @@ def test_assets_are_stored_with_all_four_scores(site) -> None:
             assert 0.0 <= float(r[score]) <= 1.0
 
 
-def test_best_asset_returns_the_highest_scoring(site) -> None:
+def test_best_asset_serves_the_newest_generation(site) -> None:
+    """Regenerating content must change what the plan and the emails serve.
+
+    This previously asserted the all-time highest score, which meant a site
+    could be re-crawled and rewritten and the action plan would keep handing
+    over copy from the earlier run. Assets are written from a crawl, so the
+    newest run is the one describing the current site.
+    """
     _cache_crawl(site["id"])
     svc.generate_for_site(site["id"], platforms=["email"])
     svc.generate_for_site(site["id"], platforms=["email"])
 
     best = svc.best_asset(site["id"], "email")
-    all_scores = [float(r["final_score"]) for r in db.fetch_all(
-        """SELECT final_score FROM content_assets
-           WHERE site_id = :s AND platform = 'email'""", s=site["id"])]
-    assert float(best["final_score"]) == max(all_scores)
+    newest = db.fetch_one(
+        """SELECT id FROM content_assets
+           WHERE site_id = :s AND platform = 'email'
+           ORDER BY created_at DESC, final_score DESC NULLS LAST
+           LIMIT 1""", s=site["id"])
+    assert best["id"] == newest["id"]
+
+
+def test_score_still_decides_between_candidates_from_the_same_run(site) -> None:
+    """Recency outranks score *across* runs, not within one.
+
+    Within a single generation the candidates are comparable, so the composite
+    score is still what picks between them.
+    """
+    _cache_crawl(site["id"])
+    for score in (0.40, 0.90, 0.55):
+        db.execute(
+            """
+            INSERT INTO content_assets (site_id, platform, caption, hashtags,
+                                        cta, final_score, created_at)
+            VALUES (:s, 'linkedin', :cap, '[]'::jsonb, 'Go', :f,
+                    TIMESTAMPTZ '2030-01-01 00:00:00+00')
+            """, s=site["id"], cap=f"candidate {score}", f=score)
+
+    best = svc.best_asset(site["id"], "linkedin")
+    assert float(best["final_score"]) == 0.90
 
 
 def test_unsupported_platform_is_rejected(site, client: TestClient) -> None:
@@ -452,3 +481,65 @@ def test_both_engines_adapt_the_tone_the_same_way() -> None:
     assert adapted == "friendly"
     assert f"in a {adapted} tone" in prompt
     assert "Brand Voice:\nprofessional" in prompt
+
+
+# ── Every channel is written for, not just defaulted ─────────────────────────
+# `facebook` and `shorts` were offered by the API while having no entry in any
+# of Module 4's per-platform tables, so they fell through to the generic
+# defaults and rendered as the blandest cards on the dashboard. These tests
+# make adding a channel without writing its rules a failure rather than a
+# silent degradation.
+
+def test_every_offered_platform_has_its_own_rules() -> None:
+    from modules.m4_content import config as m4_config
+
+    for platform in m4_config.SERVICE_PLATFORMS:
+        assert platform in m4_config.PLATFORM_SPECS, (
+            f"{platform} is offered but has no spec — it would fall back to "
+            "DEFAULT_PLATFORM_SPEC")
+        assert platform in m4_config.PLATFORM_TONE_REGISTER, (
+            f"{platform} is offered but has no tone register")
+        assert m4_config.register_note(platform), (
+            f"{platform} is offered but has no register note for the prompt")
+        assert platform in m4_config.PLATFORM_VISUAL_BRIEF, (
+            f"{platform} is offered but has no creative brief")
+
+
+def test_the_api_and_module_4_agree_on_which_platforms_exist() -> None:
+    """One list, one place. These were declared twice and had drifted."""
+    from modules.m4_content import config as m4_config
+
+    assert svc.SUPPORTED_PLATFORMS == list(m4_config.SERVICE_PLATFORMS)
+
+
+def test_each_platform_gets_its_own_copy_and_creative_brief(site) -> None:
+    """Regression: the fast engine emitted one caption shape and one creative
+    brief for every channel, so the dashboard showed five cards carrying the
+    same sentence and the same image brief.
+    """
+    _cache_crawl(site["id"])
+    result = svc.generate_for_site(site["id"])
+
+    assets = result["assets"]
+    assert len(assets) == len(svc.SUPPORTED_PLATFORMS)
+
+    captions = {a["caption"] for a in assets}
+    assert len(captions) == len(assets), "two platforms share a caption"
+
+    briefs = {(a.get("image_prompt") or a.get("shorts_prompt")) for a in assets}
+    assert len(briefs) == len(assets), "two platforms share a creative brief"
+
+    ctas = {a["cta"] for a in assets}
+    assert len(ctas) > 1, "the call to action is identical on every platform"
+
+
+def test_a_creative_brief_names_its_own_placement(site) -> None:
+    """The brief is only useful if it is cut to the placement it is for."""
+    _cache_crawl(site["id"])
+    svc.generate_for_site(site["id"], platforms=["instagram", "linkedin", "email"])
+
+    by_platform = {a["platform"]: a for a in svc.list_assets(site["id"])["assets"]}
+
+    assert "4:5" in by_platform["instagram"]["image_prompt"]
+    assert "1.91:1" in by_platform["linkedin"]["image_prompt"]
+    assert "banner" in by_platform["email"]["image_prompt"].lower()

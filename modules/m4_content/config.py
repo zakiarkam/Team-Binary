@@ -114,6 +114,21 @@ LOW_SCORE_RETRY_CANDIDATES = 2
 # them as new campaign targets.
 PLATFORMS = ["instagram", "tiktok", "linkedin", "email"]
 
+# The channels the orchestration product actually publishes to — what the API
+# offers and the dashboard generates for. Kept separate from PLATFORMS above,
+# which stays as the standalone module's own default so its existing generated
+# artifacts still load unchanged.
+#
+# These two lists used to be declared independently (here and in
+# api/services/content.py) and had drifted apart: `facebook` and `shorts` were
+# offered by the API with no spec, no tone register and no register note, so
+# they silently fell through to the generic defaults and read as the blandest
+# assets on the page. Every name here must now appear in PLATFORM_SPECS,
+# PLATFORM_TONE_REGISTER, PLATFORM_REGISTER_NOTE and PLATFORM_VISUAL_BRIEF —
+# tests/test_content.py asserts exactly that, so adding a channel without
+# writing its rules fails the suite instead of degrading quietly.
+SERVICE_PLATFORMS = ["email", "instagram", "linkedin", "shorts", "facebook"]
+
 # ---------------------------------------------------------------------------
 # Platform capabilities
 # ---------------------------------------------------------------------------
@@ -152,6 +167,7 @@ PLATFORM_SPECS = {
         "hashtags": True,
         "caption_words": (0, 40),
         "hashtag_range": (3, 30),  # 30 = Instagram's per-post hashtag cap
+        "hashtag_target": 8,       # discovery channel — tags are how posts are found
         "guidance": (
             "Short, visual-first feed caption. Lead with a hook in the "
             "first line, keep the body scannable, close with a soft CTA."
@@ -166,6 +182,7 @@ PLATFORM_SPECS = {
         "hashtags": True,
         "caption_words": (20, 180),
         "hashtag_range": (0, 5),
+        "hashtag_target": 3,       # more than three reads as spam to a professional feed
         "guidance": (
             "Professional post. Open with a business insight, support it "
             "with concrete value for the reader, close with a formal CTA."
@@ -181,6 +198,7 @@ PLATFORM_SPECS = {
         "hashtags": True,
         "caption_words": (0,30),
         "hashtag_range": (3,5),
+        "hashtag_target": 4,
         "guidance": (
             "Create short-form vertical video content. "
             "The first seconds must capture attention. "
@@ -192,6 +210,7 @@ PLATFORM_SPECS = {
         "hashtags": True,
         "caption_words": (0, 30),
         "hashtag_range": (0, 5),
+        "hashtag_target": 3,
         "guidance": (
             "Very short vertical-video caption. The hook must land in the "
             "first three seconds and the CTA must be spoken-word simple."
@@ -205,6 +224,22 @@ PLATFORM_SPECS = {
         "guidance": (
             "Write a subject line followed by a concise body. State the "
             "value proposition early, end with one clear CTA. No hashtags."
+        ),
+    },
+    "facebook": {
+        "visual_options": [
+            "image",
+            "video",
+        ],
+        "default_visual": "image",
+        "hashtags": True,
+        "caption_words": (10, 80),
+        "hashtag_range": (1, 3),  # Facebook engagement drops past ~3 tags
+        "hashtag_target": 2,
+        "guidance": (
+            "Conversational feed post for a mixed audience. Open with a "
+            "relatable situation rather than a product claim, keep it "
+            "plain-spoken, close by inviting a reply or a click."
         ),
     },
 }
@@ -292,6 +327,26 @@ PLATFORM_TONE_REGISTER = {
         "persuasive": "persuasive",
         "emotional": "persuasive",
     },
+    # Short-form vertical video. Same reasoning as TikTok — the medium is the
+    # same and only the host differs — so the register follows TikTok's.
+    "shorts": {
+        "professional": "friendly",
+        "informative": "friendly",
+        "luxury": "persuasive",
+        "persuasive": "persuasive",
+        "friendly": "friendly",
+        "emotional": "emotional",
+    },
+    # Facebook's feed sits between LinkedIn's formality and Instagram's warmth:
+    # a mixed, non-professional audience that still reads full sentences.
+    "facebook": {
+        "professional": "friendly",
+        "informative": "informative",
+        "luxury": "friendly",
+        "persuasive": "friendly",
+        "friendly": "friendly",
+        "emotional": "emotional",
+    },
 }
 
 # How each platform's register is described in a Phi-3 prompt, so the slow
@@ -303,9 +358,137 @@ PLATFORM_REGISTER_NOTE = {
     "instagram": "Speak warmly and visually, in the first person, as if to one "
                  "person scrolling.",
     "tiktok": "Speak fast and casually, high energy, plain spoken words only.",
+    "shorts": "Speak fast and casually, high energy, plain spoken words only — "
+              "the hook has to land before anyone decides to scroll on.",
     "email": "Speak directly to a subscriber who already opted in: personal, "
              "specific, and to the point.",
+    "facebook": "Speak plainly to a mixed, non-professional audience: "
+                "conversational, no jargon, open with a situation they "
+                "recognise rather than a product claim.",
 }
+
+# ---------------------------------------------------------------------------
+# Per-platform creative briefs
+# ---------------------------------------------------------------------------
+# The fast engine previously emitted ONE image brief and ONE video brief for
+# every channel, so a LinkedIn post and an Instagram post were handed a
+# byte-identical brief and the dashboard showed five copies of the same text.
+# A creative brief is platform-specific in the parts that matter most — aspect
+# ratio, framing, whether it has to read with the sound off, how much room the
+# caption needs — so those are the parts that vary here.
+#
+# Same status as PLATFORM_TONE_REGISTER: the *principle* (creative is cut to
+# the placement) is standard practice; the individual values are declared
+# editorial operating points, not measured optima.
+#
+# Templates take {name} (product) and {aud} (short audience noun).
+
+DEFAULT_VISUAL_BRIEF = {
+    "image": (
+        "A clean, bright product image of {name} in use by {aud}, modern "
+        "setting, high detail, on-brand."
+    ),
+    "video": (
+        "Open on {aud} using {name}, quick cuts of the key benefit, close on "
+        "the logo and the call to action."
+    ),
+}
+
+PLATFORM_VISUAL_BRIEF = {
+    "instagram": {
+        "image": (
+            "4:5 portrait lifestyle frame: a single {aud} mid-task with {name} "
+            "visible but off-centre, bright natural window light, shallow depth "
+            "of field, warm authentic colour. Leave clear space in the upper "
+            "third for the caption hook. No stock-photo poses, no text baked in."
+        ),
+        "video": (
+            "9:16 vertical Reel, 15-20s: hook frame in the first second showing "
+            "the problem {aud} recognise, then three fast cuts to {name} solving "
+            "it, end on the logo. Handheld feel, trending-audio pacing, large "
+            "on-screen text since most viewers watch muted."
+        ),
+    },
+    "linkedin": {
+        "image": (
+            "1.91:1 landscape frame in a credible workplace context: {aud} at "
+            "real work with {name} on screen, muted professional palette, even "
+            "diffuse lighting, documentary rather than staged. Uncluttered "
+            "enough to stay legible as a small feed thumbnail."
+        ),
+        "video": (
+            "16:9 landscape, 30-60s: a named person explains one concrete "
+            "result {aud} get from {name}, intercut with screen capture of the "
+            "product. Subtitled throughout, measured pacing, no music bed."
+        ),
+    },
+    "email": {
+        "image": (
+            "Wide header banner, roughly 600x200, one clear focal point: {name} "
+            "shown in use, generous margins, high contrast so it still reads in "
+            "a cramped inbox preview pane. Must make sense as the single image "
+            "in the message and survive being displayed at half width on mobile."
+        ),
+        "video": (
+            "Short animated header loop for {aud}, under 5s, no sound: one "
+            "simple motion showing what {name} does, exported as a fallback "
+            "still frame as well since most mail clients block animation."
+        ),
+    },
+    "facebook": {
+        "image": (
+            "1.91:1 landscape scene of an everyday moment {aud} recognise, with "
+            "{name} present but incidental rather than the hero. Faces visible, "
+            "warm natural tones, candid framing — it should look like something "
+            "a person posted, not an advert."
+        ),
+        "video": (
+            "1:1 square, 20-30s, built for sound-off autoplay: burned-in "
+            "captions from the first frame, one clear idea about how {name} "
+            "helps {aud}, closing card with the call to action."
+        ),
+    },
+    "shorts": {
+        "image": (
+            "9:16 vertical still used as the end card: {name} large and legible, "
+            "one short line of text for {aud}, high contrast for small screens."
+        ),
+        "video": (
+            "9:16 vertical Short, under 30s: the hook must land in the first "
+            "three seconds — lead with the outcome {aud} want, not the setup. "
+            "Fast jump cuts, bold on-screen text tracking the spoken words, "
+            "spoken-word simple CTA on the final frame."
+        ),
+    },
+    "tiktok": {
+        "image": (
+            "9:16 vertical still for a photo carousel: native and unpolished, "
+            "{name} shown the way {aud} would actually photograph it, chunky "
+            "on-screen text in the platform's own style."
+        ),
+        "video": (
+            "9:16 vertical, 15-25s, shot handheld and deliberately unpolished: "
+            "front-load the payoff for {aud}, keep cuts under two seconds, "
+            "on-screen captions throughout, {name} revealed rather than "
+            "announced. Native creator energy, not an advert."
+        ),
+    },
+}
+
+
+def visual_brief(platform: str, kind: str, name: str, aud: str) -> str:
+    """The creative brief for this platform and medium, filled in.
+
+    Unknown platform or medium falls back to the generic brief rather than
+    raising — a new channel should degrade to plain copy, not break generation.
+    """
+    briefs = PLATFORM_VISUAL_BRIEF.get(
+        str(platform).strip().lower(),
+        DEFAULT_VISUAL_BRIEF,
+    )
+    kind = "video" if str(kind).strip().lower() == "video" else "image"
+    template = briefs.get(kind) or DEFAULT_VISUAL_BRIEF[kind]
+    return template.format(name=name, aud=aud)
 
 
 def platform_tone(platform: str, brand_tone: str) -> str:

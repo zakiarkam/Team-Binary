@@ -84,6 +84,22 @@ def _rule(row) -> str:
                     "hook and clear visual storytelling."
                 ),
 
+            # tiktok is in config.PLATFORMS and facebook in SERVICE_PLATFORMS,
+            # but neither had a rule here, so the two of them were the only
+            # channels told merely to "improve clarity" — the least actionable
+            # advice, given to the platforms with the most specific conventions.
+            "tiktok":
+                (
+                    "Improve TikTok fit with a first-second hook, spoken-word "
+                    "phrasing, a very short caption and 3-5 native hashtags."
+                ),
+
+            "facebook":
+                (
+                    "Improve Facebook fit with a conversational opening, plain "
+                    "wording, few hashtags and a CTA that invites a reply."
+                ),
+
         }.get(
             platform,
             "Improve clarity, engagement and platform alignment."

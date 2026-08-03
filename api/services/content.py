@@ -33,7 +33,17 @@ log = logging.getLogger("mos.content")
 CRAWL_TTL_HOURS = 24
 
 #: Platforms the content engine can write for.
-SUPPORTED_PLATFORMS = ["email", "instagram", "linkedin", "shorts", "facebook"]
+#:
+#: Owned by Module 4, not redeclared here: the generator's per-platform specs,
+#: tone registers and creative briefs are what make a channel writable, so the
+#: list of writable channels has to come from the same file as those rules.
+#: `api.main` puts modules/m4_content on sys.path before the routers import.
+try:
+    import config as _m4_config
+
+    SUPPORTED_PLATFORMS = list(_m4_config.SERVICE_PLATFORMS)
+except Exception:  # standalone import, m4 not on the path
+    SUPPORTED_PLATFORMS = ["email", "instagram", "linkedin", "shorts", "facebook"]
 
 
 # ── Crawling ─────────────────────────────────────────────────────────────────
@@ -391,14 +401,32 @@ def list_assets(site_id: int, platform: str | None = None,
 
 
 def best_asset(site_id: int, platform: str) -> dict | None:
-    """Highest-scoring stored asset for a platform — used to fill campaign copy."""
+    """The copy to use for a platform — newest generation first.
+
+    This used to return the highest-scoring asset ever stored, which meant
+    regenerating content changed nothing: the action plan and the campaign
+    emails kept serving copy from an earlier run whenever that run happened to
+    score higher. Two reasons that is the wrong way round.
+
+    An asset is written *from a crawl*. Once the site has been re-read, older
+    assets describe an earlier version of the product, so preferring them is
+    preferring stale copy however well it scored at the time.
+
+    And the margin that kept them is not meaningful. `final_score` is
+    0.40*semantic + 0.40*platform_fit + 0.20*engagement; platform fit saturates
+    at 1.0 for anything obeying its spec, so it rarely separates two candidates,
+    and the engagement term comes from a regressor measured at R^2 = -0.30 and
+    Spearman 0.02 on the only data available (see config.py). Score still picks
+    between candidates *within* a run — which is where it is comparing like with
+    like — but it no longer outranks recency across runs.
+    """
     return db.fetch_one(
         """
         SELECT id, subject, caption, cta, hashtags, image_prompt, visual_kind,
                final_score::float8 AS final_score
         FROM content_assets
         WHERE site_id = :s AND platform = :p
-        ORDER BY final_score DESC NULLS LAST, created_at DESC
+        ORDER BY created_at DESC, final_score DESC NULLS LAST
         LIMIT 1
         """,
         s=site_id, p=platform,

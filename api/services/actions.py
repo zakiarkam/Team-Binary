@@ -49,7 +49,12 @@ log = logging.getLogger("mos.actions")
 
 # Platforms a company publishes to by hand. Email is handled separately
 # because it is addressed to named people rather than broadcast.
-POST_PLATFORMS = ["instagram", "linkedin", "shorts", "facebook"]
+#
+# Derived, not redeclared: this list is "everything content can be written for,
+# minus the one channel handled by the email half of the plan". Writing it out
+# by hand is how a channel ends up generatable but never plannable — add a
+# platform to Module 4 and the plan would silently never suggest posting to it.
+POST_PLATFORMS = [p for p in content_svc.SUPPORTED_PLATFORMS if p != "email"]
 
 # Lower sorts first.
 PRIORITY_EMAIL = 10
@@ -154,6 +159,22 @@ def _build_post_actions(site_id: int, plan_id: int, site: dict) -> list[dict]:
     most of the credit to `direct` or `google`, and telling someone to "post
     more direct traffic" is not advice.
     """
+    # Retire the previous plan's un-acted-on post actions first.
+    #
+    # A plan is "what to do next", and building a new one means the old advice
+    # has been reconsidered — but nothing used to retire it, so every rebuild
+    # added another full set and the page listed the same post two, three, four
+    # times over. Superseded rather than deleted, and excluded from the history
+    # as well as the plan: this action was neither done nor consciously skipped,
+    # so counting it in either place would misreport what the company did.
+    db.execute(
+        """
+        UPDATE content_actions SET status = 'superseded'
+        WHERE site_id = :s AND status = 'suggested'
+        """,
+        s=site_id,
+    )
+
     priorities = content_svc.platform_priorities(site_id)
     # `actionable_ranking` is {platform: credit}, already ordered by credit.
     credit: dict[str, float] = priorities.get("actionable_ranking") or {}
@@ -247,7 +268,8 @@ def current_plan(site_id: int, include_done: bool = False) -> dict[str, Any]:
         f"""
         SELECT a.id, a.platform, a.rationale, a.priority, a.track_token,
                a.target_url, a.status, a.executed_at,
-               ca.caption, ca.hashtags, ca.cta, ca.image_prompt, ca.subject,
+               ca.caption, ca.hashtags, ca.cta, ca.image_prompt,
+               ca.visual_kind, ca.subject,
                ca.final_score::float8 AS final_score, ca.target_segment
         FROM content_actions a
         LEFT JOIN content_assets ca ON ca.id = a.content_asset_id
@@ -265,6 +287,11 @@ def current_plan(site_id: int, include_done: bool = False) -> dict[str, Any]:
         "hashtags": r["hashtags"] or [],
         "cta": r["cta"],
         "image_brief": r["image_prompt"],
+        # Which medium that brief is for. `shorts` is a video platform and
+        # Instagram/Facebook/LinkedIn are adaptive, so the medium cannot be
+        # derived from the platform name — without this the plan tells someone
+        # to shoot a video under a heading that reads like a photo request.
+        "visual_kind": r["visual_kind"],
         "rationale": r["rationale"],
         "priority": r["priority"],
         "status": r["status"],
@@ -373,7 +400,10 @@ def action_history(site_id: int, limit: int = 200) -> dict[str, Any]:
                ca.caption, ca.target_segment
         FROM content_actions a
         LEFT JOIN content_assets ca ON ca.id = a.content_asset_id
-        WHERE a.site_id = :s AND a.status <> 'suggested'
+        -- 'superseded' is excluded alongside 'suggested': a replaced action was
+        -- never acted on, so listing it here would inflate the record of what
+        -- the company actually did.
+        WHERE a.site_id = :s AND a.status NOT IN ('suggested', 'superseded')
         ORDER BY a.executed_at DESC NULLS LAST, a.id DESC
         LIMIT :lim
         """,

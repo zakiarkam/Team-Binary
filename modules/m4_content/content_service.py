@@ -44,6 +44,59 @@ _CTA_BY_GOAL = {
     "retention": "Come back to {name} — there's more waiting.",
 }
 
+# The same goal, asked for in each channel's own voice. The *action* is fixed by
+# the campaign goal above and must not change per platform — a conversion
+# campaign asks for a purchase everywhere. Only the phrasing moves, because
+# "Start with {name} today." reads as an advert in a Facebook feed and as a
+# button label in an email.
+#
+# A platform absent from this map, or a goal absent from its inner map, falls
+# back to _CTA_BY_GOAL unchanged.
+_CTA_BY_PLATFORM_GOAL = {
+    "instagram": {
+        "awareness": "Tap the link and see what {name} does.",
+        "conversion": "Link in bio — start with {name} today.",
+        "lead_generation": "Link in bio to get early access.",
+        "engagement": "Drop a comment — what would you build with {name}?",
+        "retention": "You left something behind. Pick {name} back up.",
+    },
+    "linkedin": {
+        "awareness": "Read how {name} approaches this differently.",
+        "conversion": "Get started with {name} — it takes minutes.",
+        "lead_generation": "Request a walkthrough of {name}.",
+        "engagement": "I'd like to hear how your team handles this.",
+        "retention": "Worth another look — {name} has moved on since.",
+    },
+    "email": {
+        "awareness": "See what makes {name} different →",
+        "conversion": "Start with {name} today →",
+        "lead_generation": "Book your walkthrough →",
+        "engagement": "Reply and tell us what you'd build →",
+        "retention": "Pick up where you left off →",
+    },
+    "facebook": {
+        "awareness": "Have a look — {name} might surprise you.",
+        "conversion": "Give {name} a go today.",
+        "lead_generation": "Sign up and we'll show you around {name}.",
+        "engagement": "Tell us in the comments — what would you fix first?",
+        "retention": "Still thinking about it? {name} is right where you left it.",
+    },
+    "shorts": {
+        "awareness": "Go look up {name}.",
+        "conversion": "Get {name}. Link below.",
+        "lead_generation": "Sign up — link below.",
+        "engagement": "Comment what you'd use it for.",
+        "retention": "Come back and finish what you started.",
+    },
+    "tiktok": {
+        "awareness": "Go look up {name}.",
+        "conversion": "Get {name}. Link below.",
+        "lead_generation": "Sign up — link below.",
+        "engagement": "Comment what you'd use it for.",
+        "retention": "Come back and finish what you started.",
+    },
+}
+
 # Opening hook per tone. Keyed on the *platform* tone (config.platform_tone),
 # not the brand tone, so the same business does not open a LinkedIn post and an
 # Instagram post with a byte-identical sentence.
@@ -54,6 +107,53 @@ _HOOK_BY_TONE = {
     "friendly": "Meet {name} — made for {aud}.",
     "informative": "What {aud} should know about {name}.",
     "emotional": "The difference {name} makes for {aud} is the kind you feel.",
+}
+
+# Alternative openers, generated as extra candidates and picked by score.
+#
+# These used to be one shared list with no platform in it, so when the scorer
+# preferred the same candidate index for two channels — which it usually did,
+# since the inputs to the score barely differ — both got a byte-identical
+# opening sentence. Giving each platform its own pool means two channels can no
+# longer converge on the same line.
+_HOOK_ALTERNATIVES_DEFAULT = [
+    "What could {aud} achieve with less busywork?",
+    "A better way for {aud} to get results starts here.",
+    "One small change can make a meaningful difference for {aud}.",
+]
+
+_HOOK_ALTERNATIVES = {
+    "instagram": [
+        "The part of the day {name} gives back to {aud}.",
+        "{aud}: less busywork, same result.",
+        "This is what {name} actually looks like in practice.",
+    ],
+    "linkedin": [
+        "Most {aud} lose hours a week to work that shouldn't need doing.",
+        "A practical question for {aud}: where does the time actually go?",
+        "The teams pulling ahead aren't working harder — they've stopped doing "
+        "the work that doesn't pay.",
+    ],
+    "email": [
+        "A quicker way through your week",
+        "The change {aud} say they notice first",
+        "One thing worth five minutes of your time",
+    ],
+    "facebook": [
+        "You know that job that always takes longer than it should?",
+        "We asked {aud} what they'd change. The same answer kept coming up.",
+        "Sometimes the fix really is that simple.",
+    ],
+    "shorts": [
+        "Stop scrolling — this one's for {aud}.",
+        "{name}, in fifteen seconds.",
+        "Nobody told {aud} it could be this quick.",
+    ],
+    "tiktok": [
+        "Stop scrolling — this one's for {aud}.",
+        "{name}, in fifteen seconds.",
+        "Nobody told {aud} it could be this quick.",
+    ],
 }
 
 
@@ -205,19 +305,115 @@ def _fit_words(text: str, lo: int, hi: int, filler: str) -> str:
     return " ".join(words)
 
 
-def _hashtags(keywords: list[str], lo: int, hi: int, goal: str) -> list[str]:
+# Generic tags appended once the site's own keywords run out. Per platform,
+# because a tag is a discovery mechanism and each channel discovers differently:
+# LinkedIn wants a few broad professional topics, Instagram wants many specific
+# ones, and short-form video wants the platform's own native tags.
+_GENERIC_TAGS = {
+    "instagram": ["#Marketing", "#SmallBusiness", "#BehindTheScenes",
+                  "#Reels", "#DailyRoutine", "#Workflow"],
+    "linkedin": ["#Operations", "#Productivity", "#Leadership"],
+    "facebook": ["#SmallBusiness", "#Community"],
+    "shorts": ["#Shorts", "#HowTo", "#QuickTip"],
+    "tiktok": ["#FYP", "#LearnOnTikTok", "#SmallBiz"],
+}
+_GENERIC_TAGS_DEFAULT = ["#Marketing", "#Launch", "#Growth", "#Brand", "#Digital"]
+
+
+def _hashtags(keywords: list[str], spec: dict, goal: str,
+              platform: str) -> list[str]:
+    """Tags for this platform, from the site's own vocabulary first.
+
+    Was previously one shared pool truncated to a fixed 5 for every channel, so
+    Instagram and LinkedIn came out with byte-identical tags despite having very
+    different conventions. The count now comes from the platform's own spec.
+    """
+    lo, hi = spec["hashtag_range"]
     if hi == 0:
         return []
-    pool = [f"#{k}" for k in keywords] + [
-        f"#{goal.title().replace('_', '')}", "#Marketing", "#Launch",
-        "#Growth", "#Brand", "#Digital",
-    ]
+    generic = _GENERIC_TAGS.get(platform, _GENERIC_TAGS_DEFAULT)
+    pool = ([f"#{k}" for k in keywords]
+            + [f"#{goal.title().replace('_', '')}"] + generic)
     seen, out = set(), []
     for t in pool:
         if t.lower() not in seen:
             seen.add(t.lower()); out.append(t)
-    target = max(lo, min(hi, max(lo, 5)))
+    target = max(lo, min(hi, spec.get("hashtag_target", 5)))
     return out[:target]
+
+
+def _cta_for(platform: str, goal: str, name: str) -> str:
+    """The campaign goal's call to action, phrased for this channel."""
+    per_platform = _CTA_BY_PLATFORM_GOAL.get(platform, {})
+    template = (per_platform.get(goal)
+                or _CTA_BY_GOAL.get(goal)
+                or _CTA_BY_GOAL["awareness"])
+    return template.format(name=name)
+
+
+def _hook_candidates(platform: str, tone_hook: str, name: str, aud: str) -> list[str]:
+    """Opening lines to choose between for this platform.
+
+    Slot 0 is always the tone-derived hook so the classifier's prediction still
+    drives the primary variant; the rest are platform-specific.
+    """
+    pool = _HOOK_ALTERNATIVES.get(platform, _HOOK_ALTERNATIVES_DEFAULT)
+    return [tone_hook] + [h.format(name=name, aud=aud) for h in pool]
+
+
+# --------------------------------------------------------------------------- #
+# Caption shapes
+# --------------------------------------------------------------------------- #
+# config.PLATFORM_SPECS says how long a caption may be and what it must contain.
+# These say what it actually looks like.
+#
+# There used to be three branches here — email, linkedin, and one `else` that
+# caught everything remaining — so instagram, facebook and shorts were built
+# from a single identical template. Combined with a shared hook pool and a
+# campaign-wide CTA, three of the five cards on the dashboard rendered the same
+# sentence. Each channel now has its own shape.
+
+def _caption_email(c: dict) -> str:
+    # Ends on the CTA on purpose: email_sender.compose() detects a trailing CTA
+    # and does not append it again. See test_call_to_action_is_not_repeated.
+    return (f"Subject: {c['hook']}\n\n"
+            f"Hi {c['aud']} — {c['benefit']} That's why {c['name']} is built "
+            f"for the way you work.\n\n{c['cta']}")
+
+
+def _caption_linkedin(c: dict) -> str:
+    return (f"{c['hook']}\n\n{c['benefit']} For teams that value momentum over "
+            f"busywork, {c['name']} turns hours of effort into minutes.\n\n"
+            f"{c['cta']}")
+
+
+def _caption_instagram(c: dict) -> str:
+    # Short and stacked: the hook has to survive the two-line feed truncation,
+    # so it gets its own line and the body stays to one sentence.
+    return f"{c['hook']}\n\n{c['benefit']}\n\n{c['cta']}"
+
+
+def _caption_facebook(c: dict) -> str:
+    # Conversational and inline — a Facebook post that is stacked into short
+    # lines reads as an advert.
+    return (f"{c['hook']} {c['benefit']} That's the bit {c['name']} takes off "
+            f"your plate. {c['cta']}")
+
+
+def _caption_short_video(c: dict) -> str:
+    # Spoken aloud over a vertical video, so it is written to be *said*: the
+    # payoff first, one clause of context, then a spoken-word CTA.
+    return f"{c['hook']} {c['benefit']} {c['cta']}"
+
+
+_CAPTION_BUILDERS = {
+    "email": _caption_email,
+    "linkedin": _caption_linkedin,
+    "instagram": _caption_instagram,
+    "facebook": _caption_facebook,
+    "shorts": _caption_short_video,
+    "tiktok": _caption_short_video,
+}
 
 
 def _template_asset(platform: str, summary: dict, keywords: list[str],
@@ -232,37 +428,25 @@ def _template_asset(platform: str, summary: dict, keywords: list[str],
     tone = config.platform_tone(platform, brand_tone)
     lo, hi = spec["caption_words"]
 
-    hook = _HOOK_BY_TONE.get(tone, _HOOK_BY_TONE["professional"]).format(name=name, aud=aud)
+    tone_hook = _HOOK_BY_TONE.get(tone, _HOOK_BY_TONE["professional"]).format(
+        name=name, aud=aud)
     # Different hooks create alternatives but keep the model-selected campaign
     # goal and brand tone fixed; business intent must not change to chase a score.
-    alternatives = [
-        hook,
-        f"What could {aud} achieve with less busywork?",
-        f"A better way for {aud} to get results starts here.",
-        f"One small change can make a meaningful difference for {aud}.",
-        f"Ready to make your next step simpler, {aud}?",
-    ]
+    alternatives = _hook_candidates(platform, tone_hook, name, aud)
     hook = alternatives[candidate_index % len(alternatives)]
-    cta = _CTA_BY_GOAL.get(goal, _CTA_BY_GOAL["awareness"]).format(name=name)
+    cta = _cta_for(platform, goal, name)
     benefit = _benefit(summary)
 
-    if platform == "email":
-        caption = (f"Subject: {hook}\n\n"
-                   f"Hi {aud} — {benefit} That's why {name} is built for the way you work. "
-                   f"{cta}")
-    elif platform == "linkedin":
-        caption = (f"{hook}\n\n{benefit} For teams that value momentum over busywork, "
-                   f"{name} turns hours of effort into minutes.\n\n{cta}")
-    else:  # instagram / shorts / tiktok — punchy
-        caption = f"{hook} {benefit} {cta}"
+    build = _CAPTION_BUILDERS.get(platform, _caption_short_video)
+    caption = build({"hook": hook, "benefit": benefit, "cta": cta,
+                     "name": name, "aud": aud})
 
     # Light normalisation that preserves paragraph breaks.
     caption = re.sub(r"[ \t]+", " ", caption).replace(" .", ".").strip()
     caption = re.sub(r"\n{3,}", "\n\n", caption)
     caption = _fit_words(caption, lo, hi, f"{benefit} {cta}")
 
-    least, most = spec["hashtag_range"]
-    tags = _hashtags(keywords, least, most, goal) if spec.get("hashtags") else []
+    tags = _hashtags(keywords, spec, goal, platform) if spec.get("hashtags") else []
 
     row = {c: "" for c in ("platform", "caption", "hashtags", "cta",
                            "image_prompt", "shorts_prompt")}
@@ -273,12 +457,15 @@ def _template_asset(platform: str, summary: dict, keywords: list[str],
     row["brand_tone"] = brand_tone
     row["platform_tone"] = tone
     row["candidate_index"] = candidate_index
+    # The creative brief is cut to the placement — aspect ratio, framing, and
+    # whether it has to read with the sound off all differ per channel. This
+    # used to be one hardcoded image string and one video string for every
+    # platform, so five cards on the dashboard showed the same brief.
+    brief = config.visual_brief(platform, visual, name=name, aud=aud)
     if visual == "video":
-        row["shorts_prompt"] = (f"Open on a scene that shows {aud} using {name}; "
-                                f"quick cuts of the key benefit, end on the logo and CTA.")
+        row["shorts_prompt"] = brief
     else:
-        row["image_prompt"] = (f"A clean, bright product image of {name} in use by "
-                               f"{aud}, modern lifestyle setting, high detail, on-brand.")
+        row["image_prompt"] = brief
     return row
 
 

@@ -429,7 +429,12 @@ CREATE TABLE IF NOT EXISTS content_actions (
     -- though we never published it.
     track_token      TEXT        NOT NULL UNIQUE,
     target_url       TEXT,
-    status           TEXT        NOT NULL DEFAULT 'suggested',  -- suggested | executed | skipped
+    -- suggested | executed | skipped | superseded
+    -- 'superseded' is set when a newer plan replaces still-unactioned advice.
+    -- It is neither current (so the plan hides it) nor something the company
+    -- did (so the history hides it too) — without it, rebuilding a plan listed
+    -- the same post action once per rebuild, forever.
+    status           TEXT        NOT NULL DEFAULT 'suggested',
     executed_at      TIMESTAMPTZ,
     outcome          JSONB       NOT NULL DEFAULT '{}'::jsonb,  -- what the company reported back
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now()

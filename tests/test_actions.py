@@ -344,3 +344,80 @@ def test_plan_endpoints_round_trip(site, client: TestClient) -> None:
 def test_unknown_strategy_is_rejected(site, client: TestClient) -> None:
     res = client.post(f"/sites/{site['id']}/plan", json={"strategy": "wishful"})
     assert res.status_code == 422
+
+
+# ── The plan and the content engine describe the same world ──────────────────
+
+def test_the_plan_can_suggest_every_platform_content_is_written_for() -> None:
+    """`POST_PLATFORMS` was declared by hand alongside two other platform lists.
+
+    A channel Module 4 can write for but the planner never suggests is content
+    generated and then stranded, so the list is derived rather than repeated.
+    """
+    from api.services import content as content_svc
+
+    assert svc.POST_PLATFORMS == [
+        p for p in content_svc.SUPPORTED_PLATFORMS if p != "email"
+    ]
+    assert "email" not in svc.POST_PLATFORMS, "email is planned as email actions"
+
+
+def test_a_post_action_says_which_medium_its_brief_is_for(site) -> None:
+    """Regression: the plan exposed the creative brief without `visual_kind`.
+
+    `shorts` is a video platform and the adaptive platforms choose per asset, so
+    the medium cannot be recovered from the platform name — the plan was telling
+    someone to shoot a video under a heading that read like a photo request.
+    """
+    _contactable(site["id"], "act-vk")
+    db.execute(
+        """
+        INSERT INTO content_assets (site_id, platform, caption, hashtags, cta,
+                                    image_prompt, visual_kind, final_score)
+        VALUES (:s, 'shorts', 'A caption', '[]'::jsonb, 'Watch',
+                '9:16 vertical, hook in the first three seconds', 'video', 0.9)
+        """, s=site["id"])
+
+    svc.build_plan(site["id"], "hybrid")
+    plan = svc.current_plan(site["id"])
+
+    post = next(a for a in plan["actions"]
+                if a["kind"] == "post" and a["platform"] == "shorts")
+    assert post["image_brief"], "the brief itself must still be there"
+    assert post["visual_kind"] == "video", (
+        "a video brief must be labelled as one in the plan, not just on the "
+        "content page")
+
+
+def test_rebuilding_a_plan_replaces_the_previous_advice(site) -> None:
+    """Regression: nothing retired the old plan, so each rebuild appended a
+    whole new set and the page listed the same post action once per rebuild."""
+    _contactable(site["id"], "act-sup")
+    _asset(site["id"], "linkedin")
+
+    svc.build_plan(site["id"], "hybrid")
+    first = [a for a in svc.current_plan(site["id"])["actions"]
+             if a["kind"] == "post"]
+    svc.build_plan(site["id"], "hybrid")
+    second = [a for a in svc.current_plan(site["id"])["actions"]
+              if a["kind"] == "post"]
+
+    assert first, "the first plan should suggest at least one post"
+    assert len(second) == len(first), "the old plan's posts were not retired"
+    assert len({a["platform"] for a in second}) == len(second), (
+        "the same platform is suggested twice in one plan")
+
+
+def test_a_superseded_action_is_not_reported_as_something_the_company_did(
+    site,
+) -> None:
+    """It was replaced, not executed and not consciously skipped."""
+    _contactable(site["id"], "act-sup2")
+    _asset(site["id"], "instagram")
+
+    svc.build_plan(site["id"], "hybrid")
+    svc.build_plan(site["id"], "hybrid")
+
+    history = svc.action_history(site["id"])
+    statuses = {a["status"] for a in history["history"]}
+    assert "superseded" not in statuses

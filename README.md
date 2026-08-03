@@ -300,3 +300,5 @@ Here's the command for each part, in the order you'd start them. Run each in its
 
 username - demo@innov8smart.example
 password -demo1234
+
+PGPASSWORD=mos_dev_password psql -h localhost -p 5434 -U mos -d marketing_os
