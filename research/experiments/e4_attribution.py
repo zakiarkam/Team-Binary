@@ -36,6 +36,13 @@ TITLE = "Module 3 — attribution model comparison and disagreement"
 
 MODELS = ("first_touch", "last_touch", "linear", "markov")
 
+# Models that spread credit across the whole journey, as opposed to handing a
+# conversion entirely to one touchpoint. Used only to break ties in error: when
+# two models are indistinguishable on the evidence, "one touchpoint did all of
+# this" is the stronger claim, and the stronger claim should have to win
+# outright rather than inherit the title from a tie.
+MULTI_TOUCH = frozenset({"linear", "markov"})
+
 
 def _load_m3():
     """Module 3's attribution implementations — the same code the API runs."""
@@ -93,6 +100,7 @@ def _ground_truth_study(attribution) -> tuple[list[dict], dict, list[str]]:
     # "model X has the lowest MAE" is a weaker claim than a point estimate
     # makes it look.
     rows = []
+    exact: dict[str, float] = {}
     for model, column in (("first_touch", "ae_first_touch"),
                           ("last_touch", "ae_last_touch"),
                           ("linear", "ae_multi_touch"),
@@ -101,6 +109,7 @@ def _ground_truth_study(attribution) -> tuple[list[dict], dict, list[str]]:
             continue
         errors = comparison[column].to_numpy(dtype=float)
         interval = bootstrap_ci(errors, lambda e: float(np.mean(e)))
+        exact[model] = float(np.mean(errors))
         rows.append({
             "model": model,
             "mae": round(float(np.mean(errors)), 4),
@@ -109,7 +118,23 @@ def _ground_truth_study(attribution) -> tuple[list[dict], dict, list[str]]:
             "n_channels": int(len(errors)),
         })
 
-    rows.sort(key=lambda r: r["mae"])
+    # Rank on the error as reported, so the ordering matches the table a reader
+    # sees. Models that tie at that precision are separated by the multi-touch
+    # preference above rather than by whichever happened to be listed first.
+    rows.sort(key=lambda r: (r["mae"],
+                             0 if r["model"] in MULTI_TOUCH else 1,
+                             exact[r["model"]]))
+
+    tied = [r["model"] for r in rows if r["mae"] == rows[0]["mae"]]
+    if len(tied) > 1:
+        notes.append(
+            f"{' and '.join(tied)} score the same MAE ({rows[0]['mae']}) to the "
+            f"precision reported here, on entirely different per-channel errors. "
+            f"The tie is broken in favour of {rows[0]['model']}, which "
+            "distributes credit across the journey rather than assigning all of "
+            "it to one touchpoint — but the ordering between the tied models "
+            "carries no evidential weight.")
+
     if len(rows) >= 2 and rows[0]["ci_high"] > rows[1]["ci_low"]:
         notes.append(
             f"{rows[0]['model']} has the lowest error, but its interval overlaps "

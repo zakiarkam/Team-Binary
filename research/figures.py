@@ -294,7 +294,9 @@ def fig_attribution() -> list[str]:
 
     if mae is not None:
         ax = axes[slot]
-        mae = mae.sort_values("mae")
+        # Stable, so models tied on error keep the rank order E4 already gave
+        # them and the panel cannot contradict Table R7.
+        mae = mae.sort_values("mae", kind="stable")
         y = np.arange(len(mae))
         ax.barh(y, mae["mae"], height=0.6, color=config.PALETTE["purple"])
         ax.errorbar(mae["mae"], y,

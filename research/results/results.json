@@ -1969,29 +1969,29 @@
       "title": "Module 3 \u2014 attribution model comparison and disagreement",
       "status": "ok",
       "metrics": {
-        "best_model_vs_ground_truth": "first_touch",
+        "best_model_vs_ground_truth": "linear",
         "best_model_mae": 0.0178,
         "worst_model_mae": 0.0525,
-        "live_converters": 7811,
+        "live_converters": 7810,
         "live_data_basis": "dataset",
-        "max_pairwise_disagreement": 0.6836,
-        "mean_pairwise_disagreement": 0.3459,
+        "max_pairwise_disagreement": 0.6847,
+        "mean_pairwise_disagreement": 0.3464,
         "single_touch_share": 0.2
       },
       "tables": {
         "e4_ground_truth_mae": [
           {
-            "model": "first_touch",
-            "mae": 0.0178,
-            "ci_low": 0.0112,
-            "ci_high": 0.0268,
-            "n_channels": 5
-          },
-          {
             "model": "linear",
             "mae": 0.0178,
             "ci_low": 0.0086,
             "ci_high": 0.0292,
+            "n_channels": 5
+          },
+          {
+            "model": "first_touch",
+            "mae": 0.0178,
+            "ci_low": 0.0112,
+            "ci_high": 0.0268,
             "n_channels": 5
           },
           {
@@ -2013,12 +2013,12 @@
           {
             "model": "first_touch",
             "channel": "email",
-            "credit": 0.2079
+            "credit": 0.2067
           },
           {
             "model": "first_touch",
             "channel": "ppc",
-            "credit": 0.202
+            "credit": 0.2022
           },
           {
             "model": "first_touch",
@@ -2028,12 +2028,12 @@
           {
             "model": "first_touch",
             "channel": "seo",
-            "credit": 0.1913
+            "credit": 0.1921
           },
           {
             "model": "first_touch",
             "channel": "social_media",
-            "credit": 0.1855
+            "credit": 0.1858
           },
           {
             "model": "last_touch",
@@ -2043,22 +2043,22 @@
           {
             "model": "last_touch",
             "channel": "ppc",
-            "credit": 0.0275
+            "credit": 0.0277
           },
           {
             "model": "last_touch",
             "channel": "referral",
-            "credit": 0.0288
+            "credit": 0.0287
           },
           {
             "model": "last_touch",
             "channel": "seo",
-            "credit": 0.0269
+            "credit": 0.0268
           },
           {
             "model": "last_touch",
             "channel": "social_media",
-            "credit": 0.0253
+            "credit": 0.0255
           },
           {
             "model": "linear",
@@ -2068,12 +2068,12 @@
           {
             "model": "linear",
             "channel": "ppc",
-            "credit": 0.1127
+            "credit": 0.1128
           },
           {
             "model": "linear",
             "channel": "referral",
-            "credit": 0.1187
+            "credit": 0.1186
           },
           {
             "model": "linear",
@@ -2088,69 +2088,70 @@
           {
             "model": "markov",
             "channel": "email",
-            "credit": 0.533
+            "credit": 0.5333
           },
           {
             "model": "markov",
             "channel": "ppc",
-            "credit": 0.119
+            "credit": 0.1191
           },
           {
             "model": "markov",
             "channel": "referral",
-            "credit": 0.1243
+            "credit": 0.1242
           },
           {
             "model": "markov",
             "channel": "seo",
-            "credit": 0.1129
+            "credit": 0.1127
           },
           {
             "model": "markov",
             "channel": "social_media",
-            "credit": 0.1108
+            "credit": 0.1107
           }
         ],
         "e4_live_disagreement": [
           {
             "model_a": "first_touch",
             "model_b": "last_touch",
-            "total_variation_distance": 0.6836
+            "total_variation_distance": 0.6847
           },
           {
             "model_a": "first_touch",
             "model_b": "linear",
-            "total_variation_distance": 0.3501
+            "total_variation_distance": 0.3513
           },
           {
             "model_a": "first_touch",
             "model_b": "markov",
-            "total_variation_distance": 0.3251
+            "total_variation_distance": 0.3266
           },
           {
             "model_a": "last_touch",
             "model_b": "linear",
-            "total_variation_distance": 0.3335
+            "total_variation_distance": 0.3334
           },
           {
             "model_a": "last_touch",
             "model_b": "markov",
-            "total_variation_distance": 0.3584
+            "total_variation_distance": 0.358
           },
           {
             "model_a": "linear",
             "model_b": "markov",
-            "total_variation_distance": 0.0249
+            "total_variation_distance": 0.0246
           }
         ]
       },
       "notes": [
-        "first_touch has the lowest error, but its interval overlaps linear's \u2014 with only 5 channels to average over, the ranking is suggestive rather than established.",
+        "linear and first_touch score the same MAE (0.0178) to the precision reported here, on entirely different per-channel errors. The tie is broken in favour of linear, which distributes credit across the journey rather than assigning all of it to one touchpoint \u2014 but the ordering between the tied models carries no evidential weight.",
+        "linear has the lowest error, but its interval overlaps first_touch's \u2014 with only 5 channels to average over, the ranking is suggestive rather than established.",
         "20% of converting journeys had a single touchpoint (mean 1.8 distinct channels). On those, every model agrees by arithmetic \u2014 the agreement is not evidence.",
         "first_touch and last_touch disagree over 68% of all attributed credit on the same journeys \u2014 the single clearest argument in this project against trusting one attribution model.",
         "Ground-truth scoring is only possible on simulated journeys, where the true channel influence is known by construction. No such column exists for a real audience, which is why the live half reports disagreement rather than accuracy."
       ],
-      "seconds": 2.6
+      "seconds": 2.8
     },
     "E5": {
       "id": "E5",
