@@ -2700,7 +2700,7 @@
         "None of the 8 text features correlates with engagement after Holm\u2013Bonferroni correction. This is a property of the dataset, not a modelling failure \u2014 no model can extract a signal that is not there, and the honest response is to reduce the weight this score carries in content ranking rather than to keep tuning.",
         "The corrected model's rank correlation is 0.012 [-0.028, 0.054] \u2014 the interval spans zero, so no ranking skill is demonstrated on held-out data."
       ],
-      "seconds": 15.3
+      "seconds": 16.3
     },
     "E8": {
       "id": "E8",

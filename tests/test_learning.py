@@ -391,6 +391,54 @@ def test_retrain_on_synthetic_feedback(tmp_path, monkeypatch):
 
 
 # --------------------------------------------------------------------------
+# train/serve parity on the scored text
+# --------------------------------------------------------------------------
+
+def test_hashtag_text_renders_every_shape():
+    import engagement
+
+    assert engagement.hashtag_text(["#A", "B c"]) == "#A #Bc"
+    assert engagement.hashtag_text("['#A', '#B']") == "#A #B"
+    for empty in ([], "[]", "", None, float("nan")):
+        assert engagement.hashtag_text(empty) == ""
+
+
+def test_scored_text_includes_the_hashtags_that_get_published():
+    """Both engagement corpora carry hashtags inline in the post text — 100% of
+    `your_engagement_dataset.csv` rows contain a `#`. A generated asset keeps
+    them in a separate column, so scoring the caption alone fed the model
+    hashtag_count=0 for content that publishes with hashtags, and shifted
+    char_length, word_count, emoji_count and readability with it."""
+    import engagement
+
+    frame = pd.DataFrame([{
+        "platform": "instagram",
+        "caption": "Meet Innov8Smart — made for homeowners.",
+        "hashtags": ["#SmartHome", "#Innov8Smart"],
+    }])
+
+    text = engagement.scorable_text(frame).iloc[0]
+    assert "#SmartHome" in text and "#Innov8Smart" in text
+
+    feats = engagement.extract_features(
+        pd.DataFrame([{"text": text, "platform": "instagram"}])
+    ).iloc[0]
+    assert feats["hashtag_count"] == 2, "hashtags must reach the feature extractor"
+
+    caption_only = engagement.extract_features(
+        pd.DataFrame([{"text": frame.iloc[0]["caption"], "platform": "instagram"}])
+    ).iloc[0]
+    assert caption_only["hashtag_count"] == 0, "the bug this guards against"
+
+
+def test_scorable_text_survives_a_missing_hashtags_column():
+    import engagement
+
+    frame = pd.DataFrame([{"platform": "linkedin", "caption": "No tags here"}])
+    assert engagement.scorable_text(frame).iloc[0] == "No tags here"
+
+
+# --------------------------------------------------------------------------
 # candidates (pure helper only — generation needs Phi-3)
 # --------------------------------------------------------------------------
 

@@ -86,7 +86,10 @@ def load_feedback_corpus() -> pd.DataFrame:
     if labeled.empty:
         return _empty_canonical()
     frame = _empty_canonical()
-    frame["text"] = labeled["caption"]
+    # The store keeps caption and hashtags in separate columns; the corpora keep
+    # them together in one text field. Join them so feedback rows train on the
+    # same shape of text the base corpus does.
+    frame["text"] = engagement.scorable_text(labeled)
     frame["platform"] = labeled.get("platform")
     frame["account_id"] = labeled.get("account_id")
     frame["likes"] = labeled.get("actual_likes")
@@ -284,7 +287,9 @@ def score(df: pd.DataFrame, account_id: str | None = None) -> pd.DataFrame:
         return engagement.score(df)
 
     out = df.copy()
-    out["text"] = out["caption"].fillna("").astype(str)
+    # Caption + hashtags, matching how the corpora carry them inline. See
+    # engagement.hashtag_text for the measured skew this avoids.
+    out["text"] = engagement.scorable_text(out)
     out["platform"] = out["platform"].fillna("unknown").astype(str).str.lower()
 
     baselines = bundle.get("account_baselines", {})

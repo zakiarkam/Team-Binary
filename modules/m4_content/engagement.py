@@ -4,6 +4,7 @@
 # process segfaults on macOS. See openmp_guard.py for the full explanation.
 import openmp_guard  # noqa: F401  (import order matters)
 
+import ast
 import re
 import joblib
 import numpy as np
@@ -210,12 +211,67 @@ def _align(features: pd.DataFrame, feature_cols: list) -> pd.DataFrame:
     return features[feature_cols]
 
 
+def hashtag_text(value) -> str:
+    """Hashtags rendered the way a published post carries them.
+
+    Every row of both engagement corpora keeps its hashtags *inline in the post
+    text* — `Social Media Engagement Dataset.csv` has `#Food` inside
+    `text_content` as well as in its own `hashtags` column, and 100% of
+    `your_engagement_dataset.csv` rows contain a `#`. A generated asset does the
+    opposite: the caption is clean and the tags live in a separate field.
+
+    Scoring the caption alone therefore handed the model a different kind of
+    text than it was trained on — train/serve skew. Measured on one Instagram
+    asset: hashtag_count 5 -> 0, emoji_count 5 -> 0 (the `#` glyphs), and with
+    68 characters missing, char_length 237 -> 169, word_count 32 -> 26 and
+    readability 37.45 -> 51.62. Five of the eight features were wrong at
+    prediction time. So the tags are appended before features are extracted:
+    the model must see the text that will actually be posted.
+    """
+    if value is None:
+        return ""
+
+    if isinstance(value, (list, tuple)):
+        items = list(value)
+    else:
+        try:
+            if pd.isna(value):
+                return ""
+        except (TypeError, ValueError):
+            pass
+        text = str(value).strip()
+        if not text or text == "[]":
+            return ""
+        try:
+            parsed = ast.literal_eval(text)
+            items = list(parsed) if isinstance(parsed, (list, tuple)) else [text]
+        except (ValueError, SyntaxError):
+            items = [text]
+
+    tags = []
+    for item in items:
+        tag = str(item).strip()
+        if not tag:
+            continue
+        tags.append(tag if tag.startswith("#") else "#" + tag.replace(" ", ""))
+    return " ".join(tags)
+
+
+def scorable_text(df: pd.DataFrame) -> pd.Series:
+    """Caption plus its hashtags — the text the reader actually sees."""
+    caption = df["caption"].fillna("").astype(str).str.strip()
+    if "hashtags" not in df.columns:
+        return caption
+    tags = df["hashtags"].apply(hashtag_text)
+    return (caption + " " + tags).str.strip()
+
+
 def score(df: pd.DataFrame, model=None, feature_cols=None) -> pd.DataFrame:
     """Add predicted_engagement + normalized engagement_score columns. df must have caption + platform."""
     if model is None:
         model, feature_cols = load()
     pred_df = df.copy()
-    pred_df["text"] = pred_df["caption"].fillna("").astype(str)
+    pred_df["text"] = scorable_text(pred_df)
     pred_df["platform"] = pred_df["platform"].fillna("unknown").astype(str).str.lower()
     features = _align(extract_features(pred_df).fillna(0), feature_cols)
     df["predicted_engagement"] = model.predict(features)
