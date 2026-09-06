@@ -1,0 +1,4 @@
+strategy,n_sent,n_open,n_click,n_convert,conv_rate,drop_sent_open,drop_open_click,drop_click_convert,prediction_auc
+fixed,3320,2476,1158,334,0.1006,0.2542,0.5323,0.7116,0.9813
+hybrid,3341,2550,1190,424,0.1269,0.2368,0.5333,0.6437,0.9845
+trigger,3339,2498,1168,391,0.1171,0.2519,0.5324,0.6652,0.9799

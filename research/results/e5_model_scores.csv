@@ -1,0 +1,9 @@
+target,model,roc_auc,roc_auc_ci_low,roc_auc_ci_high,pr_auc,brier,positive_rate,n_test
+conversion,baseline (stratified),0.4983,0.4772,0.5221,0.1147,0.205,0.115,2000
+conversion,logistic regression,0.9651,0.9541,0.9743,0.8371,0.0409,0.115,2000
+conversion,random forest,0.9722,0.9642,0.9793,0.8667,0.0375,0.115,2000
+conversion,xgboost,0.9725,0.9654,0.9793,0.8624,0.038,0.115,2000
+drop_off,baseline (stratified),0.4898,0.4687,0.5107,0.6328,0.4715,0.6375,2000
+drop_off,logistic regression,0.9306,0.9168,0.9442,0.9377,0.0829,0.6375,2000
+drop_off,random forest,0.9876,0.9829,0.9915,0.9917,0.0362,0.6375,2000
+drop_off,xgboost,0.99,0.9867,0.9929,0.9941,0.0355,0.6375,2000

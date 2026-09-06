@@ -1,0 +1,7 @@
+model_a,model_b,total_variation_distance
+first_touch,last_touch,0.6847
+first_touch,linear,0.3513
+first_touch,markov,0.3266
+last_touch,linear,0.3334
+last_touch,markov,0.358
+linear,markov,0.0246

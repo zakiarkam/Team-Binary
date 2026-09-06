@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Trained artifacts (regenerable)
+models/*.pkl
+models/*.json
+
+# Pipeline outputs (regenerable)
+data/processed/*.json
+data/outputs/*.csv
+data/raw/websites/*.json
+
+# Engagement-learning feedback store + analytics imports (per-deployment data)
+data/feedback/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Module 3 trained models (regenerable via its pipeline)
+outputs/models/*.pkl
+
+# Integrated run artifacts (regenerable)
+data/integrated/run_bundle.json
+
+# Secrets and local configuration.
+# NOTE: a bare `config.py` rule used to live here. It silently swallowed
+# modules/m1_segmentation/config.py (which held DB_CONFIG), leaving that
+# dashboard importing a name nothing defines. Secrets now live in .env only.
+.env
+.env.local
+.env.*.local
+
+# Node / Next.js dashboard
+web/node_modules/
+web/.next/
+web/out/
+web/next-env.d.ts
+web/tsconfig.tsbuildinfo
+node_modules/

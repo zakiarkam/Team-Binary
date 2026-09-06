@@ -1,0 +1,7 @@
+target,model,accuracy,macro_f1,weighted_f1,n_train,n_test,n_classes,majority_class_share
+campaign_goal,majority baseline,0.5877,0.1481,0.4351,339,114,5,0.5916
+campaign_goal,tfidf + logistic,0.7719,0.4998,0.7628,339,114,5,0.5916
+campaign_goal,sbert + xgboost,0.7719,0.4042,0.7391,339,114,5,0.5916
+tone,majority baseline,0.3864,0.1115,0.2154,130,44,6,0.4023
+tone,tfidf + logistic,0.8182,0.7315,0.8153,130,44,6,0.4023
+tone,sbert + xgboost,0.7727,0.5912,0.7482,130,44,6,0.4023

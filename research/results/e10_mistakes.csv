@@ -1,0 +1,5 @@
+url,kind,capability,expected,detected
+https://www.gymshark.com/,retail,donation,False,True
+https://www.wateraid.org/uk/,charity,commerce,False,True
+https://arstechnica.com/,content,commerce,False,True
+https://www.smashingmagazine.com/,content,commerce,False,True

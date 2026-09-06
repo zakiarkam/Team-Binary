@@ -1,0 +1,41 @@
+# Research modules (M1–M4). The FastAPI backend has its own file:
+#   pip install -r api/requirements.txt
+#
+# Versions are the ones this project is actually verified against. The previous
+# file pinned xgboost==1.7.6 while 3.2.0 was installed — a stale pin is worse
+# than no pin, because it makes a broken environment look reproducible.
+# It also listed spacy, which no module imports.
+
+# ── Core data / ML ───────────────────────────────────────────────────────────
+numpy==2.4.4
+pandas==3.0.2
+scipy==1.17.1
+scikit-learn==1.8.0
+xgboost==3.2.0
+joblib==1.5.3
+matplotlib==3.10.9
+
+# ── NLP / content generation (Module 4) ──────────────────────────────────────
+# NOTE: torch and xgboost each bundle their own OpenMP runtime. On macOS,
+# fitting or scoring an XGBoost model in a process where torch is loaded
+# segfaults unless OMP_NUM_THREADS=1 is set before either is imported.
+# `import openmp_guard` handles that; see that module for the measurements.
+torch==2.13.0
+transformers==4.41.2
+sentence-transformers==2.7.0
+accelerate==0.30.1
+sentencepiece
+datasets==5.0.0
+textstat==0.7.13
+vaderSentiment==3.3.2
+
+# ── Website crawling (Module 4 input) ────────────────────────────────────────
+requests==2.33.1
+beautifulsoup4==4.14.3
+lxml==6.1.1
+# Fallback renderer for JavaScript-heavy sites. After installing, fetch the
+# browser binary too:  python -m playwright install chromium
+playwright==1.61.0
+
+# ── Testing ──────────────────────────────────────────────────────────────────
+pytest==9.0.3

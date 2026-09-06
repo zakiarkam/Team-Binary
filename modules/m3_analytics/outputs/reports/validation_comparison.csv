@@ -1,0 +1,4 @@
+Model,Bank Mktg AUC,Simulated AUC
+Logistic Regression,0.9438,1.0
+Random Forest,0.9492,0.9794
+XGBoost,0.9535,0.9934

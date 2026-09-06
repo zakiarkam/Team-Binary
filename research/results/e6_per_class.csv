@@ -1,0 +1,21 @@
+target,model,class,support,precision,recall,f1
+campaign_goal,tfidf + logistic,awareness,67,0.9492,0.8358,0.8889
+campaign_goal,tfidf + logistic,conversion,27,0.6316,0.8889,0.7385
+campaign_goal,tfidf + logistic,engagement,3,0.3333,0.3333,0.3333
+campaign_goal,tfidf + logistic,lead_generation,12,0.5,0.5833,0.5385
+campaign_goal,tfidf + logistic,retention,5,0.0,0.0,0.0
+campaign_goal,sbert + xgboost,awareness,67,0.863,0.9403,0.9
+campaign_goal,sbert + xgboost,conversion,27,0.6364,0.7778,0.7
+campaign_goal,sbert + xgboost,engagement,3,0.0,0.0,0.0
+campaign_goal,sbert + xgboost,lead_generation,12,0.5714,0.3333,0.4211
+campaign_goal,sbert + xgboost,retention,5,0.0,0.0,0.0
+tone,tfidf + logistic,emotional,2,1.0,0.5,0.6667
+tone,tfidf + logistic,friendly,2,0.5,0.5,0.5
+tone,tfidf + logistic,luxury,6,1.0,0.6667,0.8
+tone,tfidf + logistic,persuasive,17,0.7619,0.9412,0.8421
+tone,tfidf + logistic,professional,17,0.875,0.8235,0.8485
+tone,sbert + xgboost,emotional,2,1.0,0.5,0.6667
+tone,sbert + xgboost,friendly,2,0.0,0.0,0.0
+tone,sbert + xgboost,luxury,6,1.0,0.5,0.6667
+tone,sbert + xgboost,persuasive,17,0.7143,0.8824,0.7895
+tone,sbert + xgboost,professional,17,0.7895,0.8824,0.8333
