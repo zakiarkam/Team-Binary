@@ -1,0 +1,423 @@
+"""The Action Plan — the advisory contract.
+
+The product's central claim is: *we tell you what to do and write the content;
+you execute it in your own tools, and it stays measurable.* These tests pin
+down the three things that claim depends on.
+"""
+
+from __future__ import annotations
+
+import pytest
+
+pytest.importorskip("fastapi")
+
+from fastapi.testclient import TestClient  # noqa: E402
+
+from api import db  # noqa: E402
+from api.main import app  # noqa: E402
+from api.services import actions as svc  # noqa: E402
+
+try:
+    db.ping()
+    DB_UP = True
+except Exception:
+    DB_UP = False
+
+pytestmark = pytest.mark.skipif(not DB_UP, reason="PostgreSQL is not running")
+
+
+@pytest.fixture(scope="module")
+def client() -> TestClient:
+    db.init_schema()
+    with TestClient(app) as c:
+        yield c
+
+
+@pytest.fixture
+def site(client: TestClient):
+    res = client.post("/sites", json={"name": "Action Test",
+                                      "url": "https://actions.example"})
+    body = res.json()["site"]
+    yield body
+    db.execute("DELETE FROM sites WHERE id = :i", i=body["id"])
+
+
+def _contactable(site_id: int, uid: str, segment: str = "High Intent") -> int:
+    row = db.fetch_one(
+        """
+        INSERT INTO visitors (site_id, visitor_uid, email, name,
+                              email_consent, consent_at)
+        VALUES (:s, :u, :e, 'Test Person', TRUE, now())
+        RETURNING id
+        """,
+        s=site_id, u=uid, e=f"{uid}@example.com",
+    )
+    vid = int(row["id"])
+    db.execute(
+        """INSERT INTO user_segments (site_id, visitor_id, segment_name,
+                                      segment_method, segment_confidence)
+           VALUES (:s, :v, :n, 'hybrid', 0.8)""",
+        s=site_id, v=vid, n=segment)
+    return vid
+
+
+def _asset(site_id: int, platform: str) -> int:
+    row = db.fetch_one(
+        """
+        INSERT INTO content_assets (site_id, platform, caption, hashtags, cta,
+                                    image_prompt, final_score)
+        VALUES (:s, :p, 'A caption about the product', '["#one","#two"]'::jsonb,
+                'Start free', 'A bright desk scene', 0.8)
+        RETURNING id
+        """,
+        s=site_id, p=platform)
+    return int(row["id"])
+
+
+# ── The plan is advice, not delivery ─────────────────────────────────────────
+
+def test_a_plan_produces_ready_to_use_content_for_email_and_posts(site) -> None:
+    _contactable(site["id"], "act-v1")
+    for platform in ("instagram", "linkedin"):
+        _asset(site["id"], platform)
+
+    built = svc.build_plan(site["id"], "hybrid")
+    assert built["email_actions"] >= 1
+    assert built["post_actions"] >= 2
+
+    plan = svc.current_plan(site["id"])
+    kinds = {a["kind"] for a in plan["actions"]}
+    assert kinds == {"email", "post"}
+
+    email = next(a for a in plan["actions"] if a["kind"] == "email")
+    assert email["subject"] and email["body"], "an email action must be writable as-is"
+    assert email["audience_size"] >= 1
+    assert email["rationale"], "every action must say why it is being suggested"
+
+    post = next(a for a in plan["actions"] if a["kind"] == "post")
+    assert post["caption"] and post["hashtags"]
+    assert post["rationale"]
+
+
+def test_nothing_is_sent_while_a_plan_is_built(site) -> None:
+    """Building a plan must never contact a recipient.
+
+    The guard is structural: no interaction row exists until the company says
+    it executed the action.
+    """
+    _contactable(site["id"], "act-v2")
+    _asset(site["id"], "instagram")
+    svc.build_plan(site["id"], "hybrid")
+
+    interactions = db.fetch_one(
+        "SELECT count(*) AS n FROM interactions WHERE site_id = :s", s=site["id"])
+    assert interactions["n"] == 0
+
+    statuses = db.fetch_all(
+        """SELECT DISTINCT cs.status FROM campaign_sends cs
+           JOIN campaigns c ON c.id = cs.campaign_id WHERE c.site_id = :s""",
+        s=site["id"])
+    assert {r["status"] for r in statuses} == {"scheduled"}, \
+        "drafts stay planned; nothing is marked sent"
+
+
+# ── The measurement trick: a post we never published is still tracked ────────
+
+def test_a_hand_published_post_stays_measurable(site, client: TestClient) -> None:
+    """The link inside the content is ours, whoever publishes the post.
+
+    Clicking it records the click and forwards the visitor with a UTM tag, so
+    the existing attribution model sees the platform that sent them.
+    """
+    _contactable(site["id"], "act-v3")
+    _asset(site["id"], "instagram")
+    svc.build_plan(site["id"], "hybrid")
+
+    plan = svc.current_plan(site["id"])
+    post = next(a for a in plan["actions"] if a["kind"] == "post")
+    token = post["tracked_link"].rsplit("/", 1)[-1]
+
+    res = client.get(f"/l/{token}", follow_redirects=False)
+    assert res.status_code == 302
+    target = res.headers["location"]
+    assert "utm_source=" in target and "utm_medium=social" in target, \
+        "the redirect must tag the visit with its platform"
+
+    row = db.fetch_one(
+        "SELECT outcome FROM content_actions WHERE track_token = :t", t=token)
+    assert row["outcome"].get("clicks") == 1
+
+
+def test_an_unknown_short_link_redirects_rather_than_erroring(
+        client: TestClient) -> None:
+    """A public marketing link that 404s is worse than an untracked one."""
+    res = client.get("/l/not-a-real-token", follow_redirects=False)
+    assert res.status_code == 302
+
+
+# ── Executing an action is self-reported, and labelled as such ───────────────
+
+def test_marking_an_email_done_records_it_as_self_reported(site) -> None:
+    _contactable(site["id"], "act-v4")
+    built = svc.build_plan(site["id"], "hybrid")
+
+    step = db.fetch_one(
+        "SELECT min(step) AS s FROM campaign_sends WHERE campaign_id = :c",
+        c=built["plan_id"])["s"]
+    result = svc.mark_email_executed(built["plan_id"], step)
+    assert result["messages"] >= 1
+
+    row = db.fetch_one(
+        """SELECT event_type, meta, source FROM interactions
+           WHERE campaign_id = :c LIMIT 1""", c=built["plan_id"])
+    assert row["event_type"] == "sent"
+    assert row["meta"].get("self_reported") is True, \
+        "the platform did not watch it leave; the funnel must say so"
+    # Live visitor → live row. The `source` derivation is unchanged.
+    assert row["source"] == "live"
+
+
+def test_marking_a_post_done_takes_it_off_the_list(site) -> None:
+    _contactable(site["id"], "act-v5")
+    _asset(site["id"], "instagram")
+    svc.build_plan(site["id"], "hybrid")
+
+    before = svc.current_plan(site["id"])
+    post = next(a for a in before["actions"] if a["kind"] == "post")
+    svc.mark_post_executed(post["id"])
+
+    after = svc.current_plan(site["id"])
+    assert post["id"] not in [a.get("id") for a in after["actions"]
+                              if a["kind"] == "post"]
+    # ...but it is still there in the history.
+    with_done = svc.current_plan(site["id"], include_done=True)
+    done = next(a for a in with_done["actions"]
+                if a["kind"] == "post" and a["id"] == post["id"])
+    assert done["status"] == "executed" and done["executed_at"] is not None
+
+
+def test_dataset_visitors_never_produce_a_live_self_reported_send(site) -> None:
+    """The honesty invariant holds on this path too."""
+    row = db.fetch_one(
+        """INSERT INTO visitors (site_id, visitor_uid, email, email_consent,
+                                 consent_at, source)
+           VALUES (:s, 'act-ds', 'ds@example.invalid', TRUE, now(), 'dataset')
+           RETURNING id""", s=site["id"])
+    db.execute(
+        """INSERT INTO user_segments (site_id, visitor_id, segment_name,
+                                      segment_method, segment_confidence)
+           VALUES (:s, :v, 'High Intent', 'hybrid', 0.8)""",
+        s=site["id"], v=row["id"])
+
+    built = svc.build_plan(site["id"], "hybrid")
+    step = db.fetch_one(
+        "SELECT min(step) AS s FROM campaign_sends WHERE campaign_id = :c",
+        c=built["plan_id"])["s"]
+    svc.mark_email_executed(built["plan_id"], step)
+
+    leaked = db.fetch_one(
+        """SELECT count(*) AS n FROM interactions i
+           JOIN visitors v ON v.id = i.visitor_id
+           WHERE i.site_id = :s AND i.source = 'live'
+             AND v.source = 'dataset'""",
+        s=site["id"])
+    assert leaked["n"] == 0
+
+
+# ── The history: what was done, and what came of it ──────────────────────────
+
+def test_history_is_empty_until_something_is_actually_done(site) -> None:
+    _contactable(site["id"], "act-h0")
+    _asset(site["id"], "instagram")
+    svc.build_plan(site["id"], "hybrid")
+
+    hist = svc.action_history(site["id"])
+    assert hist["history"] == [], \
+        "a planned action has not happened; the history must not claim it did"
+    assert hist["counts"]["executed"] == 0
+
+
+def test_history_keeps_each_done_action_with_the_result_it_produced(
+        site) -> None:
+    """The record is the action *and* its outcome.
+
+    A tick-list would answer "did I send this?" but not "was it worth
+    sending?". The opens and clicks are observed by the pixel and the tracked
+    links even though the company sent and published the work itself.
+    """
+    visitor = _contactable(site["id"], "act-h1")
+    _asset(site["id"], "linkedin")
+    built = svc.build_plan(site["id"], "hybrid")
+
+    step = db.fetch_one(
+        "SELECT min(step) AS s FROM campaign_sends WHERE campaign_id = :c",
+        c=built["plan_id"])["s"]
+    svc.mark_email_executed(built["plan_id"], step)
+
+    # One recipient opened it, in the same shape the tracking pixel writes.
+    send = db.fetch_one(
+        """SELECT id FROM campaign_sends
+           WHERE campaign_id = :c AND step = :st AND visitor_id = :v""",
+        c=built["plan_id"], st=step, v=visitor)
+    db.execute(
+        """INSERT INTO interactions (site_id, visitor_id, campaign_id, send_id,
+                                     event_type)
+           VALUES (:s, :v, :c, :sd, 'open')""",
+        s=site["id"], v=visitor, c=built["plan_id"], sd=send["id"])
+
+    post = next(a for a in svc.current_plan(site["id"])["actions"]
+                if a["kind"] == "post")
+    svc.mark_post_executed(post["id"], notes="Published at 9am")
+
+    hist = svc.action_history(site["id"])
+    assert hist["counts"]["executed"] == 2
+    assert {h["kind"] for h in hist["history"]} == {"email", "post"}
+
+    email = next(h for h in hist["history"] if h["kind"] == "email")
+    assert email["status"] == "executed" and email["executed_at"] is not None
+    assert email["audience_size"] >= 1
+    assert email["opened"] == 1, "the observed open must survive into the record"
+    # The audience is people, not events — the interactions join must not
+    # inflate it by counting the open as a second contact.
+    assert email["audience_size"] == 1
+    assert email["clicked"] == 0 and email["converted"] == 0
+
+    done_post = next(h for h in hist["history"] if h["kind"] == "post")
+    assert done_post["id"] == post["id"]
+    assert done_post["notes"] == "Published at 9am"
+    assert done_post["clicks"] == 0  # nobody has followed the link yet
+
+    # And none of it is still on the to-do list.
+    assert svc.current_plan(site["id"])["counts"]["total"] == 0
+
+
+def test_a_skipped_action_is_recorded_as_skipped_not_as_done(site) -> None:
+    _contactable(site["id"], "act-h2")
+    _asset(site["id"], "facebook")
+    svc.build_plan(site["id"], "hybrid")
+
+    post = next(a for a in svc.current_plan(site["id"])["actions"]
+                if a["kind"] == "post")
+    svc.mark_post_executed(post["id"], executed=False)
+
+    hist = svc.action_history(site["id"])
+    entry = next(h for h in hist["history"] if h.get("id") == post["id"])
+    assert entry["status"] == "skipped"
+    assert entry["executed_at"] is None
+    assert hist["counts"]["skipped"] == 1 and hist["counts"]["executed"] == 0
+
+
+def test_history_endpoint_returns_the_record(site, client: TestClient) -> None:
+    _contactable(site["id"], "act-h3")
+    _asset(site["id"], "instagram")
+    svc.build_plan(site["id"], "hybrid")
+    post = next(a for a in svc.current_plan(site["id"])["actions"]
+                if a["kind"] == "post")
+    svc.mark_post_executed(post["id"])
+
+    res = client.get(f"/sites/{site['id']}/plan/history")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["counts"]["executed"] == 1
+    assert body["history"][0]["kind"] == "post"
+    assert "self-reported" in body["note"]
+
+    assert client.get("/sites/999999/plan/history").status_code == 404
+
+
+# ── API surface ──────────────────────────────────────────────────────────────
+
+def test_plan_endpoints_round_trip(site, client: TestClient) -> None:
+    _contactable(site["id"], "act-v6")
+    _asset(site["id"], "linkedin")
+
+    created = client.post(f"/sites/{site['id']}/plan", json={"strategy": "trigger"})
+    assert created.status_code == 201
+    assert created.json()["post_actions"] >= 1
+
+    plan = client.get(f"/sites/{site['id']}/plan")
+    assert plan.status_code == 200
+    assert plan.json()["counts"]["total"] >= 2
+    assert "advises" in plan.json()["how_to_use"]
+
+
+def test_unknown_strategy_is_rejected(site, client: TestClient) -> None:
+    res = client.post(f"/sites/{site['id']}/plan", json={"strategy": "wishful"})
+    assert res.status_code == 422
+
+
+# ── The plan and the content engine describe the same world ──────────────────
+
+def test_the_plan_can_suggest_every_platform_content_is_written_for() -> None:
+    """`POST_PLATFORMS` was declared by hand alongside two other platform lists.
+
+    A channel Module 4 can write for but the planner never suggests is content
+    generated and then stranded, so the list is derived rather than repeated.
+    """
+    from api.services import content as content_svc
+
+    assert svc.POST_PLATFORMS == [
+        p for p in content_svc.SUPPORTED_PLATFORMS if p != "email"
+    ]
+    assert "email" not in svc.POST_PLATFORMS, "email is planned as email actions"
+
+
+def test_a_post_action_says_which_medium_its_brief_is_for(site) -> None:
+    """Regression: the plan exposed the creative brief without `visual_kind`.
+
+    `shorts` is a video platform and the adaptive platforms choose per asset, so
+    the medium cannot be recovered from the platform name — the plan was telling
+    someone to shoot a video under a heading that read like a photo request.
+    """
+    _contactable(site["id"], "act-vk")
+    db.execute(
+        """
+        INSERT INTO content_assets (site_id, platform, caption, hashtags, cta,
+                                    image_prompt, visual_kind, final_score)
+        VALUES (:s, 'shorts', 'A caption', '[]'::jsonb, 'Watch',
+                '9:16 vertical, hook in the first three seconds', 'video', 0.9)
+        """, s=site["id"])
+
+    svc.build_plan(site["id"], "hybrid")
+    plan = svc.current_plan(site["id"])
+
+    post = next(a for a in plan["actions"]
+                if a["kind"] == "post" and a["platform"] == "shorts")
+    assert post["image_brief"], "the brief itself must still be there"
+    assert post["visual_kind"] == "video", (
+        "a video brief must be labelled as one in the plan, not just on the "
+        "content page")
+
+
+def test_rebuilding_a_plan_replaces_the_previous_advice(site) -> None:
+    """Regression: nothing retired the old plan, so each rebuild appended a
+    whole new set and the page listed the same post action once per rebuild."""
+    _contactable(site["id"], "act-sup")
+    _asset(site["id"], "linkedin")
+
+    svc.build_plan(site["id"], "hybrid")
+    first = [a for a in svc.current_plan(site["id"])["actions"]
+             if a["kind"] == "post"]
+    svc.build_plan(site["id"], "hybrid")
+    second = [a for a in svc.current_plan(site["id"])["actions"]
+              if a["kind"] == "post"]
+
+    assert first, "the first plan should suggest at least one post"
+    assert len(second) == len(first), "the old plan's posts were not retired"
+    assert len({a["platform"] for a in second}) == len(second), (
+        "the same platform is suggested twice in one plan")
+
+
+def test_a_superseded_action_is_not_reported_as_something_the_company_did(
+    site,
+) -> None:
+    """It was replaced, not executed and not consciously skipped."""
+    _contactable(site["id"], "act-sup2")
+    _asset(site["id"], "instagram")
+
+    svc.build_plan(site["id"], "hybrid")
+    svc.build_plan(site["id"], "hybrid")
+
+    history = svc.action_history(site["id"])
+    statuses = {a["status"] for a in history["history"]}
+    assert "superseded" not in statuses

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Your basket — Innov8Smart</title>
+  <meta name="description" content="Review your Innov8Smart basket and check out. Free delivery over $75, two-year warranty on every device, and ten loyalty points for every dollar you spend." />
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="http://localhost:8000/mos.js" data-site="mos_dmqOW5JDPufbdgR1"></script>
+</head>
+<body>
+
+<header class="nav">
+  <a class="brand" href="index.html">◆ Innov8Smart</a>
+  <nav>
+    <a href="index.html">Shop</a>
+    <a href="index.html#collection">Devices</a>
+    <a href="index.html#loyalty">Rewards</a>
+    <a class="btn btn-sm" href="cart.html" data-mos-track="nav_cart">Basket <span data-cart-count>0</span></a>
+  </nav>
+</header>
+
+<section class="cart-page">
+  <h1>Your basket</h1>
+
+  <div id="cart-empty" class="empty" hidden>
+    <p>Your basket is empty.</p>
+    <a class="btn" href="index.html#collection" data-mos-track="cart_empty_shop">Back to the collection</a>
+  </div>
+
+  <div id="cart-full" hidden>
+    <table class="cart-table">
+      <thead>
+        <tr><th>Device</th><th>Qty</th><th class="right">Price</th></tr>
+      </thead>
+      <tbody id="cart-lines"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2"><b>Total</b></td>
+          <td class="right"><b id="cart-total">$0.00</b></td>
+        </tr>
+        <tr class="muted-row">
+          <td colspan="3" id="cart-points">You will earn 0 loyalty points on this order.</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="checkout-box">
+      <p class="fineprint">
+        Free delivery over $75 · Two-year warranty · 30-day returns.
+        This is a demonstration store — no payment is taken and no card details
+        are ever requested.
+      </p>
+      <button class="btn btn-lg" id="checkout"
+              data-mos-track="checkout_complete">Complete order</button>
+    </div>
+  </div>
+
+  <div id="cart-done" class="done" hidden>
+    <h2>Order confirmed</h2>
+    <p id="done-detail"></p>
+    <p class="fineprint">
+      That order fired a <code>purchase</code> event. If you arrived here from a
+      tracked campaign link, the marketing system has just credited this
+      conversion back to the message that earned the click.
+    </p>
+    <a class="btn" href="index.html" data-mos-track="done_back_to_shop">Back to the shop</a>
+  </div>
+</section>
+
+<footer>
+  <span>© 2026 Innov8Smart</span>
+  <span id="mos-status" class="tracking-badge">tracking: checking…</span>
+</footer>
+
+<script src="shop.js"></script>
+<script src="tracking-status.js"></script>
+<script>
+  (function () {
+    var money = function (n) { return "$" + n.toFixed(2); };
+
+    function render() {
+      var items = window.innov8.basket();
+      var empty = document.getElementById("cart-empty");
+      var full = document.getElementById("cart-full");
+
+      if (!items.length) {
+        empty.hidden = false;
+        full.hidden = true;
+        return;
+      }
+      empty.hidden = true;
+      full.hidden = false;
+
+      var body = document.getElementById("cart-lines");
+      body.innerHTML = "";
+      items.forEach(function (i) {
+        var tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td>" + i.name + "</td><td>" + i.qty + "</td>" +
+          '<td class="right">' + money(i.price * i.qty) + "</td>";
+        body.appendChild(tr);
+      });
+
+      var total = window.innov8.basketTotal();
+      document.getElementById("cart-total").textContent = money(total);
+      document.getElementById("cart-points").textContent =
+        "You will earn " + Math.round(total * 10) +
+        " loyalty points on this order.";
+    }
+
+    document.getElementById("checkout").addEventListener("click", function () {
+      var order = window.innov8.checkout();
+      if (!order) return;
+
+      document.getElementById("cart-full").hidden = true;
+      document.getElementById("cart-empty").hidden = true;
+      var done = document.getElementById("cart-done");
+      done.hidden = false;
+      document.getElementById("done-detail").textContent =
+        "Thank you — " + order.units + " item(s), " +
+        money(order.value) + ", earning " + order.points_earned +
+        " loyalty points.";
+    });
+
+    render();
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+test_accuracy_learned,test_accuracy_rule,agreement_learned_rule,n_test,classes
+0.944,0.828,0.8215,2000,"['send_general_reminder', 'send_personalized_offer', 'send_premium_offer', 'send_reactivation_campaign']"

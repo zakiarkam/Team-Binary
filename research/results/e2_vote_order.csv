@@ -1,0 +1,3 @@
+vote_order,cold_start_detected_by_rules,cold_start_surviving,share_lost
+notebook (ml == hier tested first),163,127,0.2209
+corrected (cold start resolved second),163,163,0.0

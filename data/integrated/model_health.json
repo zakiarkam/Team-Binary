@@ -1,0 +1,35 @@
+{
+  "summary": "All models run and are reproducible. Four carry honest caveats (low-data classifiers, synthetic-data optimism, and simulated-data label leakage) that are reported here rather than hidden.",
+  "findings": [
+    {
+      "model": "M2 conversion model",
+      "level": "ok",
+      "finding": "Real RandomForest/LogReg trained with a Dummy baseline; accuracy sits near the base rate due to class imbalance, which the module reports honestly.",
+      "action": "Interpret with ROC/PR-AUC, not accuracy. No change needed."
+    },
+    {
+      "model": "M4 goal classifier",
+      "level": "caution",
+      "finding": "Single-split accuracy 0.75 on a very small labelled set; rare classes (e.g. 'engagement') have almost no support.",
+      "action": "Cross-validated weighted-F1: 0.763 \u00b1 0.091 (weighted-F1, 5-fold). Grow the labelled set and report CV, not a single split."
+    },
+    {
+      "model": "M4 tone classifier",
+      "level": "caution",
+      "finding": "Single-split accuracy 1.0 \u2014 1.0 on ~24 test rows is an overfit red flag, not real perfection.",
+      "action": "Cross-validated weighted-F1: 0.903 \u00b1 0.073 (weighted-F1, 5-fold). Treat as a low-data classifier; report CV with confidence intervals."
+    },
+    {
+      "model": "M4 engagement regressor",
+      "level": "caution",
+      "finding": "High R\u00b2 on the engagement dataset (RandomForest R\u00b2=0.989, MAE=0.0188). On a synthetic/semi-simulated corpus this is likely optimistic.",
+      "action": "Report engagement prediction as a relative ranker, not an absolute predictor; validate on real platform exports via learning/ loop."
+    },
+    {
+      "model": "M3 conversion / drop-off models",
+      "level": "caution",
+      "finding": "Simulated AUC \u2248 1.0 is inflated by label leakage (targets are defined by the same events used as features).",
+      "action": "The honest number is the real-data (UCI Bank-Marketing) validation AUC \u2248 0.9535. Report that, and label simulated metrics clearly."
+    }
+  ]
+}

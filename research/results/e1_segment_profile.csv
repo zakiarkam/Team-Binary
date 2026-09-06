@@ -1,0 +1,19 @@
+method,segment,users,share,conversion_rate,counted_in_separation
+rules only,Low Engagement,3499,0.4374,0.8625,True
+rules only,Loyal Customer,1942,0.2427,0.9135,True
+rules only,Price Sensitive,1451,0.1814,0.8725,True
+rules only,High Intent,945,0.1181,0.9175,True
+rules only,New Cold User,163,0.0204,0.5337,True
+k-means only,High Intent,2105,0.2631,0.9088,True
+k-means only,Loyal Customer,1980,0.2475,0.8854,True
+k-means only,Price Sensitive,1959,0.2449,0.8698,True
+k-means only,Low Engagement,1956,0.2445,0.8395,True
+hierarchical only,Loyal Customer,3103,0.3879,0.8837,True
+hierarchical only,Low Engagement,2499,0.3124,0.8563,True
+hierarchical only,Price Sensitive,1429,0.1786,0.8866,True
+hierarchical only,High Intent,969,0.1211,0.8906,True
+hybrid (vote),Low Engagement,3384,0.423,0.8599,True
+hybrid (vote),Loyal Customer,2247,0.2809,0.9097,True
+hybrid (vote),Price Sensitive,1393,0.1741,0.8794,True
+hybrid (vote),High Intent,813,0.1016,0.9176,True
+hybrid (vote),New Cold User,163,0.0204,0.5337,True

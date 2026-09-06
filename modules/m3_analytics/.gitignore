@@ -1,0 +1,22 @@
+# Environments
+venv/
+.venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Large raw datasets  never commit (download with scripts instead)
+data/raw/
+
+# Trained model artefacts  regeneratable, don't commit
+outputs/models/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/

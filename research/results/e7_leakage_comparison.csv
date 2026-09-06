@@ -1,0 +1,4 @@
+feature_set,n_features,r2,spearman,mae,spearman_ci_low,spearman_ci_high,r2_ci_low,r2_ci_high
+with outcome columns (original),17,0.9901,0.9977,0.01847,,,,
+text features only (corrected),13,-0.1676,0.012,0.39307,-0.0276,0.0539,-0.4081,-0.0715
+baseline (predict the mean),0,-0.0,0.0,0.32783,,,,

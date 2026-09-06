@@ -1,0 +1,39 @@
+# AI-Powered Digital Marketing Orchestration — local infrastructure
+# Team Binary · University of Moratuwa · 2026
+#
+# Brings up the PostgreSQL database described in the report (Figure 5.1).
+# The FastAPI backend and Next.js dashboard are run from the host during
+# development (see README) so hot-reload stays fast.
+#
+#   docker compose up -d          # start the database
+#   docker compose logs -f db     # watch it
+#   docker compose down           # stop (data is kept in the volume)
+#   docker compose down -v        # stop and DELETE all data
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: mos_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mos_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-marketing_os}
+    ports:
+      # 5434 on the host so we never clash with another project's Postgres
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - mos_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-mos} -d ${POSTGRES_DB:-marketing_os}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mos_pgdata:
+    name: mos_pgdata

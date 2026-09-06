@@ -1,0 +1,401 @@
+policy,share_targeted,incremental_responders
+uplift (S-learner),0.0001,0.0
+uplift (S-learner),0.0101,24.98
+uplift (S-learner),0.0202,36.65
+uplift (S-learner),0.0303,58.43
+uplift (S-learner),0.0404,77.73
+uplift (S-learner),0.0505,93.48
+uplift (S-learner),0.0606,110.77
+uplift (S-learner),0.0707,113.97
+uplift (S-learner),0.0808,148.35
+uplift (S-learner),0.0909,164.73
+uplift (S-learner),0.101,160.65
+uplift (S-learner),0.1111,180.55
+uplift (S-learner),0.1212,182.66
+uplift (S-learner),0.1314,191.92
+uplift (S-learner),0.1415,212.47
+uplift (S-learner),0.1515,221.6
+uplift (S-learner),0.1616,227.66
+uplift (S-learner),0.1717,242.22
+uplift (S-learner),0.1818,258.06
+uplift (S-learner),0.1919,260.71
+uplift (S-learner),0.202,278.72
+uplift (S-learner),0.2121,286.23
+uplift (S-learner),0.2222,300.79
+uplift (S-learner),0.2323,323.37
+uplift (S-learner),0.2424,324.31
+uplift (S-learner),0.2526,335.99
+uplift (S-learner),0.2627,348.24
+uplift (S-learner),0.2728,363.23
+uplift (S-learner),0.2829,371.17
+uplift (S-learner),0.2929,386.54
+uplift (S-learner),0.303,400.08
+uplift (S-learner),0.3131,405.2
+uplift (S-learner),0.3232,413.69
+uplift (S-learner),0.3333,419.74
+uplift (S-learner),0.3434,427.41
+uplift (S-learner),0.3535,440.83
+uplift (S-learner),0.3636,447.41
+uplift (S-learner),0.3738,455.47
+uplift (S-learner),0.3839,471.99
+uplift (S-learner),0.394,469.95
+uplift (S-learner),0.4041,476.55
+uplift (S-learner),0.4142,487.88
+uplift (S-learner),0.4243,493.93
+uplift (S-learner),0.4343,501.56
+uplift (S-learner),0.4444,516.28
+uplift (S-learner),0.4545,516.31
+uplift (S-learner),0.4646,518.15
+uplift (S-learner),0.4747,523.68
+uplift (S-learner),0.4848,532.46
+uplift (S-learner),0.4949,539.01
+uplift (S-learner),0.5051,537.51
+uplift (S-learner),0.5152,537.81
+uplift (S-learner),0.5253,544.13
+uplift (S-learner),0.5354,549.0
+uplift (S-learner),0.5455,537.62
+uplift (S-learner),0.5556,555.42
+uplift (S-learner),0.5657,573.09
+uplift (S-learner),0.5757,586.61
+uplift (S-learner),0.5858,606.62
+uplift (S-learner),0.5959,614.36
+uplift (S-learner),0.606,611.75
+uplift (S-learner),0.6161,619.95
+uplift (S-learner),0.6262,620.32
+uplift (S-learner),0.6364,644.52
+uplift (S-learner),0.6465,650.31
+uplift (S-learner),0.6566,661.67
+uplift (S-learner),0.6667,671.61
+uplift (S-learner),0.6768,684.75
+uplift (S-learner),0.6869,692.49
+uplift (S-learner),0.697,685.86
+uplift (S-learner),0.7071,691.9
+uplift (S-learner),0.7171,690.44
+uplift (S-learner),0.7272,699.57
+uplift (S-learner),0.7373,701.84
+uplift (S-learner),0.7474,704.82
+uplift (S-learner),0.7576,709.41
+uplift (S-learner),0.7677,717.04
+uplift (S-learner),0.7778,713.53
+uplift (S-learner),0.7879,718.32
+uplift (S-learner),0.798,724.93
+uplift (S-learner),0.8081,731.11
+uplift (S-learner),0.8182,729.9
+uplift (S-learner),0.8283,736.11
+uplift (S-learner),0.8384,744.43
+uplift (S-learner),0.8485,744.02
+uplift (S-learner),0.8585,754.57
+uplift (S-learner),0.8686,752.44
+uplift (S-learner),0.8788,754.19
+uplift (S-learner),0.8889,769.39
+uplift (S-learner),0.899,765.28
+uplift (S-learner),0.9091,764.36
+uplift (S-learner),0.9192,779.15
+uplift (S-learner),0.9293,779.96
+uplift (S-learner),0.9394,786.96
+uplift (S-learner),0.9495,786.4
+uplift (S-learner),0.9596,788.87
+uplift (S-learner),0.9697,801.87
+uplift (S-learner),0.9798,826.28
+uplift (S-learner),0.9899,826.55
+uplift (S-learner),1.0,823.54
+uplift (T-learner),0.0001,0.0
+uplift (T-learner),0.0101,21.84
+uplift (T-learner),0.0202,31.8
+uplift (T-learner),0.0303,43.86
+uplift (T-learner),0.0404,54.02
+uplift (T-learner),0.0505,58.03
+uplift (T-learner),0.0606,66.08
+uplift (T-learner),0.0707,85.25
+uplift (T-learner),0.0808,89.85
+uplift (T-learner),0.0909,109.25
+uplift (T-learner),0.101,127.18
+uplift (T-learner),0.1111,141.82
+uplift (T-learner),0.1212,156.05
+uplift (T-learner),0.1314,166.23
+uplift (T-learner),0.1415,183.18
+uplift (T-learner),0.1515,192.11
+uplift (T-learner),0.1616,218.55
+uplift (T-learner),0.1717,233.42
+uplift (T-learner),0.1818,236.48
+uplift (T-learner),0.1919,254.36
+uplift (T-learner),0.202,274.58
+uplift (T-learner),0.2121,277.34
+uplift (T-learner),0.2222,281.02
+uplift (T-learner),0.2323,294.79
+uplift (T-learner),0.2424,310.57
+uplift (T-learner),0.2526,325.66
+uplift (T-learner),0.2627,328.13
+uplift (T-learner),0.2728,336.99
+uplift (T-learner),0.2829,342.82
+uplift (T-learner),0.2929,355.75
+uplift (T-learner),0.303,358.15
+uplift (T-learner),0.3131,374.07
+uplift (T-learner),0.3232,385.69
+uplift (T-learner),0.3333,384.05
+uplift (T-learner),0.3434,393.6
+uplift (T-learner),0.3535,397.88
+uplift (T-learner),0.3636,416.68
+uplift (T-learner),0.3738,415.33
+uplift (T-learner),0.3839,421.16
+uplift (T-learner),0.394,437.21
+uplift (T-learner),0.4041,447.98
+uplift (T-learner),0.4142,448.36
+uplift (T-learner),0.4243,459.34
+uplift (T-learner),0.4343,477.31
+uplift (T-learner),0.4444,488.29
+uplift (T-learner),0.4545,496.74
+uplift (T-learner),0.4646,503.53
+uplift (T-learner),0.4747,508.83
+uplift (T-learner),0.4848,517.6
+uplift (T-learner),0.4949,518.05
+uplift (T-learner),0.5051,524.36
+uplift (T-learner),0.5152,529.87
+uplift (T-learner),0.5253,530.98
+uplift (T-learner),0.5354,540.85
+uplift (T-learner),0.5455,551.45
+uplift (T-learner),0.5556,561.6
+uplift (T-learner),0.5657,572.46
+uplift (T-learner),0.5757,575.51
+uplift (T-learner),0.5858,584.8
+uplift (T-learner),0.5959,597.02
+uplift (T-learner),0.606,600.11
+uplift (T-learner),0.6161,605.76
+uplift (T-learner),0.6262,609.57
+uplift (T-learner),0.6364,614.66
+uplift (T-learner),0.6465,620.36
+uplift (T-learner),0.6566,629.13
+uplift (T-learner),0.6667,639.56
+uplift (T-learner),0.6768,651.25
+uplift (T-learner),0.6869,655.26
+uplift (T-learner),0.697,660.68
+uplift (T-learner),0.7071,663.54
+uplift (T-learner),0.7171,666.87
+uplift (T-learner),0.7272,672.88
+uplift (T-learner),0.7373,675.93
+uplift (T-learner),0.7474,676.46
+uplift (T-learner),0.7576,682.16
+uplift (T-learner),0.7677,681.48
+uplift (T-learner),0.7778,686.72
+uplift (T-learner),0.7879,685.88
+uplift (T-learner),0.798,692.9
+uplift (T-learner),0.8081,697.64
+uplift (T-learner),0.8182,697.61
+uplift (T-learner),0.8283,698.84
+uplift (T-learner),0.8384,703.31
+uplift (T-learner),0.8485,704.35
+uplift (T-learner),0.8585,714.52
+uplift (T-learner),0.8686,713.56
+uplift (T-learner),0.8788,723.68
+uplift (T-learner),0.8889,733.51
+uplift (T-learner),0.899,750.73
+uplift (T-learner),0.9091,750.09
+uplift (T-learner),0.9192,767.23
+uplift (T-learner),0.9293,779.05
+uplift (T-learner),0.9394,792.58
+uplift (T-learner),0.9495,796.59
+uplift (T-learner),0.9596,792.02
+uplift (T-learner),0.9697,799.11
+uplift (T-learner),0.9798,805.59
+uplift (T-learner),0.9899,812.56
+uplift (T-learner),1.0,823.54
+predicted response (current policy),0.0001,0.0
+predicted response (current policy),0.0101,14.91
+predicted response (current policy),0.0202,39.99
+predicted response (current policy),0.0303,54.94
+predicted response (current policy),0.0404,75.77
+predicted response (current policy),0.0505,77.54
+predicted response (current policy),0.0606,99.22
+predicted response (current policy),0.0707,105.62
+predicted response (current policy),0.0808,117.96
+predicted response (current policy),0.0909,133.67
+predicted response (current policy),0.101,140.66
+predicted response (current policy),0.1111,153.85
+predicted response (current policy),0.1212,157.25
+predicted response (current policy),0.1314,182.15
+predicted response (current policy),0.1415,198.29
+predicted response (current policy),0.1515,215.58
+predicted response (current policy),0.1616,226.77
+predicted response (current policy),0.1717,241.26
+predicted response (current policy),0.1818,246.38
+predicted response (current policy),0.1919,244.48
+predicted response (current policy),0.202,248.72
+predicted response (current policy),0.2121,259.04
+predicted response (current policy),0.2222,271.19
+predicted response (current policy),0.2323,274.33
+predicted response (current policy),0.2424,271.71
+predicted response (current policy),0.2526,279.52
+predicted response (current policy),0.2627,288.57
+predicted response (current policy),0.2728,306.86
+predicted response (current policy),0.2829,321.12
+predicted response (current policy),0.2929,337.46
+predicted response (current policy),0.303,354.69
+predicted response (current policy),0.3131,363.44
+predicted response (current policy),0.3232,363.95
+predicted response (current policy),0.3333,369.32
+predicted response (current policy),0.3434,380.56
+predicted response (current policy),0.3535,394.97
+predicted response (current policy),0.3636,403.86
+predicted response (current policy),0.3738,417.72
+predicted response (current policy),0.3839,430.95
+predicted response (current policy),0.394,436.52
+predicted response (current policy),0.4041,446.03
+predicted response (current policy),0.4142,459.64
+predicted response (current policy),0.4243,475.41
+predicted response (current policy),0.4343,476.3
+predicted response (current policy),0.4444,499.72
+predicted response (current policy),0.4545,502.04
+predicted response (current policy),0.4646,512.44
+predicted response (current policy),0.4747,513.15
+predicted response (current policy),0.4848,521.55
+predicted response (current policy),0.4949,536.8
+predicted response (current policy),0.5051,538.77
+predicted response (current policy),0.5152,538.74
+predicted response (current policy),0.5253,542.03
+predicted response (current policy),0.5354,551.4
+predicted response (current policy),0.5455,562.51
+predicted response (current policy),0.5556,563.14
+predicted response (current policy),0.5657,566.08
+predicted response (current policy),0.5757,573.19
+predicted response (current policy),0.5858,585.1
+predicted response (current policy),0.5959,579.24
+predicted response (current policy),0.606,590.11
+predicted response (current policy),0.6161,601.11
+predicted response (current policy),0.6262,605.49
+predicted response (current policy),0.6364,603.63
+predicted response (current policy),0.6465,619.67
+predicted response (current policy),0.6566,628.98
+predicted response (current policy),0.6667,634.92
+predicted response (current policy),0.6768,626.62
+predicted response (current policy),0.6869,638.46
+predicted response (current policy),0.697,649.12
+predicted response (current policy),0.7071,658.56
+predicted response (current policy),0.7171,666.28
+predicted response (current policy),0.7272,665.4
+predicted response (current policy),0.7373,673.57
+predicted response (current policy),0.7474,677.82
+predicted response (current policy),0.7576,674.55
+predicted response (current policy),0.7677,687.75
+predicted response (current policy),0.7778,693.51
+predicted response (current policy),0.7879,702.66
+predicted response (current policy),0.798,717.77
+predicted response (current policy),0.8081,732.81
+predicted response (current policy),0.8182,731.26
+predicted response (current policy),0.8283,735.42
+predicted response (current policy),0.8384,742.81
+predicted response (current policy),0.8485,757.9
+predicted response (current policy),0.8585,762.45
+predicted response (current policy),0.8686,771.89
+predicted response (current policy),0.8788,781.02
+predicted response (current policy),0.8889,790.83
+predicted response (current policy),0.899,777.26
+predicted response (current policy),0.9091,778.74
+predicted response (current policy),0.9192,775.87
+predicted response (current policy),0.9293,783.43
+predicted response (current policy),0.9394,799.93
+predicted response (current policy),0.9495,810.01
+predicted response (current policy),0.9596,817.79
+predicted response (current policy),0.9697,817.12
+predicted response (current policy),0.9798,818.17
+predicted response (current policy),0.9899,824.68
+predicted response (current policy),1.0,823.54
+random targeting,0.0001,0.0
+random targeting,0.0101,16.35
+random targeting,0.0202,25.96
+random targeting,0.0303,43.8
+random targeting,0.0404,51.61
+random targeting,0.0505,63.23
+random targeting,0.0606,73.18
+random targeting,0.0707,74.05
+random targeting,0.0808,86.76
+random targeting,0.0909,86.69
+random targeting,0.101,102.08
+random targeting,0.1111,110.5
+random targeting,0.1212,117.8
+random targeting,0.1314,132.36
+random targeting,0.1415,136.98
+random targeting,0.1515,145.1
+random targeting,0.1616,150.04
+random targeting,0.1717,156.66
+random targeting,0.1818,175.34
+random targeting,0.1919,184.91
+random targeting,0.202,193.33
+random targeting,0.2121,194.8
+random targeting,0.2222,216.3
+random targeting,0.2323,221.53
+random targeting,0.2424,219.29
+random targeting,0.2526,213.23
+random targeting,0.2627,221.3
+random targeting,0.2728,225.93
+random targeting,0.2829,226.05
+random targeting,0.2929,220.87
+random targeting,0.303,221.5
+random targeting,0.3131,218.99
+random targeting,0.3232,223.43
+random targeting,0.3333,231.51
+random targeting,0.3434,246.03
+random targeting,0.3535,263.68
+random targeting,0.3636,268.14
+random targeting,0.3738,276.08
+random targeting,0.3839,287.54
+random targeting,0.394,294.78
+random targeting,0.4041,302.7
+random targeting,0.4142,311.57
+random targeting,0.4243,326.14
+random targeting,0.4343,329.19
+random targeting,0.4444,341.4
+random targeting,0.4545,347.54
+random targeting,0.4646,351.94
+random targeting,0.4747,357.4
+random targeting,0.4848,360.65
+random targeting,0.4949,367.28
+random targeting,0.5051,375.27
+random targeting,0.5152,390.53
+random targeting,0.5253,400.02
+random targeting,0.5354,420.69
+random targeting,0.5455,423.01
+random targeting,0.5556,436.44
+random targeting,0.5657,449.5
+random targeting,0.5757,455.53
+random targeting,0.5858,463.51
+random targeting,0.5959,461.29
+random targeting,0.606,456.57
+random targeting,0.6161,465.78
+random targeting,0.6262,480.0
+random targeting,0.6364,481.74
+random targeting,0.6465,492.04
+random targeting,0.6566,502.31
+random targeting,0.6667,511.1
+random targeting,0.6768,522.14
+random targeting,0.6869,531.17
+random targeting,0.697,552.09
+random targeting,0.7071,569.16
+random targeting,0.7171,580.84
+random targeting,0.7272,579.9
+random targeting,0.7373,595.77
+random targeting,0.7474,608.1
+random targeting,0.7576,614.76
+random targeting,0.7677,614.31
+random targeting,0.7778,624.04
+random targeting,0.7879,630.73
+random targeting,0.798,647.24
+random targeting,0.8081,655.35
+random targeting,0.8182,664.98
+random targeting,0.8283,670.0
+random targeting,0.8384,677.17
+random targeting,0.8485,691.74
+random targeting,0.8585,708.82
+random targeting,0.8686,716.24
+random targeting,0.8788,723.1
+random targeting,0.8889,741.23
+random targeting,0.899,752.81
+random targeting,0.9091,745.68
+random targeting,0.9192,761.47
+random targeting,0.9293,773.75
+random targeting,0.9394,781.15
+random targeting,0.9495,777.18
+random targeting,0.9596,785.06
+random targeting,0.9697,797.69
+random targeting,0.9798,804.41
+random targeting,0.9899,811.82
+random targeting,1.0,823.54

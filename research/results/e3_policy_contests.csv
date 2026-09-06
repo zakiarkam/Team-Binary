@@ -1,0 +1,4 @@
+comparison,mean_difference,ci_low,ci_high,wilcoxon_p,cliffs_delta,effect_size,significant,extra_rules
+hybrid − fixed,0.837,0.727,0.944,1.862645149230957e-09,0.991,large,True,8
+hybrid − trigger,-2.462,-2.574,-2.347,1.862645149230957e-09,-1.0,large,True,5
+trigger − fixed,3.299,3.146,3.447,1.862645149230957e-09,1.0,large,True,3

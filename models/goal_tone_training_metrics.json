@@ -1,0 +1,218 @@
+{
+  "dataset_path": "/Users/arkamzakir/Documents/Research/Research/data/processed/goal_tone_dataset_training.csv",
+  "dataset_rows": 527,
+  "selection": {
+    "best_goal_model_type": "tfidf_logistic",
+    "best_tone_model_type": "tfidf_logistic"
+  },
+  "results": [
+    {
+      "target": "campaign_goal",
+      "model": "tfidf_logistic",
+      "accuracy": 0.802198,
+      "weighted_f1": 0.800131,
+      "macro_f1": 0.539085,
+      "classification_report": {
+        "awareness": {
+          "precision": 0.94,
+          "recall": 0.8703703703703703,
+          "f1-score": 0.9038461538461539,
+          "support": 54.0
+        },
+        "conversion": {
+          "precision": 0.6785714285714286,
+          "recall": 0.8636363636363636,
+          "f1-score": 0.76,
+          "support": 22.0
+        },
+        "engagement": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 2.0
+        },
+        "lead_generation": {
+          "precision": 0.6,
+          "recall": 0.6666666666666666,
+          "f1-score": 0.631578947368421,
+          "support": 9.0
+        },
+        "retention": {
+          "precision": 1.0,
+          "recall": 0.25,
+          "f1-score": 0.4,
+          "support": 4.0
+        },
+        "accuracy": 0.8021978021978022,
+        "macro avg": {
+          "precision": 0.6437142857142857,
+          "recall": 0.5301346801346801,
+          "f1-score": 0.539085020242915,
+          "support": 91.0
+        },
+        "weighted avg": {
+          "precision": 0.8251491365777079,
+          "recall": 0.8021978021978022,
+          "f1-score": 0.8001308003737153,
+          "support": 91.0
+        }
+      }
+    },
+    {
+      "target": "campaign_goal",
+      "model": "sentencebert_xgboost",
+      "accuracy": 0.769231,
+      "weighted_f1": 0.729124,
+      "macro_f1": 0.379261,
+      "classification_report": {
+        "awareness": {
+          "precision": 0.85,
+          "recall": 0.9444444444444444,
+          "f1-score": 0.8947368421052632,
+          "support": 54.0
+        },
+        "conversion": {
+          "precision": 0.6296296296296297,
+          "recall": 0.7727272727272727,
+          "f1-score": 0.6938775510204082,
+          "support": 22.0
+        },
+        "engagement": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 2.0
+        },
+        "lead_generation": {
+          "precision": 0.5,
+          "recall": 0.2222222222222222,
+          "f1-score": 0.3076923076923077,
+          "support": 9.0
+        },
+        "retention": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 4.0
+        },
+        "accuracy": 0.7692307692307693,
+        "macro avg": {
+          "precision": 0.3959259259259259,
+          "recall": 0.3878787878787879,
+          "f1-score": 0.3792613401635958,
+          "support": 91.0
+        },
+        "weighted avg": {
+          "precision": 0.706064306064306,
+          "recall": 0.7692307692307693,
+          "f1-score": 0.7291244655534502,
+          "support": 91.0
+        }
+      }
+    },
+    {
+      "target": "tone",
+      "model": "tfidf_logistic",
+      "accuracy": 0.885714,
+      "weighted_f1": 0.867162,
+      "macro_f1": 0.722663,
+      "classification_report": {
+        "emotional": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 2.0
+        },
+        "friendly": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 2.0
+        },
+        "luxury": {
+          "precision": 0.5714285714285714,
+          "recall": 1.0,
+          "f1-score": 0.7272727272727273,
+          "support": 4.0
+        },
+        "persuasive": {
+          "precision": 0.9285714285714286,
+          "recall": 1.0,
+          "f1-score": 0.9629629629629629,
+          "support": 13.0
+        },
+        "professional": {
+          "precision": 1.0,
+          "recall": 0.8571428571428571,
+          "f1-score": 0.9230769230769231,
+          "support": 14.0
+        },
+        "accuracy": 0.8857142857142857,
+        "macro avg": {
+          "precision": 0.7,
+          "recall": 0.7714285714285715,
+          "f1-score": 0.7226625226625227,
+          "support": 35.0
+        },
+        "weighted avg": {
+          "precision": 0.8673469387755102,
+          "recall": 0.8857142857142857,
+          "f1-score": 0.8671624671624671,
+          "support": 35.0
+        }
+      }
+    },
+    {
+      "target": "tone",
+      "model": "sentencebert_xgboost",
+      "accuracy": 0.8,
+      "weighted_f1": 0.755968,
+      "macro_f1": 0.51362,
+      "classification_report": {
+        "emotional": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 2.0
+        },
+        "friendly": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 2.0
+        },
+        "luxury": {
+          "precision": 1.0,
+          "recall": 0.75,
+          "f1-score": 0.8571428571428571,
+          "support": 4.0
+        },
+        "persuasive": {
+          "precision": 0.9230769230769231,
+          "recall": 0.9230769230769231,
+          "f1-score": 0.9230769230769231,
+          "support": 13.0
+        },
+        "professional": {
+          "precision": 0.6842105263157895,
+          "recall": 0.9285714285714286,
+          "f1-score": 0.7878787878787878,
+          "support": 14.0
+        },
+        "accuracy": 0.8,
+        "macro avg": {
+          "precision": 0.5214574898785426,
+          "recall": 0.5203296703296704,
+          "f1-score": 0.5136197136197136,
+          "support": 35.0
+        },
+        "weighted avg": {
+          "precision": 0.730827067669173,
+          "recall": 0.8,
+          "f1-score": 0.7559678416821274,
+          "support": 35.0
+        }
+      }
+    }
+  ]
+}
