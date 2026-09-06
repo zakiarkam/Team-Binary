@@ -1,5 +1,7 @@
 import os
+import re
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -21,6 +23,21 @@ plt.rcParams.update({
 })
 
 FIGURES_DIR = "outputs/figures"
+
+# The policy figures read the E3 experiment's committed tables, not this
+# module's own pipeline output. E3 is the 30-seed paired run the report and
+# poster cite; `outputs/multiseed_summary.csv` is a separate 20-seed run of the
+# same simulator. Reading E3 here is what stops a chart and the report it
+# illustrates from quietly disagreeing after either side is rerun.
+#
+# No figure below may hardcode a value that appears in these files — every
+# number, including the seed count and the complexity axis, is read from them.
+RESEARCH_RESULTS = Path(__file__).resolve().parents[3] / "research" / "results"
+
+E3_SUMMARY = RESEARCH_RESULTS / "e3_policy_summary.csv"
+E3_CONTESTS = RESEARCH_RESULTS / "e3_policy_contests.csv"
+E3_PER_SEED = RESEARCH_RESULTS / "e3_per_seed.csv"
+E3_SPARSITY = RESEARCH_RESULTS / "e3_sparsity.csv"
 
 STRATEGY_ORDER = ['fixed', 'trigger', 'hybrid']
 STRATEGY_COLORS = {
@@ -60,11 +77,73 @@ def savefig(fig, name, rect=None):
     print(f"Wrote {path}")
 
 
-def significance_ratio(row_a, row_b, mean_col, std_col):
+def e3_summary():
+    """Per-policy headline table, ordered the way every figure plots it."""
+    return pd.read_csv(E3_SUMMARY).set_index('strategy').loc[STRATEGY_ORDER]
+
+
+def e3_per_seed():
+    """One row per (seed, policy) — the spread behind every error bar.
+
+    User-level conversion rate is not a column in the summary table, so it is
+    derived here from the two columns that do exist. Deriving it per seed (not
+    from the pooled totals) is what makes a standard deviation available for it.
+    """
+    per_seed = pd.read_csv(E3_PER_SEED)
+    per_seed['conv_rate'] = per_seed['conversions'] / per_seed['users']
+    return per_seed
+
+
+def contest_difference(contests, left, right):
+    """The mean paired difference `left − right`, as the contests table states it.
+
+    The table holds each pair once in whichever direction E3 ran it, so the
+    reverse direction is served by negating. Splitting on the separator rather
+    than matching the whole string keeps this working whether the file was
+    written with a Unicode minus or an ASCII hyphen.
+    """
+    for _, row in contests.iterrows():
+        parts = re.split(r'\s*[−–-]\s*', str(row['comparison']).strip(), maxsplit=1)
+        if len(parts) != 2:
+            continue
+        a, b = parts[0].strip(), parts[1].strip()
+        if (a, b) == (left, right):
+            return float(row['mean_difference'])
+        if (a, b) == (right, left):
+            return -float(row['mean_difference'])
+    raise KeyError(f"e3_policy_contests.csv has no row comparing {left} and {right}")
+
+
+def paired_sigma(per_seed, contests, left, right, value_col='conversions_per_1000_sends'):
+    """Mean paired difference over the SD of the per-seed differences.
+
+    Every seed puts the same 8,000 users through all three policies, so the
+    runs are paired and the between-seed variance is common to both sides. The
+    spread that the gap should be judged against is therefore the spread of the
+    *differences*, not the spread of each policy measured separately — treating
+    them as independent samples throws the pairing away and understates the
+    separation.
+
+    The mean difference itself comes from the contests table so this annotation
+    and the report quote the same figure; only its SD is recomputed here, since
+    the contests table publishes an interval rather than a standard deviation.
+    """
+    gap = contest_difference(contests, left, right)
+    wide = per_seed.pivot(index='seed', columns='strategy', values=value_col)
+    sd = float((wide[left] - wide[right]).std(ddof=1))
+    return abs(gap) / sd if sd > 0 else float('inf')
+
+
+def unpaired_ratio(row_a, row_b, mean_col, std_col):
+    """Gap over the combined SD, for tables that publish no per-seed values.
+
+    Used only by the sparsity sweep, whose committed table carries a mean and
+    an SD per level but not the individual seeds, so `paired_sigma` cannot be
+    computed there.
+    """
     gap = row_a[mean_col] - row_b[mean_col]
     combined_std = np.sqrt(row_a[std_col] ** 2 + row_b[std_col] ** 2)
-    ratio = abs(gap) / combined_std if combined_std > 0 else float('inf')
-    return ratio
+    return abs(gap) / combined_std if combined_std > 0 else float('inf')
 
 
 def route_for_user(row):
@@ -77,39 +156,49 @@ def route_for_user(row):
 
 
 def figure1_strategy_comparison_bars():
-    summary = pd.read_csv('outputs/multiseed_summary.csv')
-    summary = summary.set_index('strategy').loc[STRATEGY_ORDER].reset_index()
-    colors = [STRATEGY_COLORS[s] for s in summary['strategy']]
+    summary = e3_summary()
+    per_seed = e3_per_seed()
+    contests = pd.read_csv(E3_CONTESTS)
+
+    # Both the seed count in the titles and the axis values are read, never
+    # written into this file.
+    n_seeds = int(per_seed['seed'].nunique())
+    colors = [STRATEGY_COLORS[s] for s in STRATEGY_ORDER]
+
+    # Error bars come from the per-seed values rather than the summary's
+    # rounded sd column, so a whisker is the run's actual spread.
+    eff_std = per_seed.groupby('strategy')['conversions_per_1000_sends'].std(ddof=1)
+    rate = per_seed.groupby('strategy')['conv_rate'].agg(['mean', 'std'])
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5.5))
 
     ax = axes[0]
-    bars = ax.bar(summary['strategy'], summary['conv_per_1k_mean'],
-                   yerr=summary['conv_per_1k_std'], capsize=6, color=colors)
+    eff_mean = summary['conversions_per_1000_sends']
+    eff_err = eff_std.loc[STRATEGY_ORDER]
+    bars = ax.bar(STRATEGY_ORDER, eff_mean, yerr=eff_err, capsize=6, color=colors)
     offset = ax.get_ylim()[1] * 0.03
-    for bar, val, std in zip(bars, summary['conv_per_1k_mean'], summary['conv_per_1k_std']):
+    for bar, val, std in zip(bars, eff_mean, eff_err):
         ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + std + offset,
                 f"{val:.2f}", ha='center', va='bottom')
-    ax.set_title("Per-send conversion efficiency: 20-seed mean")
+    ax.set_title(f"Per-send conversion efficiency: {n_seeds}-seed mean")
     ax.set_ylabel("Conversions per 1000 sends")
     ax.set_ylim(0, ax.get_ylim()[1] * 1.1)
 
     ax2 = axes[1]
-    conv_rate_pct = summary['conv_rate_mean'] * 100
-    conv_rate_std_pct = summary['conv_rate_std'] * 100
-    bars2 = ax2.bar(summary['strategy'], conv_rate_pct, yerr=conv_rate_std_pct, capsize=6, color=colors)
+    conv_rate_pct = rate.loc[STRATEGY_ORDER, 'mean'] * 100
+    conv_rate_std_pct = rate.loc[STRATEGY_ORDER, 'std'] * 100
+    bars2 = ax2.bar(STRATEGY_ORDER, conv_rate_pct, yerr=conv_rate_std_pct, capsize=6, color=colors)
     offset2 = ax2.get_ylim()[1] * 0.03
     for bar, val, std in zip(bars2, conv_rate_pct, conv_rate_std_pct):
         ax2.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + std + offset2,
                   f"{val:.2f}%", ha='center', va='bottom')
-    ax2.set_title("User-level conversion rate: 20-seed mean")
+    ax2.set_title(f"User-level conversion rate: {n_seeds}-seed mean")
     ax2.set_ylabel("Conversion rate (%)")
     ax2.set_ylim(0, ax2.get_ylim()[1] * 1.1)
 
-    row = {s: summary[summary['strategy'] == s].iloc[0] for s in STRATEGY_ORDER}
-    tf = significance_ratio(row['trigger'], row['fixed'], 'conv_per_1k_mean', 'conv_per_1k_std')
-    hf = significance_ratio(row['hybrid'], row['fixed'], 'conv_per_1k_mean', 'conv_per_1k_std')
-    ht = significance_ratio(row['hybrid'], row['trigger'], 'conv_per_1k_mean', 'conv_per_1k_std')
+    tf = paired_sigma(per_seed, contests, 'trigger', 'fixed')
+    hf = paired_sigma(per_seed, contests, 'hybrid', 'fixed')
+    ht = paired_sigma(per_seed, contests, 'hybrid', 'trigger')
     annotation = (
         f"Trigger vs Fixed: {tf:.2f}σ | "
         f"Hybrid vs Fixed: {hf:.2f}σ | "
@@ -157,23 +246,28 @@ def figure2_funnel_by_strategy():
 
 
 def figure3_sparsity_sweep():
-    summary = pd.read_csv('outputs/sparsity_sweep_summary.csv')
+    summary = pd.read_csv(E3_SPARSITY)
 
     fig, ax = plt.subplots(figsize=(9, 6))
     for strat in STRATEGY_ORDER:
-        sub = summary[summary['strategy'] == strat].sort_values('sparsity')
-        ax.errorbar(sub['sparsity'], sub['conv_per_1k_mean'], yerr=sub['conv_per_1k_std'],
+        sub = summary[summary['strategy'] == strat].sort_values('signal_sparsity')
+        ax.errorbar(sub['signal_sparsity'], sub['conversions_per_1000_sends'], yerr=sub['sd'],
                      label=strat, color=STRATEGY_COLORS[strat], marker='o', capsize=4)
 
     ax.set_xlabel("signal_sparsity")
     ax.set_ylabel("conv_per_1k")
-    ax.set_title("Efficiency degradation under increasing signal sparsity (5 seeds/level)")
+    # No seed count in the title: the sweep's committed table publishes a mean
+    # and an SD per level, not the individual seeds, so there is nothing to
+    # read it from and it will not be asserted.
+    ax.set_title("Efficiency degradation under increasing signal sparsity")
     ax.legend(loc='center left')
+    ax.margins(x=0.06)   # keeps the last σ label clear of the right spine
 
-    hybrid_sub = summary[summary['strategy'] == 'hybrid'].sort_values('sparsity').reset_index(drop=True)
-    trigger_sub = summary[summary['strategy'] == 'trigger'].sort_values('sparsity').reset_index(drop=True)
+    hybrid_sub = summary[summary['strategy'] == 'hybrid'].sort_values('signal_sparsity').reset_index(drop=True)
+    trigger_sub = summary[summary['strategy'] == 'trigger'].sort_values('signal_sparsity').reset_index(drop=True)
+    # Unpaired, unlike figure 1: this table has no per-seed rows to pair on.
     ratios = [
-        significance_ratio(hybrid_sub.iloc[i], trigger_sub.iloc[i], 'conv_per_1k_mean', 'conv_per_1k_std')
+        unpaired_ratio(hybrid_sub.iloc[i], trigger_sub.iloc[i], 'conversions_per_1000_sends', 'sd')
         for i in range(len(hybrid_sub))
     ]
 
@@ -181,26 +275,30 @@ def figure3_sparsity_sweep():
     headroom_top = ymax + (ymax - ymin) * 0.12
     ax.set_ylim(ymin, headroom_top)
     annotation_y = ymax + (ymax - ymin) * 0.04
-    for x, r in zip(hybrid_sub['sparsity'], ratios):
+    for x, r in zip(hybrid_sub['signal_sparsity'], ratios):
         ax.annotate(f"{r:.2f}σ", xy=(x, annotation_y), ha='center', fontsize=8, color='dimgray')
+    ax.annotate("hybrid vs trigger, unpaired (no per-seed values published for the sweep)",
+                xy=(0.5, -0.13), xycoords='axes fraction', ha='center',
+                fontsize=8, color='dimgray')
 
     savefig(fig, 'sparsity_sweep.png')
 
 
 def figure4_complexity_vs_performance():
-    from src.strategies.fixed import OPERATIONAL_COMPLEXITY as FIXED_COMPLEXITY
-    from src.strategies.hybrid import OPERATIONAL_COMPLEXITY as HYBRID_COMPLEXITY
-    from src.strategies.trigger import OPERATIONAL_COMPLEXITY as TRIGGER_COMPLEXITY
-
-    complexity = {'fixed': FIXED_COMPLEXITY, 'trigger': TRIGGER_COMPLEXITY, 'hybrid': HYBRID_COMPLEXITY}
-    summary = pd.read_csv('outputs/multiseed_summary.csv').set_index('strategy')
+    # Complexity is read from the experiment's own output, not from the
+    # strategy modules' OPERATIONAL_COMPLEXITY constants. E3 counts distinct
+    # decision rules per policy and writes that count next to the result it
+    # produced; the constants are a different, unrelated scale.
+    summary = e3_summary()
+    per_seed = e3_per_seed()
+    rate = per_seed.groupby('strategy')['conv_rate'].mean()
 
     fig, axes = plt.subplots(1, 2, figsize=(12, 5.5))
 
     ax1 = axes[0]
     for strat in STRATEGY_ORDER:
-        x = complexity[strat]
-        y = summary.loc[strat, 'conv_per_1k_mean']
+        x = summary.loc[strat, 'operational_complexity']
+        y = summary.loc[strat, 'conversions_per_1000_sends']
         ax1.scatter(x, y, s=350, color=STRATEGY_COLORS[strat], edgecolor='black', zorder=3)
         ax1.annotate(strat, (x, y), textcoords='offset points', xytext=(10, 10), fontsize=11)
     ax1.set_xlabel("Operational complexity")
@@ -209,10 +307,19 @@ def figure4_complexity_vs_performance():
 
     ax2 = axes[1]
     for strat in STRATEGY_ORDER:
-        x = complexity[strat]
-        y = summary.loc[strat, 'conv_rate_mean'] * 100
+        x = summary.loc[strat, 'operational_complexity']
+        y = rate.loc[strat] * 100
         ax2.scatter(x, y, s=350, color=STRATEGY_COLORS[strat], edgecolor='black', zorder=3)
         ax2.annotate(strat, (x, y), textcoords='offset points', xytext=(10, 10), fontsize=11)
+
+    # The labels sit above and right of their points, so both axes need room
+    # for them. The complexity scale is read from the file, so the padding is
+    # expressed relative to the data rather than as fixed limits.
+    for ax, values in ((ax1, summary['conversions_per_1000_sends']), (ax2, rate * 100)):
+        span = float(values.max() - values.min()) or 1.0
+        ax.set_ylim(float(values.min()) - span * 0.2, float(values.max()) + span * 0.25)
+        ax.set_xlim(0, float(summary['operational_complexity'].max()) + 2)
+
     ax2.set_xlabel("Operational complexity")
     ax2.set_ylabel("User-level conversion rate (%)")
     ax2.set_title("Complexity vs user-level conversion")
